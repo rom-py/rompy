@@ -9,6 +9,8 @@ version: 2
 sphinx:
    configuration: docs/source/conf.py
 
-pip:
-    file: docs/requirements.txt
+python:
+   version: 3.7
+   install:
+   - requirements: docs/requirements.txt
 
