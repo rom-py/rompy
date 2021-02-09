@@ -1,8 +1,7 @@
 Base Classes
 ------------
 
-This is a reference API class listing, useful mainly for developers.
-
+This is a reference API class listing.
 
 .. autosummary::
    rompy.core.BaseModel
@@ -11,17 +10,22 @@ This is a reference API class listing, useful mainly for developers.
    rompy.swan.SwanGrid
    rompy.intake.NetCDFFCStackSource
    
+
 .. autoclass:: rompy.core.BaseModel
    :members:
+
 
 .. autoclass:: rompy.core.BaseGrid
    :members:
 
+
 .. autoclass:: rompy.swan.SwanModel
    :members:
 
+
 .. autoclass:: rompy.swan.SwanGrid
    :members:
+
 
 .. autoclass:: rompy.intake.NetCDFFCStackSource
    :members:
