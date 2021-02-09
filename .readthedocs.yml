@@ -10,5 +10,5 @@ sphinx:
    configuration: docs/source/conf.py
 
 pip:
-    file: docs/environment.yml
+    file: docs/requirements.txt
 
