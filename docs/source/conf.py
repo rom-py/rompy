@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'rompy'
-copyright = '2021, Paul Branson'
+copyright = '2021, CSIRO and rompy contributors'
 author = 'Paul Branson'
 
 
