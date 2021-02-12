@@ -36,7 +36,7 @@ def walk_server(urlpath, fn_fmt, fmt_fields, url_replace):
             from fsspec import filesystem
             from fsspec.utils import get_protocol
             fs = filesystem(get_protocol(test_url))
-            print(f'testing {test_url}')
+            logger.debug(f'testing {test_url}')
             urls = []
             if fs.exists(test_url):
                 for url, _ , links in fs.walk(test_url):
