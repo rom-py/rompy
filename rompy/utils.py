@@ -97,24 +97,34 @@ def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}
     #### Find Indices of nearest point
     lats = model_ds['latitude'].values
     lons = model_ds['longitude'].values
+    dummy_var =  model_ds[list(var_map.items())[0][1]].values ### Pull out the first key
     
-    regular_grid = True # Bool flag for grid type, I dont know if this will hold for all unstructured grids? A bit unfamiliar with the outputs
-    if len(lats.shape) != 1:
-        regular_grid = False
-        raise ValueError('Model dataset has unsupported grid type')
+    if (len(lats.shape) == 1) and (len(dummy_var.shape)==3):  #assumes time, x, y
+        grid = 'regular'
+    elif (len(lats.shape) == 1) and (len(dummy_var.shape)==2): #assumes time, element
+        grid = 'unstructured'
+    elif (len(lats.shape) == 2) and (len(dummy_var.shape)==3): #assumes time, x, y
+        grid = 'curvilinear' #Curvilinear
     
-    if regular_grid: ## Regular grid = i.e. Perth domain
+    if grid == 'regular': ## Regular grid = i.e. Perth domain
         mesh_lat,mesh_lon=np.meshgrid(lats,lons,indexing='ij')
-        tree=KDTree(list(zip(mesh_lat.ravel(),mesh_lon.ravel())),**KDtree_kwargs)
-        dist,grid_idx_r=tree.query(list(zip(meas_ds['latitude'],meas_ds['longitude'])))
-        grid_idx_lat,grid_idx_lon=np.unravel_index(grid_idx_r,mesh_lon.shape)
+    elif grid ==  'unstructured': 
+        mesh_lat,mesh_lon =  lats,lons
+    elif grid == 'curvilinear':
+        mesh_lat,mesh_lon =  lats,lons
+    else:
+        raise ValueError('Model dataset has an unsupported grid type')
+
+    tree=KDTree(list(zip(mesh_lat.ravel(),mesh_lon.ravel())),**KDtree_kwargs)
+    dist,grid_idx_r=tree.query(list(zip(meas_ds['latitude'],meas_ds['longitude'])))
+    grid_idx_lat,grid_idx_lon=np.unravel_index(grid_idx_r,mesh_lon.shape)
     
     ### Initialise an output xarray dataset
     out_ds =  xr.Dataset()
     out_ds['longitude'] = xr.DataArray(meas_ds.longitude.values,dims=['longitude'],attrs={'long_name':'Measurement Longitude'})
     out_ds['latitude'] = xr.DataArray(meas_ds.latitude.values,dims=['latitude'],attrs={'long_name':'Measurement Latitude'})
     
-    if regular_grid: ## Not sure if this is useful to user? Could drop to simplify 
+    if grid == 'regular': ## Not sure if this is useful to user? Could drop to simplify 
         out_ds['model_lon_idx'] = xr.DataArray(grid_idx_lon,dims=['longitude'],attrs={'long_name':'Model longitude index'})
         out_ds['model_lat_idx'] = xr.DataArray(grid_idx_lat,dims=['latitude'],attrs={'long_name':'Model latitude index'})
         out_ds['model_lon'] = xr.DataArray(model_ds.longitude.values[grid_idx_lon],dims=['longitude'],attrs={'long_name':'Model Longitude'})
@@ -143,7 +153,7 @@ def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}
                 
                 for meas_key,model_key in var_map.items():
                     out_dict['meas_'+meas_key].append(meas_ds[meas_key].isel({'time':i}).values)
-                    if regular_grid:
+                    if grid == 'regular':
                         out_dict['model_'+model_key].append(model_ds[model_key].isel({'time':time_idx,'latitude':grid_idx_lat,'longitude':grid_idx_lon}).values)
                     #else:  Add other grid types here
                     
@@ -165,9 +175,13 @@ def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}
     out_ds['obs_latlon_inds'] =   xr.DataArray(np.asarray(obs_latlon_inds),dims=['observation','ind'],attrs={'long_name':'Lat-lon indices for observation'})
     
     ### Add in attributes - would be nice to update the drivers to convert straight to nc's with catalog params which we could add here!
+    out_ds.attrs['grid'] =  grid
+
     if KDtree_kwargs:
         for val,key in KDtree_kwargs.items():
-            out_ds.attrs['KDtree' + key] = val
+            if type(val) in [str,int,float,np.int64,np.int32,np.float64,np.float32]: # Any other types could go here
+                out_ds.attrs['KDtree' + key] = val
     else: out_ds.attrs['KDtree params'] = 'Default'
+
 
     return out_ds
