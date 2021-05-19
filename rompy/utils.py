@@ -58,18 +58,18 @@ def walk_server(urlpath, fn_fmt, fmt_fields, url_replace):
 
         return valid_urls
 
-def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}):
+def find_matchup_data(measurement,model,var_map,time_thresh=None,KDtree_kwargs={},metadata={}):
     """
     Finds nearest points between observed data and model output and returns corresonding nearest variable.
     
     Parameters
     ----------
-    meas_ds : xarray.dataset
+    measurement : xarray.dataset or pandas.dataframe
         Dataset containing measurements
-    model_ds : xarray.dataset
-        Dataset containing model output - currently only supports 
+    model : xarray.dataset
+        Dataset containing model output - currently only tested for regular grid
     var_map: dict
-        Dictionary of key maps from variables in meas_ds to corresponding variable in model_ds
+        Dictionary of key maps from variables in "measurement" to corresponding variable in "model"
     time_thresh: 'None' (default), int or numpy.timedelta64
         Time threshold for finding matching measurements and model outputs. 
             None (Defaults): within 30 mins
@@ -77,6 +77,8 @@ def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}
             np.timedelta
     KDtree_kwargs: dict
         Dictionary passed to scipy.spatial.KDtree function
+    metadata: dict
+        Dictionary passed to output ds for user-provided metadata
         
     Returns
     ----------
@@ -84,6 +86,16 @@ def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}
         Xarray dataset containing measurements and nearest model outputs
     """
     
+    ### Remove case-sensitivity from measurement dataframe/ds by making everything lowercase, try to make the lat/lon/time calls a little more robust
+    if type(measurement) == xr.Dataset:
+        name_dict = dict(zip(list(measurement.variables),[a.lower() for a in list(measurement.variables)]))
+        measurement = measurement.rename(name_dict)
+    elif type(measurement) == pd.DataFrame:
+        name_dict = dict(zip(list(measurement.keys()),[a.lower() for a in list(measurement.keys())]))
+        measurement =  measurement.rename(columns=name_dict)
+ 
+    var_map = dict((meas_key.lower(), model_key) for meas_key, model_key in var_map.items())
+
     ### Set time threshold
     if not time_thresh:
         time_thresh =  np.timedelta64(30,'m') ## Defaults to 30 mins
@@ -95,93 +107,78 @@ def find_matchup_data(meas_ds,model_ds,var_map,time_thresh=None,KDtree_kwargs={}
         raise ValueError('Unrecognised input for "time_thresh", must be "int", "np.timedelta64" or "None"')
         
     #### Find Indices of nearest point
-    lats = model_ds['latitude'].values
-    lons = model_ds['longitude'].values
-    dummy_var =  model_ds[list(var_map.items())[0][1]].values ### Pull out the first key
+    lats = model['latitude'].values
+    lons = model['longitude'].values
+    dummy_var =  model[list(var_map.items())[0][1]] ### Pull out the first key
     
     if (len(lats.shape) == 1) and (len(dummy_var.shape)==3):  #assumes time, x, y
         grid = 'regular'
+        mesh_lat,mesh_lon=np.meshgrid(lats,lons,indexing='ij')
     elif (len(lats.shape) == 1) and (len(dummy_var.shape)==2): #assumes time, element
         grid = 'unstructured'
+        mesh_lat,mesh_lon =  lats,lons
     elif (len(lats.shape) == 2) and (len(dummy_var.shape)==3): #assumes time, x, y
         grid = 'curvilinear' #Curvilinear
-    
-    if grid == 'regular': ## Regular grid = i.e. Perth domain
-        mesh_lat,mesh_lon=np.meshgrid(lats,lons,indexing='ij')
-    elif grid ==  'unstructured': 
-        mesh_lat,mesh_lon =  lats,lons
-    elif grid == 'curvilinear':
-        mesh_lat,mesh_lon =  lats,lons
+        mesh_lat,mesh_lon =  lats,lons     
     else:
         raise ValueError('Model dataset has an unsupported grid type')
 
     tree=KDTree(list(zip(mesh_lat.ravel(),mesh_lon.ravel())),**KDtree_kwargs)
-    dist,grid_idx_r=tree.query(list(zip(meas_ds['latitude'],meas_ds['longitude'])))
-    grid_idx_lat,grid_idx_lon=np.unravel_index(grid_idx_r,mesh_lon.shape)
-    
-    ### Initialise an output xarray dataset
-    out_ds =  xr.Dataset()
-    out_ds['longitude'] = xr.DataArray(meas_ds.longitude.values,dims=['longitude'],attrs={'long_name':'Measurement Longitude'})
-    out_ds['latitude'] = xr.DataArray(meas_ds.latitude.values,dims=['latitude'],attrs={'long_name':'Measurement Latitude'})
-    
-    if grid == 'regular': ## Not sure if this is useful to user? Could drop to simplify 
-        out_ds['model_lon_idx'] = xr.DataArray(grid_idx_lon,dims=['longitude'],attrs={'long_name':'Model longitude index'})
-        out_ds['model_lat_idx'] = xr.DataArray(grid_idx_lat,dims=['latitude'],attrs={'long_name':'Model latitude index'})
-        out_ds['model_lon'] = xr.DataArray(model_ds.longitude.values[grid_idx_lon],dims=['longitude'],attrs={'long_name':'Model Longitude'})
-        out_ds['model_lat'] = xr.DataArray(model_ds.latitude.values[grid_idx_lat],dims=['latitude'],attrs={'long_name':'Model Latitude'})
-    else: # Add other grid types
-        raise ValueError('Model dataset has an unsupported grid type')
+    dist,grid_idx_r=tree.query(list(zip(measurement['latitude'],measurement['longitude'])))
 
-    ### Now loop through time stamp of observations 
-    meas_times = meas_ds.time.values
-    model_times = model_ds.time.values
+    if grid in ['regular','curvilinear']:
+        grid_idx_lat,grid_idx_lon=np.unravel_index(grid_idx_r,mesh_lon.shape)
+        
+    ##################
+    ### Loop through time, check if timestamps are within thresh and get indices
+    meas_times = measurement.time.values
+    model_times = model.time.values
     
     ## Initialise a dict that we can append to 
-    out_dict =  {'time':[],'model_dt':[]}
-    
-    for meas_key,model_key in var_map.items():
-        out_dict['meas_'+ meas_key] = []
-        out_dict['model_'+ model_key] = []
-        
-    #loop through time, check if timestamps are within thresh and save out data
+    measurement_idx = []
+    model_time_idx = []
+            
     for i,time in enumerate(meas_times):
         inds =  np.argwhere(np.abs(model_times - time) < time_thresh) ## within time_thresh
         if inds.size > 0:
             for time_idx in inds:
-                out_dict['time'].append(time)
-                out_dict['model_dt'].append(model_times[time_idx] - time)
+                measurement_idx.append(i)
+                model_time_idx.append(int(time_idx))
                 
-                for meas_key,model_key in var_map.items():
-                    out_dict['meas_'+meas_key].append(meas_ds[meas_key].isel({'time':i}).values)
-                    if grid == 'regular':
-                        out_dict['model_'+model_key].append(model_ds[model_key].isel({'time':time_idx,'latitude':grid_idx_lat,'longitude':grid_idx_lon}).values)
-                    #else:  Add other grid types here
-                    
-    ### Then lets get out the measurement and model times
-    out_ds['time'] =  xr.DataArray(np.asarray(out_dict.pop('time')).flatten(),dims=['time'],attrs={'long_name':'Measurement time'})
-    out_ds['model_dt'] =  xr.DataArray(np.asarray(out_dict.pop('model_dt')).flatten(),dims=['time'],attrs={'long_name':'Time between measurement and model output'})
+    ######## Now retrieve data from model and measurements for indices
+    model_time_idx =  xr.DataArray(model_time_idx,dims='observation')
+    model_lat_idx = xr.DataArray(grid_idx_lat[measurement_idx],dims='observation')
+    model_lon_idx = xr.DataArray(grid_idx_lon[measurement_idx],dims='observation')
     
-    for key,val in out_dict.items():
-        out_ds[key] =  xr.DataArray(np.asarray(val).squeeze(),dims=['time','latitude','longitude'])
+    model_results = model[list(var_map.values())].isel(time=model_time_idx,latitude=model_lat_idx,longitude=model_lon_idx)
+    
+    measurement_keys = ['time','longitude','latitude'] + list(var_map.keys())
+    if type(measurement) ==  pd.DataFrame:
+        measurement_results = measurement[measurement_keys].loc[measurement_idx]
+    elif type(measurement) ==  xr.Dataset:
+        meas_time_idx =  xr.DataArray(measurement_idx,dims='observation')
+        measurement_results =  measurement[measurement_keys].isel(time=meas_time_idx)
+    
+    ###################################################
+    ### Initialise an output xarray dataset
+    out_ds =  xr.Dataset()
+    
+    for key in list(measurement_results.keys()): ### first lets add the measurement data
+        out_ds['meas_'+key] =  xr.DataArray(measurement_results[key].values,dims=['observation'])
         
-    out_ds['dist'] =  xr.DataArray(dist,dims=['observation'],attrs={'long_name':'Distance from observation to nearest model cell','units':'dDegrees'})
+    for key in list(model_results.variables): ### then the model data
+        out_ds['model_'+key] = xr.DataArray(model_results[key],dims=['observation'])
     
-    #### This is to calculate which indices in the lat-lon grid contain field observations
-    obs_latlon_inds = []
-    for i,lat in enumerate(out_ds['latitude']):
-        for j,lon in enumerate(out_ds['longitude']):
-            if any(~np.isnan(out_ds['meas_hs'].values[:,i,j])):
-                obs_latlon_inds.append([i,j])
-    out_ds['obs_latlon_inds'] =   xr.DataArray(np.asarray(obs_latlon_inds),dims=['observation','ind'],attrs={'long_name':'Lat-lon indices for observation'})
+    out_ds['dist'] =  xr.DataArray(dist[measurement_idx],dims=['observation'],
+                                   attrs={'long_name':'Distance from observation to nearest model cell','units':'dDegrees'})  ### Add distances from KD tree
     
     ### Add in attributes - would be nice to update the drivers to convert straight to nc's with catalog params which we could add here!
-    out_ds.attrs['grid'] =  grid
-
-    if KDtree_kwargs:
-        for val,key in KDtree_kwargs.items():
-            if type(val) in [str,int,float,np.int64,np.int32,np.float64,np.float32]: # Any other types could go here
-                out_ds.attrs['KDtree' + key] = val
-    else: out_ds.attrs['KDtree params'] = 'Default'
-
-
+    out_ds.attrs['grid'] =  grid  
+    attrs_prepend_map =  {'metadata':'metadata_','KDtree_kwargs':'KDtree_'}
+    for attr_source in [metadata,KDtree_kwargs]:
+        if attr_source:
+            for val,key in attr_source.items():
+                if type(val) in [str,int,float,np.int64,np.int32,np.float64,np.float32]: # Any other types could go here 
+                    out_ds.attrs[attrs_prepend_map[str(attr_source)] + key] = val
+                    
     return out_ds
