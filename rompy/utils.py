@@ -21,11 +21,9 @@ def dict_product(d):
         yield dict(zip(keys, element))
 
 def walk_server(urlpath, fn_fmt, fmt_fields, url_replace):
-        from os.path import dirname
         from functools import reduce
         from operator import iconcat
         from dask import delayed, compute
-        import dask.config as dc
 
         # Targetted scans of the file system based on date range
         test_urls = set([urlpath.format(**pv) for pv in dict_product(fmt_fields)])
@@ -37,12 +35,16 @@ def walk_server(urlpath, fn_fmt, fmt_fields, url_replace):
         def check_url(test_url,test_fns):
             from fsspec import filesystem
             from fsspec.utils import get_protocol
+            from os.path import dirname
             fs = filesystem(get_protocol(test_url))
             logger.debug(f'testing {test_url}')
             urls = []
             if fs.exists(test_url):
                 for url, _ , links in fs.walk(test_url):
-                    urls += [dirname(url) + '/' + fn for fn in links if fn in test_fns]
+                    # test for case that url is a local directory, otherwise likely a http url
+                    if fs.isfile(url): 
+                        url = dirname(url)
+                    urls += [url + '/' + fn for fn in links if fn in test_fns]
             return urls
 
         valid_urls = compute(*[check_url(test_url,test_fns) for test_url in test_urls],
@@ -55,6 +57,8 @@ def walk_server(urlpath, fn_fmt, fmt_fields, url_replace):
 
         for f,r in url_replace.items():
             valid_urls = [u.replace(f,r) for u in valid_urls]
+            
+        logger.debug(f'valid_urls after replace : {valid_urls}')
 
         return valid_urls
 
