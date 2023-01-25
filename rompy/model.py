@@ -25,11 +25,11 @@ class Model(BaseModel):
     id: str
         Model id.
     kind: str
-        Model kind
+        Model kind, this should be set by inheritted classes.
     workdir: str
         Workspace directory path.
     children: list[Model]
-        Model child nests
+        Model child nests.
     loglevel: str | int
         Logger level, see https://docs.python.org/3/library/logging.html#levels.
 
