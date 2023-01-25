@@ -30,13 +30,15 @@ class Model(BaseModel):
         Workspace directory path.
     children: list[Model]
         Model child nests
+    loglevel: str | int
+        Logger level, see https://docs.python.org/3/library/logging.html#levels.
 
     """
     id: str
     kind: str
     workdir: Path
     children: list[Model] = []
-    loglevel: str = "INFO"
+    loglevel: str | int = "INFO"
 
     def _set_workspace(self):
         """Create workspace environment."""
