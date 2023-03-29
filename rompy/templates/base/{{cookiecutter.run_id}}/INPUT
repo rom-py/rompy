@@ -1,0 +1,11 @@
+$
+$ BASE - Simple example template used by rompy
+$ Template: {{cookiecutter._template}}
+$ Generated: {{cookiecutter._generated_at}} on {{cookiecutter._generated_on}} by {{cookiecutter._generated_by}}
+$ projection: wgs84
+$
+
+run_id: '{{cookiecutter.run_id}}' 
+compute_start: {{cookiecutter.compute_start}} 
+compute_interval: {{cookiecutter.compute_interval}} 
+compute_stop: {{cookiecutter.compute_stop}}
