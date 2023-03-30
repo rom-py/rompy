@@ -1,19 +1,13 @@
 import pytest
+from utils import compare_files
 
 from rompy.core import BaseModel
-
-
-def compare_files(file1, file2):
-    with open(file1, "r") as f1:
-        with open(file2, "r") as f2:
-            for line1, line2 in zip(f1, f2):
-                if line1[0] != "$" and line2[0] != "$":
-                    assert line1 == line2
+from rompy.templates.base.model import Template
 
 
 @pytest.fixture
 def model():
-    return BaseModel(run_id="test_base", output_dir="simulations")
+    return BaseModel(run_id="test_base", output_dir="simulations", template=Template())
 
 
 # test generate method
