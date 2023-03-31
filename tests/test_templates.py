@@ -10,22 +10,30 @@ here = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture
-def template():
+def gitlab_template():
     return Template(
         run_id="test_base",
-        _template="../rompy/templates/base",
+        template="git@gitlab.com:oceanum/models/test-rompy-template.git",
         output_dir=os.path.join(here, "template_output"),
     )
 
 
-# write tests for Template class
+@pytest.fixture
+def template():
+    return Template(
+        run_id="test_base",
+        template="../rompy/templates/base",
+        output_dir=os.path.join(here, "template_output"),
+    )
+
+
 def test_template():
     template = Template()
     assert template.run_id == "run_id"
     assert template.compute_start == datetime(2020, 2, 21, 4)
     assert template.compute_interval == "0.25 HR"
     assert template.compute_stop == datetime(2020, 2, 24, 4)
-    assert template._template == ""
+    assert template.template == None
 
 
 def test_datetime_parse():
@@ -60,6 +68,15 @@ def test_datetime_parse_fail():
 # test generate
 def test_generate(template):
     template.generate()
+    compare_files(
+        os.path.join(here, "template_output/test_base/INPUT"),
+        os.path.join(here, "simulations/test_base_ref/INPUT"),
+    )
+
+
+# repeat suite for gitlab template
+def test_gitlab_template(gitlab_template):
+    gitlab_template.generate()
     compare_files(
         os.path.join(here, "template_output/test_base/INPUT"),
         os.path.join(here, "simulations/test_base_ref/INPUT"),

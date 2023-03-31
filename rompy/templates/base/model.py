@@ -25,15 +25,35 @@ def json_serial(obj, datetimefmt="%Y%m%d.%H%M%S"):
 
 
 class Template(BaseModel):
+    """A base class for all templates
+
+    Parameters
+    ----------
+    run_id : str
+        The run id
+    compute_start : datetime
+        The start time of the simulation
+    compute_interval : str
+        The time interval of the simulation
+    compute_stop : datetime
+        The stop time of the simulation
+    output_dir : str
+        The output directory
+    checkout : str
+        The git checkout branch, tag or commit
+    template : str
+        The template directory
+    _datefmt : str
+        The date format to be rendered in the template
+    """
+
     run_id: str = "run_id"
-    # compute_start: str = "20200221.040000"
     compute_start: datetime = datetime(2020, 2, 21, 4)
     compute_interval: str = "0.25 HR"
-    # compute_stop: datetime = "20200224.040000"
     compute_stop: datetime = datetime(2020, 2, 24, 4)
     output_dir: str = "template_output"
-    checkout: str | None = None
-    _template: str = ""
+    checkout: str = "main"
+    template: str | None = None
     _datefmt: str = "%Y%m%d.%H%M%S"
     _generated_at: str = PrivateAttr()
     _generated_on: str = PrivateAttr()
@@ -62,9 +82,14 @@ class Template(BaseModel):
         return v
 
     def _write_template_json(self) -> str:
-        """Write the cookiecutter.json file from pydantic template"""
+        """Write the cookiecutter.json file from pydantic template
 
-        template = os.path.dirname(inspect.getmodule(self).__file__)
+        returns
+        -------
+        template : str
+        """
+
+        template = self.template or os.path.dirname(inspect.getmodule(self).__file__)
 
         def json_serial_local(obj):
             return json_serial(obj, self._datefmt)
@@ -80,6 +105,16 @@ class Template(BaseModel):
         return template
 
     def generate(self, output_dir: str = None) -> str:
+        """Generate the template
+
+        Parameters
+        ----------
+        output_dir : str, optional
+
+        Returns
+        -------
+        staging_dir : str
+        """
         self._generated_at = str(datetime.utcnow())
         self._generated_by = os.environ.get("USER")
         self._generated_on = platform.node()
@@ -89,7 +124,8 @@ class Template(BaseModel):
             default_config=False,
         )
 
-        template = self._write_template_json()
+        template = self.template or os.path.dirname(inspect.getmodule(self).__file__)
+        # template = self._write_template_json()
 
         repo_dir, cleanup = cc_repository.determine_repo_dir(
             template=template,
