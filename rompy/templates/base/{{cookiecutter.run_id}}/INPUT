@@ -6,6 +6,6 @@ $ projection: wgs84
 $
 
 run_id: '{{cookiecutter.run_id}}' 
-compute_start: {{cookiecutter.compute_start}} 
+compute_start: {{cookiecutter.compute_start.strftime(cookiecutter._datefmt)}} 
 compute_interval: {{cookiecutter.compute_interval}} 
-compute_stop: {{cookiecutter.compute_stop}}
+compute_stop: {{cookiecutter.compute_stop.strftime(cookiecutter._datefmt)}}

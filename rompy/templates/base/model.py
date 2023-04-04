@@ -98,6 +98,7 @@ class Template(BaseModel):
             d.update({"_generated_at": self._generated_at})
             d.update({"_generated_by": self._generated_by})
             d.update({"_generated_on": self._generated_on})
+            d.update({"_datefmt": self._datefmt})
             f.write(json.dumps(d, default=json_serial_local, indent=4))
 
     def generate(self, output_dir: str = None) -> str:
@@ -130,12 +131,18 @@ class Template(BaseModel):
             no_input=True,
         )
 
-        self._write_template_json(repo_dir)
+        # self._write_template_json(repo_dir)
 
-        # regenerate the context so that is is correctly templated
-        context = cc_generate.generate_context(
-            context_file=os.path.join(repo_dir, "cookiecutter.json"),
-        )
+        # context = cc_generate.generate_context(
+        #     context_file=os.path.join(repo_dir, "cookiecutter.json"),
+        # )
+        context = {}
+        context["cookiecutter"] = self.dict()
+        context["cookiecutter"].update({"_template": repo_dir})
+        context["cookiecutter"].update({"_generated_at": self._generated_at})
+        context["cookiecutter"].update({"_generated_by": self._generated_by})
+        context["cookiecutter"].update({"_generated_on": self._generated_on})
+        context["cookiecutter"].update({"_datefmt": self._datefmt})
 
         staging_dir = cc_generate.generate_files(
             repo_dir=repo_dir,
