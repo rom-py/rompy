@@ -1,7 +1,10 @@
 import os
 import tempfile
 
+import numpy as np
+import pandas as pd
 import pytest
+import xarray as xr
 
 import rompy
 from rompy.data import DataBlob, DataGrid
@@ -51,8 +54,40 @@ def grid_data_source():
     )
 
 
-def test_grid_stage(grid_data_source):
+@pytest.mark.skip(reason="not reproducible outside of oceanum")
+def test_intake_grid(grid_data_source):
     data = grid_data_source
+    assert data.ds.latitude.max() == 10
+    assert data.ds.latitude.min() == 0
+    assert data.ds.longitude.max() == 10
+    assert data.ds.longitude.min() == 0
+
+
+# create netcdf data with latitude, longitude, time, and data variables for testing
+@pytest.fixture
+def nc_data_source():
+    # touch temp netcdf file
+    tmp_path = tempfile.mkdtemp()
+    source = os.path.join(tmp_path, "test.nc")
+    ds = xr.Dataset(
+        {
+            "data": xr.DataArray(
+                np.random.rand(10, 10, 10),
+                dims=["time", "latitude", "longitude"],
+                coords={
+                    "time": pd.date_range("2000-01-01", periods=10),
+                    "latitude": np.linspace(0, 10, 10),
+                    "longitude": np.linspace(0, 10, 10),
+                },
+            )
+        }
+    )
+    ds.to_netcdf(source)
+    return DataGrid(path=source)
+
+
+def test_netcdf_grid(nc_data_source):
+    data = nc_data_source
     assert data.ds.latitude.max() == 10
     assert data.ds.latitude.min() == 0
     assert data.ds.longitude.max() == 10
