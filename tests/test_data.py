@@ -3,6 +3,7 @@ import tempfile
 
 import pytest
 
+import rompy
 from rompy.data import DataBlob, DataGrid
 
 
@@ -34,14 +35,25 @@ def test_fails_both_path_and_url():
         DataBlob(path="foo", url="bar")
 
 
-# @pytest.fixture
-# def grid_data_source():
-#     return DataBlob(
-#         url="https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/gfs.20210501/00/atmos/gfs.t00z.pgrb2.0p25.f000"
-#     )
-#
-#
-# def test_grid_stage(grid_data_source):
-#     ds = grid_data_source
-#     output = ds.stage("./test.nc")
-#     assert output.path.is_file()
+@pytest.fixture
+def grid_data_source():
+    return DataGrid(
+        catalog=os.path.join(rompy.__path__[0], "catalogs", "oceanum.yaml"),
+        dataset="era5_wind10m",
+        filter={
+            "sort": {"coords": ["latitude"]},
+            "crop": {
+                "time": slice("2000-01-01", "2000-01-02"),
+                "latitude": slice(0, 10),
+                "longitude": slice(0, 10),
+            },
+        },
+    )
+
+
+def test_grid_stage(grid_data_source):
+    data = grid_data_source
+    assert data.ds.latitude.max() == 10
+    assert data.ds.latitude.min() == 0
+    assert data.ds.longitude.max() == 10
+    assert data.ds.longitude.min() == 0
