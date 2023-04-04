@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pytest
 from utils import compare_files
@@ -25,3 +26,4 @@ def test_generate(model):
         os.path.join(here, "simulations/test_base/INPUT"),
         os.path.join(here, "simulations/test_base_ref/INPUT"),
     )
+    shutil.rmtree(os.path.join(here, "simulations/test_base"))

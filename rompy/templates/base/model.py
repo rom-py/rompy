@@ -81,7 +81,7 @@ class Template(BaseModel):
                 pass
         return v
 
-    def _write_template_json(self) -> str:
+    def _write_template_json(self, template_dir):
         """Write the cookiecutter.json file from pydantic template
 
         returns
@@ -89,20 +89,16 @@ class Template(BaseModel):
         template : str
         """
 
-        template = self.template or os.path.dirname(inspect.getmodule(self).__file__)
-
         def json_serial_local(obj):
             return json_serial(obj, self._datefmt)
 
-        ccjson = os.path.join(template, "cookiecutter.json")
-        with open(ccjson, "w") as f:
+        with open(os.path.join(template_dir, "cookiecutter.json"), "w") as f:
             d = self.dict()
-            d.update({"_template": template})
+            d.update({"_template": template_dir})
             d.update({"_generated_at": self._generated_at})
             d.update({"_generated_by": self._generated_by})
             d.update({"_generated_on": self._generated_on})
             f.write(json.dumps(d, default=json_serial_local, indent=4))
-        return template
 
     def generate(self, output_dir: str = None) -> str:
         """Generate the template
@@ -125,7 +121,6 @@ class Template(BaseModel):
         )
 
         template = self.template or os.path.dirname(inspect.getmodule(self).__file__)
-        # template = self._write_template_json()
 
         repo_dir, cleanup = cc_repository.determine_repo_dir(
             template=template,
@@ -134,6 +129,8 @@ class Template(BaseModel):
             checkout=self.checkout,
             no_input=True,
         )
+
+        self._write_template_json(repo_dir)
 
         # regenerate the context so that is is correctly templated
         context = cc_generate.generate_context(
