@@ -5,8 +5,8 @@ from datetime import datetime
 import pytest
 from utils import compare_files
 
+from rompy.configurations.base import BaseConfig
 from rompy.core import BaseModel
-from rompy.templates.base.model import Template
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,14 +16,14 @@ def model():
     return BaseModel(
         run_id="test_base",
         output_dir=os.path.join(here, "simulations"),
-        template=Template(),
+        template=BaseConfig(),
     )
 
 
 @pytest.fixture
 def gitlab_template():
     return BaseModel(
-        template=Template(
+        template=BaseConfig(
             template="git@gitlab.com:oceanum/models/test-rompy-template.git",
         )
     )

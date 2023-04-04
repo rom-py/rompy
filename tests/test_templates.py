@@ -5,18 +5,18 @@ import pytest
 from utils import compare_files
 
 from rompy import TEMPLATES_DIR
-from rompy.templates.base.model import Template
+from rompy.configurations.base import BaseConfig
 
 here = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture
 def template():
-    return Template(
+    return BaseConfig(
         template="../rompy/templates/base",
     )
 
 
 def test_template():
-    template = Template()
-    assert template.template == os.path.join(TEMPLATES_DIR, "base")
+    config = BaseConfig()
+    assert config.template == os.path.join(TEMPLATES_DIR, "base")
