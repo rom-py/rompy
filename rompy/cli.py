@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 import click
 import yaml
 
 from rompy.swan import SwanModel
+
+logging.basicConfig(level=logging.INFO)
 
 
 @click.command()
