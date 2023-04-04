@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 from utils import compare_files
 
-from rompy.configurations.base import BaseConfig
+from rompy.configuration.base import BaseConfig
 from rompy.core import BaseModel
 
 here = os.path.dirname(os.path.abspath(__file__))
