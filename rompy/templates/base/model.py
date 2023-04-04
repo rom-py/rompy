@@ -30,16 +30,6 @@ class Template(BaseModel):
 
     Parameters
     ----------
-    run_id : str
-        The run id
-    compute_start : datetime
-        The start time of the simulation
-    compute_interval : str
-        The time interval of the simulation
-    compute_stop : datetime
-        The stop time of the simulation
-    output_dir : str
-        The output directory
     checkout : str
         The git checkout branch, tag or commit
     template : str
