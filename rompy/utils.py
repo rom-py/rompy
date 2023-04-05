@@ -238,11 +238,3 @@ def find_matchup_data(
                     out_ds.attrs[attrs_prepend_map[str(attr_source)] + key] = val
 
     return out_ds
-
-
-def json_serial(obj, datetimefmt="%Y%m%d.%H%M%S"):
-    """JSON serializer for objects not serializable by default json code"""
-
-    if isinstance(obj, datetime):
-        return obj.strftime(datetimefmt)
-    raise TypeError("Type %s not serializable" % type(obj))
