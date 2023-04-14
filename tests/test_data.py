@@ -8,6 +8,8 @@ import xarray as xr
 
 import rompy
 from rompy.data import DataBlob, DataGrid
+from rompy.core import BaseGrid
+from datetime import datetime
 
 
 # create dummy local datasource for testing
@@ -76,8 +78,8 @@ def nc_data_source():
                 dims=["time", "latitude", "longitude"],
                 coords={
                     "time": pd.date_range("2000-01-01", periods=10),
-                    "latitude": np.linspace(0, 10, 10),
-                    "longitude": np.linspace(0, 10, 10),
+                    "latitude": np.arange(0, 10),
+                    "longitude": np.arange(0, 10),
                 },
             )
         }
@@ -92,3 +94,32 @@ def test_netcdf_grid(nc_data_source):
     assert data.ds.latitude.min() == 0
     assert data.ds.longitude.max() == 10
     assert data.ds.longitude.min() == 0
+
+
+def test_grid_filter(nc_data_source):
+    grid = BaseGrid(x=np.arange(2, 7), y=np.arange(3, 7))
+    nc_data_source._filter_grid(grid)
+    assert nc_data_source.ds.latitude.max() == 6
+    assert nc_data_source.ds.latitude.min() == 3
+    assert nc_data_source.ds.longitude.max() == 6
+    assert nc_data_source.ds.longitude.min() == 2
+
+    
+def test_grid_filter_buffer(nc_data_source):
+    grid = BaseGrid(x=np.arange(3, 7), y=np.arange(3, 7))
+    nc_data_source._filter_grid(grid, buffer=1)
+    assert nc_data_source.ds.latitude.max() == 7
+    assert nc_data_source.ds.latitude.min() == 2
+    assert nc_data_source.ds.longitude.max() == 7
+    assert nc_data_source.ds.longitude.min() == 2
+
+def test_time_filter(nc_data_source):
+    grid = BaseGrid(x=np.arange(3, 7), y=np.arange(3, 7))
+    nc_data_source._filter_grid(grid, start="2000-01-02", end="2000-01-03", buffer=1)
+    assert nc_data_source.ds.latitude.max() == 7
+    assert nc_data_source.ds.latitude.min() == 2
+    assert nc_data_source.ds.longitude.max() == 7
+    assert nc_data_source.ds.longitude.min() == 2
+    assert nc_data_source.ds.time.max() == np.datetime64("2000-01-03")
+    assert nc_data_source.ds.time.min() == np.datetime64("2000-01-02")
+                                
