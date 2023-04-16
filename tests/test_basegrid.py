@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import shapely
 
-from rompy.core import BaseGrid
+from rompy.core import BaseGrid, RegularGrid
 
 
 # test class based on pytest fixtures
@@ -13,6 +13,12 @@ def grid():
     xx, yy = np.meshgrid(x, y)
     return BaseGrid(x=xx, y=yy)
 
+@pytest.fixture
+def regulargrid():
+    x0, y0 = 0, 0
+    dx, dy = 1, 1
+    nx, ny = 10, 10
+    return RegularGrid(x0=x0, y0=y0, dx=dx, dy=dy, nx=nx, ny=ny)
 
 def test_bbox(grid):
     assert grid.bbox() == [0.0, 0.0, 9.0, 9.0]
@@ -43,3 +49,7 @@ def test_grid_minmax(grid):
     assert grid.miny == 0
     assert grid.maxx == 9
     assert grid.maxy == 9
+
+def test_equivalence(regulargrid, grid):
+    assert np.array_equal(regulargrid.x, grid.x)
+    assert np.array_equal(regulargrid.y, grid.y)
