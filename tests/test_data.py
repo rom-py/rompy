@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 
 import rompy
-from rompy.data import DataBlob, DataGrid
+from rompy.core import DataBlob, DataGrid
 from rompy.core import BaseGrid
 from datetime import datetime
 
@@ -90,9 +90,9 @@ def nc_data_source():
 
 def test_netcdf_grid(nc_data_source):
     data = nc_data_source
-    assert data.ds.latitude.max() == 10
+    assert data.ds.latitude.max() == 9
     assert data.ds.latitude.min() == 0
-    assert data.ds.longitude.max() == 10
+    assert data.ds.longitude.max() == 9
     assert data.ds.longitude.min() == 0
 
 

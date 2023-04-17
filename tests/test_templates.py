@@ -5,7 +5,7 @@ import pytest
 from utils import compare_files
 
 from rompy import TEMPLATES_DIR
-from rompy.configuration.base import BaseConfig
+from rompy.core import BaseConfig
 
 here = os.path.dirname(os.path.abspath(__file__))
 
