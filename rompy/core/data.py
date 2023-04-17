@@ -6,7 +6,7 @@ from typing import Optional
 import cloudpathlib
 import intake
 import xarray as xr
-from pydantic import BaseModel, FilePath, FileUrl, root_validator, validator
+from pydantic import root_validator
 
 from .filters import Filter
 from .types import RompyBaseModel
@@ -103,10 +103,10 @@ class DataGrid(RompyBaseModel):
         """Define the filters to use to extract data to this grid"""
         minLon, minLat, maxLon, maxLat = grid.bbox()
         self.filter.crop = {
-                self.lonname: slice(minLon - buffer, maxLon + buffer),
-                self.latname: slice(minLat - buffer, maxLat + buffer),
-                self.timename: slice(start, end)
-            }
+            self.lonname: slice(minLon - buffer, maxLon + buffer),
+            self.latname: slice(minLat - buffer, maxLat + buffer),
+            self.timename: slice(start, end),
+        }
 
     @property
     def ds(self):

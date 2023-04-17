@@ -1,22 +1,10 @@
-
-import glob
-import json
 import logging
-import os
-import platform
-import zipfile as zf
-from datetime import datetime
 from typing import Optional
 
-import cookiecutter.config as cc_config
-import cookiecutter.generate as cc_generate
-import cookiecutter.repository as cc_repository
 import numpy as np
-from pydantic import validator, root_validator
+from pydantic import root_validator
 from pydantic_numpy import NDArray
 from shapely.geometry import Polygon
-
-from .config import BaseConfig
 
 from .types import Bbox, RompyBaseModel
 
@@ -26,8 +14,6 @@ from .types import Bbox, RompyBaseModel
 # comment using numpy style docstrings
 
 logger = logging.getLogger(__name__)
-
-
 
 
 class BaseGrid(RompyBaseModel):
@@ -176,6 +162,7 @@ class BaseGrid(RompyBaseModel):
     def __eq__(self, other):
         return self.dict() == other.dict()
 
+
 class RegularGrid(BaseGrid):
     x0: Optional[float] = None
     y0: Optional[float] = None
@@ -211,9 +198,7 @@ class RegularGrid(BaseGrid):
             return values
         for var in [x0, y0, dx, dy, nx, ny]:
             if var is None:
-                raise ValueError(
-                    "x0, y0, dx, dy, nx, ny must be provided for REG grid"
-                )
+                raise ValueError("x0, y0, dx, dy, nx, ny must be provided for REG grid")
         return values
 
     def __init__(self, **data):

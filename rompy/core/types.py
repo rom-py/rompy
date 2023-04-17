@@ -1,5 +1,3 @@
-from datetime import datetime as pydatetime
-
 import pydantic
 import yaml
 

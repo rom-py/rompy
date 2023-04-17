@@ -1,4 +1,3 @@
-
 import glob
 import json
 import logging
@@ -6,21 +5,17 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
-from typing import Optional
 
 import cookiecutter.config as cc_config
 import cookiecutter.generate as cc_generate
 import cookiecutter.repository as cc_repository
-import numpy as np
-from pydantic import validator, root_validator
-from pydantic_numpy import NDArray
-from shapely.geometry import Polygon
+from pydantic import validator
 
 from .config import BaseConfig
-
 from .types import RompyBaseModel
 
 logger = logging.getLogger(__name__)
+
 
 class BaseModel(RompyBaseModel):
     """A base class for all models
@@ -204,4 +199,3 @@ class BaseModel(RompyBaseModel):
 
     def __call__(self):
         return self.generate()
-
