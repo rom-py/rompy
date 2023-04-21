@@ -199,3 +199,6 @@ class BaseModel(RompyBaseModel):
 
     def __call__(self):
         return self.generate()
+
+    def __repr__(self):
+        return self.yaml()
