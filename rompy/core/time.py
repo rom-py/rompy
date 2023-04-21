@@ -56,7 +56,7 @@ class DateTimeRange(RompyBaseModel):
     class Config:
         validate_all = True
 
-    @validator("frequency", "duration")
+    @validator("frequency", "duration", pre=True)
     def valid_duration_interval(cls, v):
         if v == None:
             return v
@@ -126,7 +126,7 @@ class DateTimeRange(RompyBaseModel):
         ):
             raise ValueError("Must provide only two of start_date, end_date, duration")
         if values.get("start_date") is not None and values.get("end_date") is not None:
-            values["duration"] = str(values["end_date"] - values["start_date"])
+            values["duration"] = values["end_date"] - values["start_date"]
         if values.get("start_date") is not None and values.get("duration") is not None:
             values["end_date"] = values["start_date"] + values["duration"]
         if values.get("end_date") is not None and values.get("duration") is not None:
