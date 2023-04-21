@@ -12,9 +12,6 @@ class RompyBaseModel(pydantic.BaseModel):
     def __str__(self):
         return self.yaml()
 
-    def __repr__(self):
-        return self.yaml()
-
 
 class Latitude(pydantic.BaseModel):
     """Latitude"""
