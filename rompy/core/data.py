@@ -1,5 +1,6 @@
 # write pydantic model to read xarray data from intake catalogs, filter, and write to netcdf
 
+import os
 import pathlib
 from typing import Optional
 
@@ -73,6 +74,7 @@ class DataGrid(RompyBaseModel):
 
     """
 
+    id: str
     path: Optional[pathlib.Path]
     url: Optional[cloudpathlib.CloudPath]
     catalog: Optional[str]  # TODO make this smarter
@@ -122,8 +124,8 @@ class DataGrid(RompyBaseModel):
             ds = self.filter(ds)
         return ds
 
-    def stage(self, stage_dir: str) -> "DataGrid":
+    def get(self, stage_dir: str) -> "DataGrid":
         """Write the data source to a new location"""
-        dest = os.path.join(stage_dir, f"{type}.nc")
-        self.ds.to_netcdf(dest, mode=self.mode, format=self.format)
-        return DataGrid(path=dest, **self.netcdf_kwargs)
+        dest = os.path.join(stage_dir, f"{self.id}.nc")
+        self.ds.to_netcdf(dest, **self.netcdf_kwargs)
+        return DataGrid(id=self.id, path=dest, **self.netcdf_kwargs)

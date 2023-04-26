@@ -22,6 +22,23 @@ def txt_data_source():
     return DataBlob(path=source)
 
 
+@pytest.fixture
+def grid_data_source():
+    return DataGrid(
+        id="wind",
+        catalog=os.path.join(rompy.__path__[0], "catalogs", "oceanum.yaml"),
+        dataset="era5_wind10m",
+        filter={
+            "sort": {"coords": ["latitude"]},
+            "crop": {
+                "time": slice("2000-01-01", "2000-01-02"),
+                "latitude": slice(0, 10),
+                "longitude": slice(0, 10),
+            },
+        },
+    )
+
+
 def test_stage(txt_data_source):
     ds = txt_data_source
     output = ds.stage("./test.txt")
@@ -39,22 +56,6 @@ def test_fails_both_path_and_url():
         DataBlob(path="foo", url="bar")
 
 
-@pytest.fixture
-def grid_data_source():
-    return DataGrid(
-        catalog=os.path.join(rompy.__path__[0], "catalogs", "oceanum.yaml"),
-        dataset="era5_wind10m",
-        filter={
-            "sort": {"coords": ["latitude"]},
-            "crop": {
-                "time": slice("2000-01-01", "2000-01-02"),
-                "latitude": slice(0, 10),
-                "longitude": slice(0, 10),
-            },
-        },
-    )
-
-
 @pytest.mark.skip(reason="not reproducible outside of oceanum")
 def test_intake_grid(grid_data_source):
     data = grid_data_source
@@ -62,6 +63,11 @@ def test_intake_grid(grid_data_source):
     assert data.ds.latitude.min() == 0
     assert data.ds.longitude.max() == 10
     assert data.ds.longitude.min() == 0
+    downloaded = data.get("simulations")
+    assert downloaded.ds.latitude.max() == 10
+    assert downloaded.ds.latitude.min() == 0
+    assert downloaded.ds.longitude.max() == 10
+    assert downloaded.ds.longitude.min() == 0
 
 
 @pytest.fixture
