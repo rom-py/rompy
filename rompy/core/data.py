@@ -73,7 +73,9 @@ class DataGrid(RompyBaseModel):
     filter: Filter
             Optional filter specification to apply to the dataset
     xarray_kwargs: dict
+            Optional keyword arguments to pass to xarray.open_dataset
     netcdf_kwargs: dict
+            Optional keyword arguments to pass to xarray.Dataset.to_netcdf
 
     """
 
