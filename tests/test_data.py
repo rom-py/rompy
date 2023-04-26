@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -7,9 +8,7 @@ import pytest
 import xarray as xr
 
 import rompy
-from rompy.core import DataBlob, DataGrid
-from rompy.core import BaseGrid
-from datetime import datetime
+from rompy.core import BaseGrid, DataBlob, DataGrid
 
 
 # create dummy local datasource for testing
@@ -65,7 +64,6 @@ def test_intake_grid(grid_data_source):
     assert data.ds.longitude.min() == 0
 
 
-# create netcdf data with latitude, longitude, time, and data variables for testing
 @pytest.fixture
 def nc_data_source():
     # touch temp netcdf file
@@ -104,7 +102,7 @@ def test_grid_filter(nc_data_source):
     assert nc_data_source.ds.longitude.max() == 6
     assert nc_data_source.ds.longitude.min() == 2
 
-    
+
 def test_grid_filter_buffer(nc_data_source):
     grid = BaseGrid(x=np.arange(3, 7), y=np.arange(3, 7))
     nc_data_source._filter_grid(grid, buffer=1)
@@ -112,6 +110,7 @@ def test_grid_filter_buffer(nc_data_source):
     assert nc_data_source.ds.latitude.min() == 2
     assert nc_data_source.ds.longitude.max() == 7
     assert nc_data_source.ds.longitude.min() == 2
+
 
 def test_time_filter(nc_data_source):
     grid = BaseGrid(x=np.arange(3, 7), y=np.arange(3, 7))
@@ -122,4 +121,3 @@ def test_time_filter(nc_data_source):
     assert nc_data_source.ds.longitude.min() == 2
     assert nc_data_source.ds.time.max() == np.datetime64("2000-01-03")
     assert nc_data_source.ds.time.min() == np.datetime64("2000-01-02")
-                                
