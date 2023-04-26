@@ -19,7 +19,7 @@ def txt_data_source():
     source = os.path.join(tmp_path, "test.txt")
     with open(source, "w") as f:
         f.write("hello world")
-    return DataBlob(path=source)
+    return DataBlob(id="test", path=source)
 
 
 @pytest.fixture
@@ -39,16 +39,16 @@ def grid_data_source():
     )
 
 
-def test_stage(txt_data_source):
+def test_get(txt_data_source):
     ds = txt_data_source
-    output = ds.stage("./test.txt")
+    output = ds.get("./test.txt")
     assert output.path.is_file()
 
 
-def test_stage_no_path(txt_data_source):
+def test_get_no_path(txt_data_source):
     ds = txt_data_source
     with pytest.raises(TypeError):
-        ds.stage()
+        ds.get()
 
 
 def test_fails_both_path_and_url():
@@ -89,7 +89,7 @@ def nc_data_source():
         }
     )
     ds.to_netcdf(source)
-    return DataGrid(path=source)
+    return DataGrid(id="grid", path=source)
 
 
 def test_netcdf_grid(nc_data_source):

@@ -31,6 +31,7 @@ class DataBlob(RompyBaseModel):
 
     """
 
+    id: str
     path: Optional[pathlib.Path]
     url: Optional[cloudpathlib.CloudPath]
 
@@ -42,13 +43,13 @@ class DataBlob(RompyBaseModel):
             raise ValueError("Must provide either a path or a url, not both")
         return values
 
-    def stage(self, dest: str) -> "DataBlob":
+    def get(self, dest: str) -> "DataBlob":
         """Copy the data source to a new location"""
         if self.path:
             pathlib.Path(dest).write_bytes(self.path.read_bytes())
         elif self.url:
             pathlib.Path(dest).write_bytes(self.url.read_bytes())
-        return DataBlob(path=dest)
+        return DataBlob(id=self.id, path=dest)
 
 
 class DataGrid(RompyBaseModel):
@@ -67,6 +68,8 @@ class DataGrid(RompyBaseModel):
             Optional intake catalog
     dataset: str
             Optional intake dataset id
+    params: dict
+            Optional parameters to pass to the intake catalog
     filter: Filter
             Optional filter specification to apply to the dataset
     xarray_kwargs: dict
@@ -79,6 +82,8 @@ class DataGrid(RompyBaseModel):
     url: Optional[cloudpathlib.CloudPath]
     catalog: Optional[str]  # TODO make this smarter
     dataset: Optional[str]
+    args: Optional[dict] = {}
+    params: Optional[dict] = {}
     filter: Optional[Filter] = Filter()
     latname: Optional[str] = "latitude"
     lonname: Optional[str] = "longitude"
@@ -119,7 +124,7 @@ class DataGrid(RompyBaseModel):
             ds = xr.open_dataset(self.url, **self.xarray_kwargs)
         elif self.catalog:
             cat = intake.open_catalog(self.catalog)
-            ds = cat[self.dataset].to_dask()
+            ds = cat[self.dataset](**self.args, **self.params).to_dask()
         if self.filter:
             ds = self.filter(ds)
         return ds
