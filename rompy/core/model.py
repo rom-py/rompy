@@ -114,52 +114,58 @@ class BaseModel(RompyBaseModel):
             defaults = json.load(f)
 
     def generate(self) -> str:
-        """Generate the model input files
+        self.config.generate(self)
 
-        returns
-        -------
-        staging_dir : str
-        """
-        logger.info("")
-        logger.info("-----------------------------------------------------")
-        logger.info("Model settings:")
-        print("")
-        logger.info(self.yaml(indent=2))
-        logger.info(f"Template used to generate model: {self.config.template}")
+    # def generate(self) -> str:
+    #     """Generate the model input files
+    #
+    #     returns
+    #     -------
+    #     staging_dir : str
+    #     """
+    #     logger.info("")
+    #     logger.info("-----------------------------------------------------")
+    #     logger.info("Model settings:")
+    #     print("")
+    #     logger.info(self.yaml(indent=2))
+    #     logger.info(f"Template used to generate model: {self.config.template}")
+    #
+    #     config_dict = cc_config.get_user_config(
+    #         config_file=None,
+    #         default_config=False,
+    #     )
+    #
+    #     repo_dir, cleanup = cc_repository.determine_repo_dir(
+    #         template=self.config.template,
+    #         abbreviations=config_dict["abbreviations"],
+    #         clone_to_dir=config_dict["cookiecutters_dir"],
+    #         checkout=self.config.checkout,
+    #         no_input=True,
+    #     )
+    #
+    #     cc_full = {}
+    #     cc_full["cookiecutter"] = self.dict()
+    #     cc_full["cookiecutter"].update(self.config.dict())
+    #     cc_full["cookiecutter"].update({"_template": repo_dir})
+    #     cc_full["cookiecutter"].update({"_generated_at": str(datetime.utcnow())})
+    #     cc_full["cookiecutter"].update({"_generated_by": os.environ.get("USER")})
+    #     cc_full["cookiecutter"].update({"_generated_on": platform.node()})
+    #     cc_full["cookiecutter"].update({"_datefmt": self.config._datefmt})
+    #
+    #     staging_dir = cc_generate.generate_files(
+    #         repo_dir=repo_dir,
+    #         context=cc_full,
+    #         overwrite_if_exists=True,
+    #         output_dir=self.output_dir,
+    #     )
+    #     logger.info("")
+    #     logger.info(f"Successfully generated project in {self.output_dir}")
+    #     logger.info(f"Settings saved to {self.save_settings()}")
+    #     logger.info("-----------------------------------------------------")
+    #     return staging_dir
 
-        config_dict = cc_config.get_user_config(
-            config_file=None,
-            default_config=False,
-        )
-
-        repo_dir, cleanup = cc_repository.determine_repo_dir(
-            template=self.config.template,
-            abbreviations=config_dict["abbreviations"],
-            clone_to_dir=config_dict["cookiecutters_dir"],
-            checkout=self.config.checkout,
-            no_input=True,
-        )
-
-        cc_full = {}
-        cc_full["cookiecutter"] = self.dict()
-        cc_full["cookiecutter"].update(self.config.dict())
-        cc_full["cookiecutter"].update({"_template": repo_dir})
-        cc_full["cookiecutter"].update({"_generated_at": str(datetime.utcnow())})
-        cc_full["cookiecutter"].update({"_generated_by": os.environ.get("USER")})
-        cc_full["cookiecutter"].update({"_generated_on": platform.node()})
-        cc_full["cookiecutter"].update({"_datefmt": self.config._datefmt})
-
-        staging_dir = cc_generate.generate_files(
-            repo_dir=repo_dir,
-            context=cc_full,
-            overwrite_if_exists=True,
-            output_dir=self.output_dir,
-        )
-        logger.info("")
-        logger.info(f"Successfully generated project in {self.output_dir}")
-        logger.info(f"Settings saved to {self.save_settings()}")
-        logger.info("-----------------------------------------------------")
-        return staging_dir
+    def write(self):
+        self.config.write(self)
 
     def zip(self) -> str:
         """Zip the input files for the model run

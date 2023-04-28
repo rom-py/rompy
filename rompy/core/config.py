@@ -10,7 +10,6 @@ from pydantic import PrivateAttr
 import rompy
 from rompy import TEMPLATES_DIR
 
-from .time import DateTimeRange
 from .types import RompyBaseModel
 
 # from rompy.data import DataBlob, DataGrid
@@ -52,6 +51,7 @@ class BaseConfig(RompyBaseModel):
         run_dir : str
             Path to run directory
         """
+        self._set_generation_medatadata()
         output = ""
         output += f"$\n"
         output += f"$ BASE - Simple example template used by rompy\n"
@@ -66,7 +66,7 @@ class BaseConfig(RompyBaseModel):
         output += f"compute_stop: {runtime.compute_stop.strftime(self._datefmt)}\n"
         return output
 
-    def write(self, run_dir: str, runtime: rompy.core.BaseModel) -> None:
+    def write(self, runtime: rompy.core.BaseModel) -> None:
         """Write input file
 
         Parameters
@@ -74,7 +74,7 @@ class BaseConfig(RompyBaseModel):
         run_dir : str
             Path to run directory
         """
-        self._set_generation_medatadata()
-        os.makedirs(run_dir, exist_ok=True)
-        with open(os.path.join(run_dir, "INPUT"), "w") as f:
+        outdir = os.path.join(runtime.output_dir, runtime.run_id)
+        os.makedirs(outdir, exist_ok=True)
+        with open(os.path.join(outdir, "INPUT"), "w") as f:
             f.write(self.generate(runtime=runtime))

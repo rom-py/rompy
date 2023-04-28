@@ -23,6 +23,8 @@ class DataBlob(RompyBaseModel):
 
     Parameters
     ----------
+    id: str
+            Unique identifier for this data source
     path: str
           Optional local file path
     url: str
@@ -60,6 +62,8 @@ class DataGrid(RompyBaseModel):
 
     Parameters
     ----------
+    id: str
+            Unique identifier for this data source
     path: str
             Optional local file path
     url: str
