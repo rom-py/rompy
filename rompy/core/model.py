@@ -12,6 +12,7 @@ import cookiecutter.repository as cc_repository
 from pydantic import validator
 
 from .config import BaseConfig
+from .time import TimeRange
 from .types import RompyBaseModel
 
 logger = logging.getLogger(__name__)
@@ -38,37 +39,17 @@ class BaseModel(RompyBaseModel):
     """
 
     run_id: str = "run_id"
-    compute_start: datetime = datetime(2020, 2, 21, 4)
-    compute_interval: str = "0.25 HR"
-    compute_stop: datetime = datetime(2020, 2, 24, 4)
+    period: TimeRange = TimeRange(
+        start=datetime(2020, 2, 21, 4),
+        end=datetime(2020, 2, 24, 4),
+        interval="15M",
+    )
     output_dir: str = "simulations"
     config: BaseConfig = BaseConfig()
     _model: str | None = None
 
     class Config:
         underscore_attrs_are_private = True
-
-    @validator("compute_start", "compute_stop", pre=True)
-    def validate_compute_start_stop(cls, v):
-        if isinstance(v, datetime):
-            return v
-        for fmt in [
-            "%Y%m%d.%H%M%S",
-            "%Y%m%d.%H%M",
-            "%Y%m%dT%H%M%S",
-            "%Y%m%dT%H%M",
-            "%Y%m%dT%H",
-            "%Y%m%dT",
-            "%Y-%m-%dT%H%M",
-            "%Y-%m-%dT%H",
-            "%Y-%m-%dT",
-        ]:
-            try:
-                ret = datetime.strptime(v, fmt)
-                return ret
-            except ValueError:
-                pass
-        return v
 
     @property
     def staging_dir(self):

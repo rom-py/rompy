@@ -6,7 +6,7 @@ import pytest
 from utils import compare_files
 
 from rompy import TEMPLATES_DIR
-from rompy.core import BaseConfig, BaseModel, DateTimeRange
+from rompy.core import BaseConfig, BaseModel, TimeRange
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,11 +25,10 @@ def test_template():
 
 def test_newbaseconfig():
     """Test the swantemplate function."""
-    run_dir = "simulations/test_basetemplate"
+    run_dir = "simulations/test_base"
     config = BaseConfig()
-    runtime = BaseModel(run_id="test_base")
+    runtime = BaseModel(run_id="test_base", output_dir="simulations")
     config.write(
-        run_dir=run_dir,
         runtime=runtime,
     )
     compare_files(

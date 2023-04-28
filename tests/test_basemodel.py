@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 from utils import compare_files
 
-from rompy.core import BaseModel, BaseConfig
+from rompy.core import BaseConfig, BaseModel, TimeRange
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,7 +30,7 @@ def gitlab_template():
 
 # test generate method
 def test_generate(model):
-    model.generate()
+    model.config.generate()
     compare_files(
         os.path.join(here, "simulations/test_base/INPUT"),
         os.path.join(here, "simulations/test_base_ref/INPUT"),
@@ -39,26 +39,26 @@ def test_generate(model):
 
 
 def test_datetime_parse():
-    compute_stop = datetime(2022, 2, 21, 4)
+    end = datetime(2022, 2, 21, 4)
     for format in [
         "%Y%m%d.%H%M%S",
         "%Y%m%d.%H%M",
         "%Y%m%dT%H%M%S",
         "%Y%m%dT%H%M",
     ]:
-        model = BaseModel(compute_stop=compute_stop.strftime(format))
+        model = BaseModel(period=TimeRange(end=end.strftime(format), duration="1d"))
         for period in ["year", "month", "day", "hour"]:
-            assert getattr(model.compute_stop, period) == getattr(compute_stop, period)
+            assert getattr(model.period.end, period) == getattr(end, period)
 
 
 def test_datetime_parse_fail():
-    compute_stop = datetime(2022, 2, 21, 4)
+    end = datetime(2022, 2, 21, 4)
     for format in [
         "%Y%m%d.%Hhello",
         "%Y%m%dhello",
     ]:
         try:
-            model = BaseModel(compute_stop=compute_stop.strftime(format))
+            model = BaseModel(period=TimeRange(end=end.strftime(format), duration="1d"))
         except ValueError:
             pass
         else:

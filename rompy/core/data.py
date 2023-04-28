@@ -139,4 +139,4 @@ class DataGrid(RompyBaseModel):
         """Write the data source to a new location"""
         dest = os.path.join(stage_dir, f"{self.id}.nc")
         self.ds.to_netcdf(dest, **self.netcdf_kwargs)
-        return DataGrid(id=self.id, path=dest, **self.netcdf_kwargs)
+        return DataGrid(id=self.id, path=dest)

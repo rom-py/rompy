@@ -22,41 +22,41 @@ time_units = {
 }
 
 
-class DateTimeRange(RompyBaseModel):
+class TimeRange(RompyBaseModel):
     """A time range object
 
     Parameters
     ----------
-    start_date : datetime
+    start : datetime
         The start date of the time range
-    end_date : datetime
+    end : datetime
         The end date of the time range
     duration : str, timedelta
         The duration of the time range
-    frequency : str, timedelta
+    interval : str, timedelta
         The frequency of the time range
     include_end : bool
 
     Examples
     --------
     >>> from rompy import DateTimeRange
-    >>> DateTimeRange(start_date="2020-01-01", end_date="2020-01-02")
-    DateTimeRange(start_date=datetime.datetime(2020, 1, 1, 0, 0), end_date=datetime.datetime(2020, 1, 2, 0, 0), duration=None, frequency=None)
-    >>> DateTimeRange(start_date="2020-01-01", duration="1d")
-    DateTimeRange(start_date=datetime.datetime(2020, 1, 1, 0, 0), end_date=datetime.datetime(2020, 1, 2, 0, 0), duration=datetime.timedelta(days=1), frequency=None)
-    >>> DateTimeRange(start_date="2020-01-01", duration="1d", frequency="1h")
+    >>> DateTimeRange(start="2020-01-01", end="2020-01-02")
+    DateTimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=datetime.datetime(2020, 1, 2, 0, 0), duration=None, frequency=None)
+    >>> DateTimeRange(start="2020-01-01", duration="1d")
+    DateTimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=datetime.datetime(2020, 1, 2, 0, 0), duration=datetime.timedelta(days=1), frequency=None)
+    >>> DateTimeRange(start="2020-01-01", duration="1d", frequency="1h")
     """
 
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    start: Optional[datetime] = None
+    end: Optional[datetime] = None
     duration: Optional[Union[str, timedelta]] = None
-    frequency: Optional[Union[str, timedelta]] = "1h"
+    interval: Optional[Union[str, timedelta]] = "1h"
     include_end: bool = True
 
     class Config:
         validate_all = True
 
-    @validator("frequency", "duration", pre=True)
+    @validator("interval", "duration", pre=True)
     def valid_duration_interval(cls, v):
         if v == None:
             return v
@@ -71,7 +71,7 @@ class DateTimeRange(RompyBaseModel):
             time_delta_value = int(v[:-1])
             return timedelta(**{time_units[time_delta_unit]: time_delta_value})
 
-    @validator("start_date", "end_date", pre=True)
+    @validator("start", "end", pre=True)
     def validate_start_end(cls, v):
         if v == None:
             return v
@@ -97,65 +97,57 @@ class DateTimeRange(RompyBaseModel):
 
     @root_validator
     def validate_start_end_duration(cls, values):
-        # check two out of start_date, end_date, duration are provided
-        if values.get("start_date"):
-            if not values.get("end_date") and not values.get("duration"):
-                raise ValueError(
-                    "start_date provided, must provide either end_date or duration"
-                )
-        if values.get("end_date"):
-            if not values.get("start_date") and not values.get("duration"):
-                raise ValueError(
-                    "end_date provided, must provide either start_date or duration"
-                )
+        # check two out of start, end, duration are provided
+        if values.get("start"):
+            if not values.get("end") and not values.get("duration"):
+                raise ValueError("start provided, must provide either end or duration")
+        if values.get("end"):
+            if not values.get("start") and not values.get("duration"):
+                raise ValueError("end provided, must provide either start or duration")
         if values.get("duration"):
-            if not values.get("start_date") and not values.get("end_date"):
-                raise ValueError(
-                    "duration provided, must provide either start_date or end_date"
-                )
+            if not values.get("start") and not values.get("end"):
+                raise ValueError("duration provided, must provide either start or end")
         if (
-            values.get("start_date") is None
-            and values.get("end_date") is None
+            values.get("start") is None
+            and values.get("end") is None
             and values.get("duration") is None
         ):
-            raise ValueError("Must provide two of start_date, end_date, duration")
+            raise ValueError("Must provide two of start, end, duration")
         if (
-            values.get("start_date") is not None
-            and values.get("end_date") is not None
+            values.get("start") is not None
+            and values.get("end") is not None
             and values.get("duration") is not None
         ):
-            raise ValueError("Must provide only two of start_date, end_date, duration")
-        if values.get("start_date") is not None and values.get("end_date") is not None:
-            values["duration"] = values["end_date"] - values["start_date"]
-        if values.get("start_date") is not None and values.get("duration") is not None:
-            values["end_date"] = values["start_date"] + values["duration"]
-        if values.get("end_date") is not None and values.get("duration") is not None:
-            values["start_date"] = values["end_date"] - values["duration"]
+            raise ValueError("Must provide only two of start, end, duration")
+        if values.get("start") is not None and values.get("end") is not None:
+            values["duration"] = values["end"] - values["start"]
+        if values.get("start") is not None and values.get("duration") is not None:
+            values["end"] = values["start"] + values["duration"]
+        if values.get("end") is not None and values.get("duration") is not None:
+            values["start"] = values["end"] - values["duration"]
         return values
 
     @property
     def date_range(self) -> List[datetime]:
-        start = self.start_date
-        end = self.end_date
+        start = self.start
+        end = self.end
         date_range = []
         while start < end:
             date_range.append(start)
-            start += self.frequency
-            if start + self.frequency > end:
+            start += self.interval
+            if start + self.interval > end:
                 if self.include_end:
                     date_range.append(end)
                 break
         return date_range
 
     def contains(self, date: datetime) -> bool:
-        return self.start_date <= date <= self.end_date
+        return self.start <= date <= self.end
 
-    def contains_range(self, date_range: "DateTimeRange") -> bool:
-        return self.contains(date_range.start_date) and self.contains(
-            date_range.end_date
-        )
+    def contains_range(self, date_range: "TimeRange") -> bool:
+        return self.contains(date_range.start) and self.contains(date_range.end)
 
-    def common_times(self, date_range: "DateTimeRange") -> List[datetime]:
+    def common_times(self, date_range: "TimeRange") -> List[datetime]:
         common_times = []
         for date in self.date_range:
             if date_range.contains(date):
