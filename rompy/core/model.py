@@ -48,9 +48,6 @@ class BaseModel(RompyBaseModel):
     config: BaseConfig = BaseConfig()
     _model: str | None = None
 
-    class Config:
-        underscore_attrs_are_private = True
-
     @property
     def staging_dir(self):
         """The directory where the model is staged for execution
@@ -87,12 +84,6 @@ class BaseModel(RompyBaseModel):
         with open(settingsfile, "w") as f:
             f.write(self.yaml())
         return settingsfile
-
-    @classmethod
-    def load_settings(fn):
-        """Load the run settings from a file"""
-        with open(fn) as f:
-            defaults = json.load(f)
 
     def generate(self) -> str:
         self.config.generate(self)
