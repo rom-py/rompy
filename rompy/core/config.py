@@ -61,9 +61,9 @@ class BaseConfig(RompyBaseModel):
         output += f"$\n"
         output += f"\n"
         output += f"run_id: '{runtime.run_id}'\n"
-        output += f"compute_start: {runtime.compute_start.strftime(self._datefmt)}\n"
-        output += f"compute_interval: {runtime.compute_interval}\n"
-        output += f"compute_stop: {runtime.compute_stop.strftime(self._datefmt)}\n"
+        output += f"compute_start: {runtime.period.start.strftime(self._datefmt)}\n"
+        output += f"compute_interval: {runtime.period.interval.seconds/3600} HR\n"
+        output += f"compute_stop: {runtime.period.end.strftime(self._datefmt)}\n"
         return output
 
     def write(self, runtime: rompy.core.BaseModel) -> None:
