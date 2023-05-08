@@ -18,9 +18,9 @@ def template():
     )
 
 
-def test_template():
-    config = BaseConfig()
-    assert config.template == os.path.join(TEMPLATES_DIR, "base")
+# def test_template():
+#     config = BaseConfig()
+#     assert config.template == os.path.join(TEMPLATES_DIR, "base")
 
 
 def test_newbaseconfig():

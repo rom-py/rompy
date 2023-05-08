@@ -10,6 +10,7 @@ import xarray as xr
 from pydantic import root_validator
 
 from .filters import Filter
+from .time import TimeRange
 from .types import RompyBaseModel
 
 # from .filters import lonlat_filter, time_filter, variable_filter
@@ -112,14 +113,23 @@ class DataGrid(RompyBaseModel):
             raise ValueError("Must provide only one of a path url or catalog")
         return values
 
-    def _filter_grid(self, grid, start=None, end=None, buffer=0.1):
+    def _filter_grid(self, grid, buffer=0.1):
         """Define the filters to use to extract data to this grid"""
         minLon, minLat, maxLon, maxLat = grid.bbox()
-        self.filter.crop = {
-            self.lonname: slice(minLon - buffer, maxLon + buffer),
-            self.latname: slice(minLat - buffer, maxLat + buffer),
-            self.timename: slice(start, end),
-        }
+        self.filter.crop.update(
+            {
+                self.lonname: slice(minLon - buffer, maxLon + buffer),
+                self.latname: slice(minLat - buffer, maxLat + buffer),
+            }
+        )
+
+    def _filter_time(self, time: TimeRange):
+        """Define the filters to use to extract data to this grid"""
+        self.filter.crop.update(
+            {
+                self.timename: slice(time.start, time.end),
+            }
+        )
 
     @property
     def ds(self):

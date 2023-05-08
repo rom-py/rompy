@@ -30,7 +30,6 @@ class BaseConfig(RompyBaseModel):
         The date format to be rendered in the template
     """
 
-    template: str = os.path.join(TEMPLATES_DIR, "base")
     checkout: str = "main"
 
     _datefmt: str = "%Y%m%d.%H%M%S"

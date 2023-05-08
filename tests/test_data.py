@@ -8,7 +8,7 @@ import pytest
 import xarray as xr
 
 import rompy
-from rompy.core import BaseGrid, DataBlob, DataGrid
+from rompy.core import BaseGrid, DataBlob, DataGrid, TimeRange
 
 
 # create dummy local datasource for testing
@@ -120,7 +120,8 @@ def test_grid_filter_buffer(nc_data_source):
 
 def test_time_filter(nc_data_source):
     grid = BaseGrid(x=np.arange(3, 7), y=np.arange(3, 7))
-    nc_data_source._filter_grid(grid, start="2000-01-02", end="2000-01-03", buffer=1)
+    nc_data_source._filter_grid(grid, buffer=1)
+    nc_data_source._filter_time(TimeRange(start="2000-01-02", end="2000-01-03"))
     assert nc_data_source.ds.latitude.max() == 7
     assert nc_data_source.ds.latitude.min() == 2
     assert nc_data_source.ds.longitude.max() == 7
