@@ -12,6 +12,7 @@ import cookiecutter.repository as cc_repository
 from pydantic import validator
 
 from .config import BaseConfig
+from .render import render
 from .time import TimeRange
 from .types import RompyBaseModel
 
@@ -46,7 +47,10 @@ class BaseModel(RompyBaseModel):
     )
     output_dir: str = "simulations"
     config: BaseConfig = BaseConfig()
+    template: str = "/source/rompy/rompy/templates/base"
+    checkout: str = "main"
     _model: str | None = None
+    _datefmt: str = "%Y%m%d.%H%M%S"
 
     @property
     def staging_dir(self):
@@ -85,56 +89,51 @@ class BaseModel(RompyBaseModel):
             f.write(self.yaml())
         return settingsfile
 
-    def generate(self) -> str:
-        self.config.generate(self)
-
     # def generate(self) -> str:
-    #     """Generate the model input files
-    #
-    #     returns
-    #     -------
-    #     staging_dir : str
-    #     """
-    #     logger.info("")
-    #     logger.info("-----------------------------------------------------")
-    #     logger.info("Model settings:")
-    #     print("")
-    #     logger.info(self.yaml(indent=2))
-    #     logger.info(f"Template used to generate model: {self.config.template}")
-    #
-    #     config_dict = cc_config.get_user_config(
-    #         config_file=None,
-    #         default_config=False,
-    #     )
-    #
-    #     repo_dir, cleanup = cc_repository.determine_repo_dir(
-    #         template=self.config.template,
-    #         abbreviations=config_dict["abbreviations"],
-    #         clone_to_dir=config_dict["cookiecutters_dir"],
-    #         checkout=self.config.checkout,
-    #         no_input=True,
-    #     )
-    #
-    #     cc_full = {}
-    #     cc_full["cookiecutter"] = self.dict()
-    #     cc_full["cookiecutter"].update(self.config.dict())
-    #     cc_full["cookiecutter"].update({"_template": repo_dir})
-    #     cc_full["cookiecutter"].update({"_generated_at": str(datetime.utcnow())})
-    #     cc_full["cookiecutter"].update({"_generated_by": os.environ.get("USER")})
-    #     cc_full["cookiecutter"].update({"_generated_on": platform.node()})
-    #     cc_full["cookiecutter"].update({"_datefmt": self.config._datefmt})
-    #
-    #     staging_dir = cc_generate.generate_files(
-    #         repo_dir=repo_dir,
-    #         context=cc_full,
-    #         overwrite_if_exists=True,
-    #         output_dir=self.output_dir,
-    #     )
-    #     logger.info("")
-    #     logger.info(f"Successfully generated project in {self.output_dir}")
-    #     logger.info(f"Settings saved to {self.save_settings()}")
-    #     logger.info("-----------------------------------------------------")
-    #     return staging_dir
+    #     self.config.generate(self)
+
+    @property
+    def _generation_medatadata(self):
+        return dict(
+            _generated_at=str(datetime.utcnow()),
+            _generated_by=os.environ.get("USER"),
+            _generated_on=platform.node(),
+        )
+
+    def generate(self) -> str:
+        """Generate the model input files
+
+        returns
+        -------
+        staging_dir : str
+        """
+        logger.info("")
+        logger.info("-----------------------------------------------------")
+        logger.info("Model settings:")
+        print("")
+        logger.info(self.yaml(indent=2))
+        logger.info(f"Template used to generate model: {self.template}")
+
+        cc_full = {}
+        cc_full["runtime"] = self.dict()
+        # cc_full["runtime"].update({"_generated_at": str(datetime.utcnow())})
+        # cc_full["runtime"].update({"_generated_by": os.environ.get("USER")})
+        # cc_full["runtime"].update({"_generated_on": platform.node()})
+        cc_full["runtime"].update(self._generation_medatadata)
+        cc_full["runtime"].update({"_datefmt": self._datefmt})
+
+        if callable(self.config):
+            cc_full["config"] = self.config()
+        else:
+            cc_full["config"] = self.config
+
+        staging_dir = render(cc_full, self.template, self.checkout, self.output_dir)
+
+        logger.info("")
+        logger.info(f"Successfully generated project in {self.output_dir}")
+        logger.info(f"Settings saved to {self.save_settings()}")
+        logger.info("-----------------------------------------------------")
+        return staging_dir
 
     def write(self):
         self.config.write(self)

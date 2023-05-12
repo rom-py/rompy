@@ -25,14 +25,18 @@ def template():
 
 def test_newbaseconfig():
     """Test the swantemplate function."""
-    run_dir = "simulations/test_base"
+    run_dir = os.path.join(here, "simulations")
+    run_id = "test_base"
     config = BaseConfig()
-    runtime = BaseModel(run_id="test_base", output_dir="simulations")
+    runtime = BaseModel(
+        run_id=run_id,
+        output_dir=run_dir,
+    )
     config.write(
         runtime=runtime,
     )
     compare_files(
         os.path.join(here, "simulations/test_base_ref/INPUT"),
-        os.path.join(here, run_dir, "INPUT"),
+        os.path.join(run_dir, run_id, "INPUT"),
     )
-    shutil.rmtree(run_dir)
+    shutil.rmtree(os.path.join(run_dir, run_id))
