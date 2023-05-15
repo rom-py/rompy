@@ -114,6 +114,7 @@ class BaseModel(RompyBaseModel):
         cc_full["runtime"] = self.dict()
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
+        cc_full["runtime"]["frequency"] = "0.25 HR"  # TODO calculate from period
 
         if callable(self.config):
             cc_full["config"] = self.config(self)
