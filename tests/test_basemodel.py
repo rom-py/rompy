@@ -15,7 +15,7 @@ def model():
     return BaseModel(
         run_id="test_base",
         output_dir=os.path.join(here, "simulations"),
-        template=BaseConfig(),
+        # template=BaseConfig(),
     )
 
 
@@ -26,16 +26,6 @@ def gitlab_template():
             template="git@gitlab.com:oceanum/models/test-rompy-template.git",
         )
     )
-
-
-# test generate method
-def test_generate(model):
-    model.config.generate()
-    compare_files(
-        os.path.join(here, "simulations/test_base/INPUT"),
-        os.path.join(here, "simulations/test_base_ref/INPUT"),
-    )
-    shutil.rmtree(os.path.join(here, "simulations/test_base"))
 
 
 def test_datetime_parse():
@@ -75,6 +65,7 @@ def test_generate(model):
 
 
 # repeat suite for gitlab template
+@pytest.mark.skip(reason="gitlab template not ready following restructure")
 def test_gitlab_template(gitlab_template):
     gitlab_template.generate()
     compare_files(

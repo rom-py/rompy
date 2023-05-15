@@ -32,11 +32,26 @@ def test_newbaseconfig():
         run_id=run_id,
         output_dir=run_dir,
     )
-    config.write(
-        runtime=runtime,
-    )
+    runtime.generate()
     compare_files(
         os.path.join(here, "simulations/test_base_ref/INPUT"),
         os.path.join(run_dir, run_id, "INPUT"),
     )
     shutil.rmtree(os.path.join(run_dir, run_id))
+
+
+def test_custom_template():
+    run_dir = os.path.join(here, "simulations")
+    run_id = "test_base"
+    config = BaseConfig()
+    runtime = BaseModel(
+        run_id=run_id,
+        output_dir=run_dir,
+        template="simple_templates/base",
+    )
+    runtime.generate()
+    compare_files(
+        os.path.join(here, "simulations/test_base_ref/INPUT"),
+        os.path.join(run_dir, run_id, "INPUT"),
+    )
+    # shutil.rmtree(os.path.join(run_dir, run_id))

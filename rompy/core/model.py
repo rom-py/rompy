@@ -61,7 +61,9 @@ class BaseModel(RompyBaseModel):
         staging_dir : str
         """
 
-        return os.path.join(self.output_dir, self.run_id)
+        odir = os.path.join(self.output_dir, self.run_id)
+        os.makedirs(odir, exist_ok=True)
+        return odir
 
     @property
     def grid(self) -> "core.Grid":
@@ -116,18 +118,15 @@ class BaseModel(RompyBaseModel):
 
         cc_full = {}
         cc_full["runtime"] = self.dict()
-        # cc_full["runtime"].update({"_generated_at": str(datetime.utcnow())})
-        # cc_full["runtime"].update({"_generated_by": os.environ.get("USER")})
-        # cc_full["runtime"].update({"_generated_on": platform.node()})
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
 
         if callable(self.config):
-            cc_full["config"] = self.config()
+            cc_full["config"] = self.config(self)
         else:
             cc_full["config"] = self.config
 
-        staging_dir = render(cc_full, self.template, self.checkout, self.output_dir)
+        staging_dir = render(cc_full, self.template, self.output_dir, self.checkout)
 
         logger.info("")
         logger.info(f"Successfully generated project in {self.output_dir}")
