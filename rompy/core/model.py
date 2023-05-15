@@ -1,15 +1,9 @@
 import glob
-import json
 import logging
 import os
 import platform
 import zipfile as zf
 from datetime import datetime
-
-import cookiecutter.config as cc_config
-import cookiecutter.generate as cc_generate
-import cookiecutter.repository as cc_repository
-from pydantic import validator
 
 from .config import BaseConfig
 from .render import render
