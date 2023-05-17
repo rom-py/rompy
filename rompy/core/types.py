@@ -6,12 +6,6 @@ class RompyBaseModel(pydantic.BaseModel):
     class Config:
         underscore_attrs_are_private = True
 
-    def yaml(self, **kwargs):
-        return yaml.dump(self.dict(), **kwargs)
-
-    def __str__(self):
-        return self.yaml()
-
 
 class Latitude(pydantic.BaseModel):
     """Latitude"""

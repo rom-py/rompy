@@ -153,3 +153,11 @@ class TimeRange(RompyBaseModel):
             if date_range.contains(date):
                 common_times.append(date)
         return common_times
+
+    def __str__(self):
+        ret = f"\n\tStart: {self.start}\n"
+        ret += f"\tEnd: {self.end}\n"
+        ret += f"\tDuration: {self.duration}\n"
+        ret += f"\tInterval: {self.interval}\n"
+        ret += f"\tInclude End: {self.include_end}\n"
+        return ret

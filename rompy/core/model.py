@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 import platform
+import pprint
 import zipfile as zf
 from datetime import datetime
 
@@ -21,12 +22,8 @@ class BaseModel(RompyBaseModel):
 
     run_id : str
         The run id
-    compute_start : datetime
-        The start time of the simulation
-    compute_interval : str
-        The time interval of the simulation
-    compute_stop : datetime
-        The stop time of the simulation
+    period : TimeRange
+        The time period to run the model
     output_dir : str
         The output directory
     config : BaseConfig
@@ -106,8 +103,7 @@ class BaseModel(RompyBaseModel):
         logger.info("")
         logger.info("-----------------------------------------------------")
         logger.info("Model settings:")
-        print("")
-        logger.info(self.yaml(indent=2))
+        logger.info(self)
         logger.info(f"Template used to generate model: {self.template}")
 
         cc_full = {}
@@ -125,7 +121,6 @@ class BaseModel(RompyBaseModel):
 
         logger.info("")
         logger.info(f"Successfully generated project in {self.output_dir}")
-        logger.info(f"Settings saved to {self.save_settings()}")
         logger.info("-----------------------------------------------------")
         return staging_dir
 
@@ -171,5 +166,9 @@ class BaseModel(RompyBaseModel):
     def __call__(self):
         return self.generate()
 
-    def __repr__(self):
-        return self.yaml()
+    def __str__(self):
+        ret = f"period: self.period\n"
+        ret += f"output_dir: self.output_dir\n"
+        ret += f"config: {self.config}\n"
+        ret += f"template: {self.template}\n"
+        return ret
