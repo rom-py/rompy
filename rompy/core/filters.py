@@ -27,6 +27,12 @@ class Filter(RompyBaseModel):
             if params:
                 ds = filters[fn](ds, **params)
         return ds
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    def __str__(self):
+        return f"Filter(sort={self.sort}, subset={self.subset}, crop={self.crop}, timenorm={self.timenorm}, rename={self.rename}, derived={self.derived})"
 
 
 def derived_filter(ds, derived_variables):
