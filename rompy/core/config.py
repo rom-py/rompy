@@ -22,6 +22,3 @@ class BaseConfig(RompyBaseModel):
 
     class Config:
         extra = "allow"
-
-    def __call__(self, runtime):
-        return self.dict()
