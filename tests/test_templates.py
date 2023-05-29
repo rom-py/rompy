@@ -27,10 +27,11 @@ def test_newbaseconfig():
     """Test the swantemplate function."""
     run_dir = os.path.join(here, "simulations")
     run_id = "test_base"
-    config = BaseConfig()
+    config = BaseConfig(arg1="foo", arg2="bar")
     runtime = BaseModel(
         run_id=run_id,
         output_dir=run_dir,
+        config=config,
     )
     runtime.generate()
     compare_files(
@@ -43,11 +44,12 @@ def test_newbaseconfig():
 def test_custom_template():
     run_dir = os.path.join(here, "simulations")
     run_id = "test_base"
-    config = BaseConfig()
+    config = BaseConfig(arg1="foo", arg2="bar")
     runtime = BaseModel(
         run_id=run_id,
         output_dir=run_dir,
         template="simple_templates/base",
+        config=config,
     )
     runtime.generate()
     compare_files(

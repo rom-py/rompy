@@ -1,5 +1,7 @@
 import logging
 
+from typing_extensions import Literal
+
 from .types import RompyBaseModel
 
 logger = logging.getLogger(__name__)
@@ -16,8 +18,10 @@ class BaseConfig(RompyBaseModel):
         Fictional argument 1
     """
 
-    arg1: str = "foo"
-    arg2: str = "bar"
+    model_type: Literal["base"] = "base"
+
+    class Config:
+        extra = "allow"
 
     def __call__(self, runtime):
         return self.dict()

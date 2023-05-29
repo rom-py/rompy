@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 from dateutil.relativedelta import relativedelta
-from pydantic import root_validator, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from .types import RompyBaseModel
 
@@ -22,36 +22,61 @@ time_units = {
 }
 
 
-class TimeRange(RompyBaseModel):
-    """A time range object
+class TimeRange(BaseModel):
+    """
+    A time range object
 
-    Parameters
+    Attributes
     ----------
-    start : datetime
+    start : datetime, optional
         The start date of the time range
-    end : datetime
+    end : datetime, optional
         The end date of the time range
-    duration : str, timedelta
+    duration : str or timedelta, optional
         The duration of the time range
-    interval : str, timedelta
+    interval : str or timedelta, optional
         The frequency of the time range
-    include_end : bool
+    include_end : bool, default True
+        Determines if the end date should be included in the range
 
     Examples
     --------
-    >>> from rompy import DateTimeRange
-    >>> DateTimeRange(start="2020-01-01", end="2020-01-02")
-    DateTimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=datetime.datetime(2020, 1, 2, 0, 0), duration=None, frequency=None)
-    >>> DateTimeRange(start="2020-01-01", duration="1d")
-    DateTimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=datetime.datetime(2020, 1, 2, 0, 0), duration=datetime.timedelta(days=1), frequency=None)
-    >>> DateTimeRange(start="2020-01-01", duration="1d", frequency="1h")
+    >>> from rompy import TimeRange
+    >>> tr = TimeRange(start="2020-01-01", end="2020-01-02")
+    >>> tr
+    TimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=datetime.datetime(2020, 1, 2, 0, 0), duration=None, interval=None, include_end=True)
+    >>> tr = TimeRange(start="2020-01-01", duration="1d")
+    >>> tr
+    TimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=datetime.datetime(2020, 1, 2, 0, 0), duration=timedelta(days=1), interval=None, include_end=True)
+    >>> tr = TimeRange(start="2020-01-01", duration="1d", interval="1h")
+    >>> tr
+    TimeRange(start=datetime.datetime(2020, 1, 1, 0, 0), end=None, duration=timedelta(days=1), interval=timedelta(hours=1), include_end=True)
     """
 
-    start: Optional[datetime] = None
-    end: Optional[datetime] = None
-    duration: Optional[Union[str, timedelta]] = None
-    interval: Optional[Union[str, timedelta]] = "1h"
-    include_end: bool = True
+    start: Optional[datetime] = Field(
+        None,
+        description="The start date of the time range",
+        example="2020-01-01",
+    )
+    end: Optional[datetime] = Field(
+        None,
+        description="The end date of the time range",
+        example="2020-01-02",
+    )
+    duration: Optional[Union[str, timedelta]] = Field(
+        None,
+        description="The duration of the time range",
+        example="1d",
+    )
+    interval: Optional[Union[str, timedelta]] = Field(
+        "1h",
+        description="The frequency of the time range",
+        example="1h or '1h'",
+    )
+    include_end: bool = Field(
+        True,
+        description="Determines if the end date should be included in the range",
+    )
 
     class Config:
         validate_all = True
@@ -100,13 +125,16 @@ class TimeRange(RompyBaseModel):
         # check two out of start, end, duration are provided
         if values.get("start"):
             if not values.get("end") and not values.get("duration"):
-                raise ValueError("start provided, must provide either end or duration")
+                raise ValueError(
+                    "start provided, must provide either end or duration")
         if values.get("end"):
             if not values.get("start") and not values.get("duration"):
-                raise ValueError("end provided, must provide either start or duration")
+                raise ValueError(
+                    "end provided, must provide either start or duration")
         if values.get("duration"):
             if not values.get("start") and not values.get("end"):
-                raise ValueError("duration provided, must provide either start or end")
+                raise ValueError(
+                    "duration provided, must provide either start or end")
         if (
             values.get("start") is None
             and values.get("end") is None

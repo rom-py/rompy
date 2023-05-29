@@ -2,41 +2,41 @@
 
 import os
 import pathlib
-from typing import Optional
+from typing import List, Optional
 
 import cloudpathlib
 import intake
 import xarray as xr
-from pydantic import root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from .filters import Filter
 from .time import TimeRange
 from .types import RompyBaseModel
 
-# from .filters import lonlat_filter, time_filter, variable_filter
-
 
 class DataBlob(RompyBaseModel):
-    """Data source for model ingestion. This is intended to be a generic data source
-    for files that simply need to be copied to the model directory.
+    """Data source for model ingestion. This is intended to be a generic data
+    source for files that simply need to be copied to the model directory.
 
     Must be a local file or a remote file.
 
-    Parameters
-    ----------
+    Attributes:
+    -----------
     id: str
-            Unique identifier for this data source
-    path: str
-          Optional local file path
-    url: str
-            Optional remote file url
-
-
+        Unique identifier for this data source
+    path: Optional[pathlib.Path]
+        Optional local file path
+    url: Optional[cloudpathlib.CloudPath]
+        Optional remote file url
     """
 
-    id: str
-    path: Optional[pathlib.Path]
-    url: Optional[cloudpathlib.CloudPath]
+    id: str = Field(description="Unique identifier for this data source")
+    path: Optional[pathlib.Path] = Field(
+        default=None, description="Optional local file path"
+    )
+    url: Optional[cloudpathlib.CloudPath] = Field(
+        default=None, description="Optional remote file url"
+    )
 
     @root_validator
     def check_path_or_url(cls, values):
@@ -56,47 +56,45 @@ class DataBlob(RompyBaseModel):
 
 
 class DataGrid(RompyBaseModel):
-    """Data source for model ingestion. This is intended to be a generic data source
-    for xarray datasets that need to be filtered and written to netcdf.
+    """Data source for model ingestion. This is intended to be a generic data
+    source
+       for xarray datasets that need to be filtered and written to netcdf.
 
-    Must be a local file (path) or a remote file (url) or intake and dataset id combination.
-
-    Parameters
-    ----------
-    id: str
-            Unique identifier for this data source
-    path: str
-            Optional local file path
-    url: str
-            Optional remote file url
-    catalog: str
-            Optional intake catalog
-    dataset: str
-            Optional intake dataset id
-    params: dict
-            Optional parameters to pass to the intake catalog
-    filter: Filter
-            Optional filter specification to apply to the dataset
-    xarray_kwargs: dict
-            Optional keyword arguments to pass to xarray.open_dataset
-    netcdf_kwargs: dict
-            Optional keyword arguments to pass to xarray.Dataset.to_netcdf
+       Must be a local file (path) or a remote file (url) or intake and dataset
+    id combination.
 
     """
 
-    id: str
-    path: Optional[pathlib.Path]
-    url: Optional[cloudpathlib.CloudPath]
-    catalog: Optional[str]  # TODO make this smarter
-    dataset: Optional[str]
-    args: Optional[dict] = {}
-    params: Optional[dict] = {}
-    filter: Optional[Filter] = Filter()
-    latname: Optional[str] = "latitude"
-    lonname: Optional[str] = "longitude"
-    timename: Optional[str] = "time"
-    xarray_kwargs: Optional[dict] = {}
-    netcdf_kwargs: Optional[dict] = dict(mode="w", format="NETCDF4")
+    id: str = Field(description="Unique identifier for this data source")
+    path: Optional[pathlib.Path] = Field(
+        None, description="Optional local file path")
+    url: Optional[cloudpathlib.CloudPath] = Field(
+        None, description="Optional remote file url"
+    )
+    catalog: Optional[str] = Field(None, description="Optional intake catalog")
+    dataset: Optional[str] = Field(
+        None, description="Optional intake dataset id")
+    params: Optional[dict] = Field(
+        {}, description="Optional parameters to pass to the intake catalog"
+    )
+    filter: Optional[Filter] = Field(
+        Filter(), description="Optional filter specification to apply to the dataset"
+    )
+    latname: Optional[str] = Field(
+        "latitude", description="Name of the latitude variable"
+    )
+    lonname: Optional[str] = Field(
+        "longitude", description="Name of the longitude variable"
+    )
+    timename: Optional[str] = Field(
+        "time", description="Name of the time variable")
+    xarray_kwargs: Optional[dict] = Field(
+        {}, description="Optional keyword arguments to pass to xarray.open_dataset"
+    )
+    netcdf_kwargs: Optional[dict] = Field(
+        {"mode": "w", "format": "NETCDF4"},
+        description="Optional keyword arguments to pass to xarray.Dataset.to_netcdf",
+    )
 
     @root_validator
     def check_path_or_url_or_intake(cls, values):
@@ -144,6 +142,66 @@ class DataGrid(RompyBaseModel):
         if self.filter:
             ds = self.filter(ds)
         return ds
+
+    def plot(self, param, isel={}, model_grid=None, cmap="turbo"):
+        """Plot the grid"""
+
+        import cartopy.crs as ccrs
+        import cartopy.feature as cfeature
+        import matplotlib.pyplot as plt
+        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
+                                           LONGITUDE_FORMATTER)
+
+        ds = self.ds
+        if param not in ds:
+            raise ValueError(f"Parameter {param} not in dataset")
+
+        # First set some plot parameters:
+        minLon, minLat, maxLon, maxLat = (
+            ds[self.lonname].values[0],
+            ds[self.latname].values[0],
+            ds[self.lonname].values[-1],
+            ds[self.latname].values[-1],
+        )
+        extents = [minLon, maxLon, minLat, maxLat]
+
+        # create figure and plot/map
+        fig, ax = plt.subplots(
+            1,
+            1,
+            figsize=(fscale, fscale * (maxLon - minLon) / (maxLat - minLat)),
+            subplot_kw={"projection": ccrs.PlateCarree()},
+        )
+        ax.set_extent(extents, crs=ccrs.PlateCarree())
+
+        coastline = cfeature.GSHHSFeature(
+            scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
+        )
+        ax.add_feature(coastline, zorder=0)
+        ax.add_feature(cfeature.BORDERS, linewidth=2)
+
+        ds[params].isel(isel).plot(
+            ax=ax, transform=ccrs.PlateCarree(), cmap=cmap)
+
+        gl = ax.gridlines(
+            crs=ccrs.PlateCarree(),
+            draw_labels=True,
+            linewidth=2,
+            color="gray",
+            alpha=0.5,
+            linestyle="--",
+        )
+
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+
+        # Plot the model domain
+        if model_grid:
+            bx, by = self.boundary_points()
+            poly = plt.Polygon(list(zip(bx, by)), facecolor="r", alpha=0.05)
+            ax.add_patch(poly)
+            ax.plot(bx, by, lw=2, color="k")
+        return fig, ax
 
     def get(self, stage_dir: str) -> "DataGrid":
         """Write the data source to a new location"""
