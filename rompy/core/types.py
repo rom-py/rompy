@@ -306,3 +306,11 @@ class Bbox(pydantic.BaseModel):
         if len(polygon) != 1:
             raise ValueError("polygon must have exactly one ring")
         return cls.from_ring(polygon[0])
+
+
+class Spectrum(RompyBaseModel):
+    fmin: float = 0.0464
+    fmax: float = 1.0
+    nfreqs: int = 31
+    ndirs: int = 36
+    # TODO make more flexible.

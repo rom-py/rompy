@@ -18,6 +18,7 @@ class Filter(RompyBaseModel):
     crop: Optional[dict] = {}
     timenorm: Optional[dict] = {}
     rename: Optional[dict] = {}
+    derived: Optional[dict] = {}
 
     def __call__(self, ds):
         filters = get_filter_fns()
@@ -26,6 +27,41 @@ class Filter(RompyBaseModel):
             if params:
                 ds = filters[fn](ds, **params)
         return ds
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    def __str__(self):
+        return f"Filter(sort={self.sort}, subset={self.subset}, crop={self.crop}, timenorm={self.timenorm}, rename={self.rename}, derived={self.derived})"
+
+
+def derived_filter(ds, derived_variables):
+    """Add derived variable to Dataset.
+
+    Parameters
+    ----------
+    ds: xarray.Dataset
+        Input dataset to add derived variables to.
+    derived_variables: dict
+        Mapping {`derived_variable_name`: `derived_variable_definition`} where
+        `derived_variable_definition` is a string to be evaluated defining some
+        transformation based on existing variables in the input dataset `ds`.
+
+    Returns
+    -------
+    ds: xarray.Dataset
+        Input dataset with extra derived variables.
+
+    Example
+    -------
+    >>> import xarray as xr
+    >>> ds = xr.DataArray([-10, -11], coords={"x": [0, 1]}).to_dataset(name="elevation")
+    >>> ds = derived_filter(ds, {"depth": "ds.elevation * -1"})
+
+    """
+    for var, expr in derived_variables.items():
+        ds[var] = eval(expr)
+    return ds
 
 
 def sort_filter(ds, coords=None):
@@ -133,6 +169,7 @@ def get_filter_fns():
         "crop": crop_filter,
         "timenorm": timenorm_filter,
         "rename": rename_filter,
+        "derived": derived_filter,
     }
 
 

@@ -114,8 +114,7 @@ class BaseGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
-                                           LONGITUDE_FORMATTER)
+        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 
         # First set some plot parameters:
         bbox = self.bbox(buffer=0.1)
@@ -236,6 +235,9 @@ class RegularGrid(BaseGrid):
         x = np.reshape(x, ii.shape)
         y = np.reshape(y, ii.shape)
         return x, y
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.nx}, {self.ny})"
 
 
 if __name__ == "__main__":
