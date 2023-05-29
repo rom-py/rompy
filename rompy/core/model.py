@@ -4,6 +4,9 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
+from typing import Optional
+
+from pydantic import Field
 
 from .config import BaseConfig
 from .render import render
@@ -14,35 +17,28 @@ logger = logging.getLogger(__name__)
 
 
 class BaseModel(RompyBaseModel):
-    """A base class for all models
+    """A base class for all models"""
 
-    Parameters
-    ----------
-
-    run_id : str
-        The run id
-    compute_start : datetime
-        The start time of the simulation
-    compute_interval : str
-        The time interval of the simulation
-    compute_stop : datetime
-        The stop time of the simulation
-    output_dir : str
-        The output directory
-    config : BaseConfig
-        The configuration object
-    """
-
-    run_id: str = "run_id"
-    period: TimeRange = TimeRange(
-        start=datetime(2020, 2, 21, 4),
-        end=datetime(2020, 2, 24, 4),
-        interval="15M",
+    run_id: str = Field("run_id", description="The run id")
+    period: TimeRange = Field(
+        TimeRange(
+            start=datetime(2020, 2, 21, 4),
+            end=datetime(2020, 2, 24, 4),
+            interval="15M",
+        ),
+        description="The time period to run the model",
     )
-    output_dir: str = "simulations"
-    config: BaseConfig = BaseConfig()
-    template: str = "/source/rompy/rompy/templates/base"
-    checkout: str = "main"
+    output_dir: str = Field("simulations", description="The output directory")
+    config: BaseConfig = Field(
+        BaseConfig(), description="The configuration object")
+    template: Optional[str] = Field(
+        description="The path to the model template",
+        default="/source/rompy/rompy/templates/base",
+    )
+    checkout: Optional[str] = Field(
+        description="The git branch to use",
+        default="main",
+    )
     _model: str | None = None
     _datefmt: str = "%Y%m%d.%H%M%S"
 
@@ -80,7 +76,8 @@ class BaseModel(RompyBaseModel):
         -------
         settingsfile : str
         """
-        settingsfile = os.path.join(self.output_dir, f"settings_{self.run_id}.yaml")
+        settingsfile = os.path.join(
+            self.output_dir, f"settings_{self.run_id}.yaml")
         with open(settingsfile, "w") as f:
             f.write(self.yaml())
         return settingsfile
@@ -106,26 +103,26 @@ class BaseModel(RompyBaseModel):
         logger.info("")
         logger.info("-----------------------------------------------------")
         logger.info("Model settings:")
-        print("")
-        logger.info(self.yaml(indent=2))
+        logger.info(self)
         logger.info(f"Template used to generate model: {self.template}")
 
         cc_full = {}
         cc_full["runtime"] = self.dict()
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
-        cc_full["runtime"]["frequency"] = "0.25 HR"  # TODO calculate from period
+        # TODO calculate from period
+        cc_full["runtime"]["frequency"] = "0.25 HR"
 
         if callable(self.config):
             cc_full["config"] = self.config(self)
         else:
             cc_full["config"] = self.config
 
-        staging_dir = render(cc_full, self.template, self.output_dir, self.checkout)
+        staging_dir = render(cc_full, self.template,
+                             self.output_dir, self.checkout)
 
         logger.info("")
         logger.info(f"Successfully generated project in {self.output_dir}")
-        logger.info(f"Settings saved to {self.save_settings()}")
         logger.info("-----------------------------------------------------")
         return staging_dir
 
@@ -153,7 +150,8 @@ class BaseModel(RompyBaseModel):
         run_files = glob.glob(self.staging_dir + "/**/*", recursive=True)
         with zf.ZipFile(zip_fn, mode="w", compression=zf.ZIP_DEFLATED) as z:
             for f in run_files:
-                z.write(f, f.replace(self.staging_dir, ""))  # strip off the path prefix
+                # strip off the path prefix
+                z.write(f, f.replace(self.staging_dir, ""))
 
         # Clean up run files leaving the settings.json
         for f in run_files:
@@ -171,5 +169,9 @@ class BaseModel(RompyBaseModel):
     def __call__(self):
         return self.generate()
 
-    def __repr__(self):
-        return self.yaml()
+    def __str__(self):
+        ret = f"period: self.period\n"
+        ret += f"output_dir: self.output_dir\n"
+        ret += f"config: {self.config}\n"
+        ret += f"template: {self.template}\n"
+        return ret

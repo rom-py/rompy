@@ -67,7 +67,7 @@ def render(context, template, output_dir, checkout=None):
         checkout=checkout,
         no_input=True,
     )
-    context["runtime"].update({"_template": repo_dir})
+    context["_template"] = repo_dir
 
     staging_dir = cc_generate.generate_files(
         repo_dir=repo_dir,
