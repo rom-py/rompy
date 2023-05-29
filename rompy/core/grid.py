@@ -5,6 +5,7 @@ import numpy as np
 from pydantic import root_validator
 from pydantic_numpy import NDArray
 from shapely.geometry import Polygon
+from typing_extensions import Literal
 
 from .types import Bbox, RompyBaseModel
 
@@ -35,6 +36,7 @@ class BaseGrid(RompyBaseModel):
     # about this a bit more
     x: Optional[NDArray]
     y: Optional[NDArray]
+    grid_type: Literal["base"] = "base"
 
     @property
     def minx(self) -> float:
@@ -114,8 +116,7 @@ class BaseGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
-                                           LONGITUDE_FORMATTER)
+        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 
         # First set some plot parameters:
         bbox = self.bbox(buffer=0.1)
@@ -164,6 +165,7 @@ class BaseGrid(RompyBaseModel):
 
 
 class RegularGrid(BaseGrid):
+    grid_type: Literal["regular"] = "regular"
     x0: Optional[float] = None
     y0: Optional[float] = None
     rot: Optional[float] = 0.0

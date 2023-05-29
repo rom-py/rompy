@@ -5,14 +5,14 @@ from datetime import datetime
 import pytest
 from utils import compare_files
 
-from rompy.core import BaseConfig, BaseModel, TimeRange
+from rompy.core import BaseConfig, ModelRun, TimeRange
 
 here = os.path.dirname(os.path.abspath(__file__))
 
 
 @pytest.fixture
 def model():
-    return BaseModel(
+    return ModelRun(
         run_id="test_base",
         output_dir=os.path.join(here, "simulations"),
         config=BaseConfig(arg1="foo", arg2="bar"),
@@ -22,7 +22,7 @@ def model():
 
 @pytest.fixture
 def gitlab_template():
-    return BaseModel(
+    return ModelRun(
         template=BaseConfig(
             template="git@gitlab.com:oceanum/models/test-rompy-template.git",
         )
@@ -37,8 +37,7 @@ def test_datetime_parse():
         "%Y%m%dT%H%M%S",
         "%Y%m%dT%H%M",
     ]:
-        model = BaseModel(period=TimeRange(
-            end=end.strftime(format), duration="1d"))
+        model = ModelRun(period=TimeRange(end=end.strftime(format), duration="1d"))
         for period in ["year", "month", "day", "hour"]:
             assert getattr(model.period.end, period) == getattr(end, period)
 
@@ -50,8 +49,7 @@ def test_datetime_parse_fail():
         "%Y%m%dhello",
     ]:
         try:
-            model = BaseModel(period=TimeRange(
-                end=end.strftime(format), duration="1d"))
+            model = ModelRun(period=TimeRange(end=end.strftime(format), duration="1d"))
         except ValueError:
             pass
         else:
