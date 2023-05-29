@@ -6,7 +6,7 @@ import zipfile as zf
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from .config import BaseConfig
 from .render import render
