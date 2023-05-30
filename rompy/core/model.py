@@ -95,9 +95,6 @@ class ModelRun(RompyBaseModel):
         logger.info("-----------------------------------------------------")
         return staging_dir
 
-    def write(self):
-        self.config.write(self)
-
     def zip(self) -> str:
         """Zip the input files for the model run
 
