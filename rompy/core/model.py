@@ -4,6 +4,7 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
+from typing import Optional
 
 from pydantic import Field
 
@@ -28,7 +29,8 @@ class ModelRun(RompyBaseModel):
         description="The time period to run the model",
     )
     output_dir: str = Field("simulations", description="The output directory")
-    config: BaseConfig = Field(BaseConfig(), description="The configuration object")
+    config: BaseConfig = Field(
+        BaseConfig(), description="The configuration object")
     template: Optional[str] = Field(
         description="The path to the model template",
         default="/source/rompy/rompy/templates/base",
@@ -85,7 +87,8 @@ class ModelRun(RompyBaseModel):
         else:
             cc_full["config"] = self.config
 
-        staging_dir = render(cc_full, self.template, self.output_dir, self.checkout)
+        staging_dir = render(cc_full, self.template,
+                             self.output_dir, self.checkout)
 
         logger.info("")
         logger.info(f"Successfully generated project in {self.output_dir}")
