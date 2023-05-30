@@ -29,16 +29,7 @@ class ModelRun(RompyBaseModel):
         description="The time period to run the model",
     )
     output_dir: str = Field("simulations", description="The output directory")
-    config: BaseConfig = Field(
-        BaseConfig(), description="The configuration object")
-    template: Optional[str] = Field(
-        description="The path to the model template",
-        default="/source/rompy/rompy/templates/base",
-    )
-    checkout: Optional[str] = Field(
-        description="The git branch to use",
-        default="main",
-    )
+    config: BaseConfig = Field(BaseConfig(), description="The configuration object")
     _datefmt: str = "%Y%m%d.%H%M%S"
 
     @property
@@ -73,7 +64,7 @@ class ModelRun(RompyBaseModel):
         logger.info("-----------------------------------------------------")
         logger.info("Model settings:")
         logger.info(self)
-        logger.info(f"Template used to generate model: {self.template}")
+        logger.info(f"Template used to generate model: {self.config.template}")
 
         cc_full = {}
         cc_full["runtime"] = self.dict()
@@ -87,8 +78,9 @@ class ModelRun(RompyBaseModel):
         else:
             cc_full["config"] = self.config
 
-        staging_dir = render(cc_full, self.template,
-                             self.output_dir, self.checkout)
+        staging_dir = render(
+            cc_full, self.config.template, self.output_dir, self.config.checkout
+        )
 
         logger.info("")
         logger.info(f"Successfully generated project in {self.output_dir}")
