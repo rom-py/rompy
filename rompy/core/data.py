@@ -66,10 +66,8 @@ class DataGrid(RompyBaseModel):
     """
 
     id: str = Field(description="Unique identifier for this data source")
-    path: Optional[pathlib.Path] = Field(None, description="Optional local file path")
-    url: Optional[cloudpathlib.CloudPath] = Field(
-        None, description="Optional remote file url"
-    )
+    path: Optional[str] = Field(None, description="Optional local file path")
+    url: Optional[str] = Field(None, description="Optional remote file url")
     catalog: Optional[str] = Field(None, description="Optional intake catalog")
     dataset: Optional[str] = Field(None, description="Optional intake dataset id")
     args: Optional[dict] = Field(
@@ -149,7 +147,8 @@ class DataGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
+                                           LONGITUDE_FORMATTER)
 
         ds = self.ds
         if param not in ds:

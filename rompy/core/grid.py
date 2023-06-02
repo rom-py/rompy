@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 import numpy as np
-from pydantic import root_validator
+from pydantic import Field, root_validator
 from pydantic_numpy import NDArray
 from shapely.geometry import Polygon
 from typing_extensions import Literal
@@ -18,24 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 class BaseGrid(RompyBaseModel):
-    """An object which provides an abstract representation of a grid in some geographic space
+    """
+    An object which provides an abstract representation of a grid in some geographic space
 
     This is the base class for all Grid objects. The minimum representation of a grid are two
     NumPy array's representing the vertices or nodes of some structured or unstructured grid,
     its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
-
-    Parameters
-    ----------
-    x : numpy.ndarray
-        A 1D array of x coordinates
-    y : numpy.ndarray
-        A 1D array of y coordinates
     """
 
-    # Note these are here to that it doesn't break the SWAN inheritance. Need to think
-    # about this a bit more
-    x: Optional[NDArray]
-    y: Optional[NDArray]
+    x: Optional[NDArray] = Field(description="A 1D array of x coordinates")
+    y: Optional[NDArray] = Field(description="A 1D array of y coordinates")
     grid_type: Literal["base"] = "base"
 
     @property
