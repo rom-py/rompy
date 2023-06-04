@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 from pydantic import Field, root_validator
@@ -108,7 +108,8 @@ class BaseGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
+                                           LONGITUDE_FORMATTER)
 
         # First set some plot parameters:
         bbox = self.bbox(buffer=0.1)
@@ -157,14 +158,26 @@ class BaseGrid(RompyBaseModel):
 
 
 class RegularGrid(BaseGrid):
-    grid_type: Literal["regular"] = "regular"
-    x0: Optional[float] = None
-    y0: Optional[float] = None
-    rot: Optional[float] = 0.0
-    dx: Optional[float] = None
-    dy: Optional[float] = None
-    nx: Optional[int] = None
-    ny: Optional[int] = None
+    grid_type: Literal["regular"] = Field(
+        "regular", description="Type of grid, must be 'regular'"
+    )
+    x0: Optional[float] = Field(None, description="X coordinate of the grid origin")
+    y0: Optional[float] = Field(None, description="Y coordinate of the grid origin")
+    rot: Optional[float] = Field(
+        0.0, description="Rotation angle of the grid in degrees"
+    )
+    dx: Optional[float] = Field(
+        None, description="Spacing between grid points in the x direction"
+    )
+    dy: Optional[float] = Field(
+        None, description="Spacing between grid points in the y direction"
+    )
+    nx: Optional[int] = Field(
+        None, description="Number of grid points in the x direction"
+    )
+    ny: Optional[int] = Field(
+        None, description="Number of grid points in the y direction"
+    )
     _x0: Optional[float]
     _y0: Optional[float]
     _rot: Optional[float]
