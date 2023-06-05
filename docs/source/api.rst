@@ -28,7 +28,7 @@ This is a reference API class listing.
 .. autopydantic_model:: rompy.core.data.DataBlob
    :members:
 
-.. autopydantic_model:: rompy.core.data.DataGridded
+.. autopydantic_model:: rompy.core.data.DataGrid
    :members:
 
 Swan Classes

@@ -108,8 +108,7 @@ class BaseGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
-                                           LONGITUDE_FORMATTER)
+        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 
         # First set some plot parameters:
         bbox = self.bbox(buffer=0.1)
@@ -158,6 +157,11 @@ class BaseGrid(RompyBaseModel):
 
 
 class RegularGrid(BaseGrid):
+    """
+    An object which provides an abstract representation of a regular grid in
+    some geographic space
+    """
+
     grid_type: Literal["regular"] = Field(
         "regular", description="Type of grid, must be 'regular'"
     )
