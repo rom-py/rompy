@@ -57,10 +57,9 @@ class DataBlob(RompyBaseModel):
 
 class DataGrid(RompyBaseModel):
     """Data source for model ingestion. This is intended to be a generic data
-    source
-       for xarray datasets that need to be filtered and written to netcdf.
+    source for xarray datasets that need to be filtered and written to netcdf.
 
-       Must be a local file (path) or a remote file (url) or intake and dataset
+    Must be a local file (path) or a remote file (url) or intake and dataset
     id combination.
 
     """
@@ -69,7 +68,8 @@ class DataGrid(RompyBaseModel):
     path: Optional[str] = Field(None, description="Optional local file path")
     url: Optional[str] = Field(None, description="Optional remote file url")
     catalog: Optional[str] = Field(None, description="Optional intake catalog")
-    dataset: Optional[str] = Field(None, description="Optional intake dataset id")
+    dataset: Optional[str] = Field(
+        None, description="Optional intake dataset id")
     args: Optional[dict] = Field(
         {}, description="Optional arguments to pass to the intake catalog"
     )
@@ -85,7 +85,8 @@ class DataGrid(RompyBaseModel):
     lonname: Optional[str] = Field(
         "longitude", description="Name of the longitude variable"
     )
-    timename: Optional[str] = Field("time", description="Name of the time variable")
+    timename: Optional[str] = Field(
+        "time", description="Name of the time variable")
     xarray_kwargs: Optional[dict] = Field(
         {}, description="Optional keyword arguments to pass to xarray.open_dataset"
     )
@@ -147,8 +148,7 @@ class DataGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
-                                           LONGITUDE_FORMATTER)
+        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
 
         ds = self.ds
         if param not in ds:
@@ -178,7 +178,8 @@ class DataGrid(RompyBaseModel):
         ax.add_feature(coastline, zorder=0)
         ax.add_feature(cfeature.BORDERS, linewidth=2)
 
-        ds[params].isel(isel).plot(ax=ax, transform=ccrs.PlateCarree(), cmap=cmap)
+        ds[params].isel(isel).plot(
+            ax=ax, transform=ccrs.PlateCarree(), cmap=cmap)
 
         gl = ax.gridlines(
             crs=ccrs.PlateCarree(),

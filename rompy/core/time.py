@@ -26,19 +26,6 @@ class TimeRange(BaseModel):
     """
     A time range object
 
-    Attributes
-    ----------
-    start : datetime, optional
-        The start date of the time range
-    end : datetime, optional
-        The end date of the time range
-    duration : str or timedelta, optional
-        The duration of the time range
-    interval : str or timedelta, optional
-        The frequency of the time range
-    include_end : bool, default True
-        Determines if the end date should be included in the range
-
     Examples
     --------
     >>> from rompy import TimeRange
