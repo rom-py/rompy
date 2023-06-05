@@ -303,6 +303,8 @@ class Bbox(pydantic.BaseModel):
 
 
 class Spectrum(RompyBaseModel):
+    """A class to represent a wave spectrum."""
+
     fmin: float = 0.0464
     fmax: float = 1.0
     nfreqs: int = 31
