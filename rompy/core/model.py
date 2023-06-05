@@ -131,5 +131,5 @@ class ModelRun(RompyBaseModel):
         ret = f"period: self.period\n"
         ret += f"output_dir: self.output_dir\n"
         ret += f"config: {self.config}\n"
-        ret += f"template: {self.template}\n"
+        ret += f"template: {self.config.template}\n"
         return ret
