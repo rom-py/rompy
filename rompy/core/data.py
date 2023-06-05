@@ -66,14 +66,13 @@ class DataGrid(RompyBaseModel):
     """
 
     id: str = Field(description="Unique identifier for this data source")
-    path: Optional[pathlib.Path] = Field(
-        None, description="Optional local file path")
-    url: Optional[cloudpathlib.CloudPath] = Field(
-        None, description="Optional remote file url"
-    )
+    path: Optional[str] = Field(None, description="Optional local file path")
+    url: Optional[str] = Field(None, description="Optional remote file url")
     catalog: Optional[str] = Field(None, description="Optional intake catalog")
-    dataset: Optional[str] = Field(
-        None, description="Optional intake dataset id")
+    dataset: Optional[str] = Field(None, description="Optional intake dataset id")
+    args: Optional[dict] = Field(
+        {}, description="Optional arguments to pass to the intake catalog"
+    )
     params: Optional[dict] = Field(
         {}, description="Optional parameters to pass to the intake catalog"
     )
@@ -86,8 +85,7 @@ class DataGrid(RompyBaseModel):
     lonname: Optional[str] = Field(
         "longitude", description="Name of the longitude variable"
     )
-    timename: Optional[str] = Field(
-        "time", description="Name of the time variable")
+    timename: Optional[str] = Field("time", description="Name of the time variable")
     xarray_kwargs: Optional[dict] = Field(
         {}, description="Optional keyword arguments to pass to xarray.open_dataset"
     )
@@ -180,8 +178,7 @@ class DataGrid(RompyBaseModel):
         ax.add_feature(coastline, zorder=0)
         ax.add_feature(cfeature.BORDERS, linewidth=2)
 
-        ds[params].isel(isel).plot(
-            ax=ax, transform=ccrs.PlateCarree(), cmap=cmap)
+        ds[params].isel(isel).plot(ax=ax, transform=ccrs.PlateCarree(), cmap=cmap)
 
         gl = ax.gridlines(
             crs=ccrs.PlateCarree(),

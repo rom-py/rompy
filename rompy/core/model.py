@@ -16,7 +16,7 @@ from .types import RompyBaseModel
 logger = logging.getLogger(__name__)
 
 
-class BaseModel(RompyBaseModel):
+class ModelRun(RompyBaseModel):
     """A base class for all models"""
 
     run_id: str = Field("run_id", description="The run id")
@@ -29,17 +29,7 @@ class BaseModel(RompyBaseModel):
         description="The time period to run the model",
     )
     output_dir: str = Field("simulations", description="The output directory")
-    config: BaseConfig = Field(
-        BaseConfig(), description="The configuration object")
-    template: Optional[str] = Field(
-        description="The path to the model template",
-        default="/source/rompy/rompy/templates/base",
-    )
-    checkout: Optional[str] = Field(
-        description="The git branch to use",
-        default="main",
-    )
-    _model: str | None = None
+    config: BaseConfig = Field(BaseConfig(), description="The configuration object")
     _datefmt: str = "%Y%m%d.%H%M%S"
 
     @property
@@ -54,36 +44,6 @@ class BaseModel(RompyBaseModel):
         odir = os.path.join(self.output_dir, self.run_id)
         os.makedirs(odir, exist_ok=True)
         return odir
-
-    @property
-    def grid(self) -> "core.Grid":
-        """The grid used by the model
-
-        returns
-        -------
-        grid : core.Grid
-        """
-        return self._get_grid()
-
-    def _get_grid(self):
-        """Subclasses should return an instance of core.Grid"""
-        raise NotImplementedError
-
-    def save_settings(self) -> str:
-        """Save the run settings
-
-        returns
-        -------
-        settingsfile : str
-        """
-        settingsfile = os.path.join(
-            self.output_dir, f"settings_{self.run_id}.yaml")
-        with open(settingsfile, "w") as f:
-            f.write(self.yaml())
-        return settingsfile
-
-    # def generate(self) -> str:
-    #     self.config.generate(self)
 
     @property
     def _generation_medatadata(self):
@@ -104,7 +64,7 @@ class BaseModel(RompyBaseModel):
         logger.info("-----------------------------------------------------")
         logger.info("Model settings:")
         logger.info(self)
-        logger.info(f"Template used to generate model: {self.template}")
+        logger.info(f"Template used to generate model: {self.config.template}")
 
         cc_full = {}
         cc_full["runtime"] = self.dict()
@@ -118,16 +78,14 @@ class BaseModel(RompyBaseModel):
         else:
             cc_full["config"] = self.config
 
-        staging_dir = render(cc_full, self.template,
-                             self.output_dir, self.checkout)
+        staging_dir = render(
+            cc_full, self.config.template, self.output_dir, self.config.checkout
+        )
 
         logger.info("")
         logger.info(f"Successfully generated project in {self.output_dir}")
         logger.info("-----------------------------------------------------")
         return staging_dir
-
-    def write(self):
-        self.config.write(self)
 
     def zip(self) -> str:
         """Zip the input files for the model run

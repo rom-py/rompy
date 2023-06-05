@@ -8,6 +8,8 @@
 
 from typing import Optional
 
+import xarray as xr
+
 from .types import RompyBaseModel
 
 
@@ -27,10 +29,10 @@ class Filter(RompyBaseModel):
             if params:
                 ds = filters[fn](ds, **params)
         return ds
-    
+
     def __repr__(self):
         return self.__str__()
-    
+
     def __str__(self):
         return f"Filter(sort={self.sort}, subset={self.subset}, crop={self.crop}, timenorm={self.timenorm}, rename={self.rename}, derived={self.derived})"
 
@@ -71,7 +73,7 @@ def sort_filter(ds, coords=None):
     return ds
 
 
-def subset_filter(ds, data_vars=None):
+def subset_filter(ds, data_vars=None) -> xr.Dataset:
     """
     Subset data variables from dataset.
 
@@ -91,7 +93,7 @@ def subset_filter(ds, data_vars=None):
     return ds
 
 
-def crop_filter(ds, **data_slice):
+def crop_filter(ds, **data_slice) -> xr.Dataset:
     """
     Crop dataset.
 
@@ -102,9 +104,14 @@ def crop_filter(ds, **data_slice):
     data_slice: Iterable
         Data slice to crop
 
+    Returns
+    -------
+    ds: xr.Dataset
+
     """
     if data_slice is not None:
-        this_crop = {k: data_slice[k] for k in data_slice.keys() if k in ds.dims.keys()}
+        this_crop = {k: data_slice[k]
+                     for k in data_slice.keys() if k in ds.dims.keys()}
         ds = ds.sel(this_crop)
         for k in data_slice.keys():
             if (k not in ds.dims.keys()) and (k in ds.coords.keys()):
@@ -113,7 +120,7 @@ def crop_filter(ds, **data_slice):
     return ds
 
 
-def timenorm_filter(ds, interval="hour", reftime=None):
+def timenorm_filter(ds, interval="hour", reftime=None) -> xr.Dataset:
     """Normalize time to lead time in hours
 
     Parameters
@@ -143,7 +150,7 @@ def timenorm_filter(ds, interval="hour", reftime=None):
     return ds
 
 
-def rename_filter(ds, **varmap):
+def rename_filter(ds, **varmap) -> xr.Dataset:
     """Rename variables in dataset
 
     Parameters
@@ -161,7 +168,7 @@ def rename_filter(ds, **varmap):
     return ds
 
 
-def get_filter_fns():
+def get_filter_fns() -> dict:
     """Get dictionary of filter functions"""
     return {
         "sort": sort_filter,

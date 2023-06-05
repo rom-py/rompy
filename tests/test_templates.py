@@ -6,7 +6,7 @@ import pytest
 from utils import compare_files
 
 from rompy import TEMPLATES_DIR
-from rompy.core import BaseConfig, BaseModel, TimeRange
+from rompy.core import BaseConfig, ModelRun, TimeRange
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,7 +28,7 @@ def test_newbaseconfig():
     run_dir = os.path.join(here, "simulations")
     run_id = "test_base"
     config = BaseConfig(arg1="foo", arg2="bar")
-    runtime = BaseModel(
+    runtime = ModelRun(
         run_id=run_id,
         output_dir=run_dir,
         config=config,
@@ -45,7 +45,7 @@ def test_custom_template():
     run_dir = os.path.join(here, "simulations")
     run_id = "test_base"
     config = BaseConfig(arg1="foo", arg2="bar")
-    runtime = BaseModel(
+    runtime = ModelRun(
         run_id=run_id,
         output_dir=run_dir,
         template="simple_templates/base",

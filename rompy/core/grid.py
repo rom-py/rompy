@@ -1,10 +1,11 @@
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
-from pydantic import root_validator
+from pydantic import Field, root_validator
 from pydantic_numpy import NDArray
 from shapely.geometry import Polygon
+from typing_extensions import Literal
 
 from .types import Bbox, RompyBaseModel
 
@@ -17,24 +18,17 @@ logger = logging.getLogger(__name__)
 
 
 class BaseGrid(RompyBaseModel):
-    """An object which provides an abstract representation of a grid in some geographic space
+    """
+    An object which provides an abstract representation of a grid in some geographic space
 
     This is the base class for all Grid objects. The minimum representation of a grid are two
     NumPy array's representing the vertices or nodes of some structured or unstructured grid,
     its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
-
-    Parameters
-    ----------
-    x : numpy.ndarray
-        A 1D array of x coordinates
-    y : numpy.ndarray
-        A 1D array of y coordinates
     """
 
-    # Note these are here to that it doesn't break the SWAN inheritance. Need to think
-    # about this a bit more
-    x: Optional[NDArray]
-    y: Optional[NDArray]
+    x: Optional[NDArray] = Field(description="A 1D array of x coordinates")
+    y: Optional[NDArray] = Field(description="A 1D array of y coordinates")
+    grid_type: Literal["base"] = "base"
 
     @property
     def minx(self) -> float:
@@ -164,13 +158,26 @@ class BaseGrid(RompyBaseModel):
 
 
 class RegularGrid(BaseGrid):
-    x0: Optional[float] = None
-    y0: Optional[float] = None
-    rot: Optional[float] = 0.0
-    dx: Optional[float] = None
-    dy: Optional[float] = None
-    nx: Optional[int] = None
-    ny: Optional[int] = None
+    grid_type: Literal["regular"] = Field(
+        "regular", description="Type of grid, must be 'regular'"
+    )
+    x0: Optional[float] = Field(None, description="X coordinate of the grid origin")
+    y0: Optional[float] = Field(None, description="Y coordinate of the grid origin")
+    rot: Optional[float] = Field(
+        0.0, description="Rotation angle of the grid in degrees"
+    )
+    dx: Optional[float] = Field(
+        None, description="Spacing between grid points in the x direction"
+    )
+    dy: Optional[float] = Field(
+        None, description="Spacing between grid points in the y direction"
+    )
+    nx: Optional[int] = Field(
+        None, description="Number of grid points in the x direction"
+    )
+    ny: Optional[int] = Field(
+        None, description="Number of grid points in the y direction"
+    )
     _x0: Optional[float]
     _y0: Optional[float]
     _rot: Optional[float]
