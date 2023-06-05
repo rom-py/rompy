@@ -1,18 +1,18 @@
-import pydantic
 import yaml
+from pydantic import BaseModel, Field, validator
 
 
-class RompyBaseModel(pydantic.BaseModel):
+class RompyBaseModel(BaseModel):
     class Config:
         underscore_attrs_are_private = True
 
 
-class Latitude(pydantic.BaseModel):
+class Latitude(BaseModel):
     """Latitude"""
 
-    lat: float
+    lat: float = Field(description="Latitude", ge=-90, le=90)
 
-    @pydantic.validator("lat")
+    @validator("lat")
     def validate_lat(cls, v):
         if not (-90 <= v <= 90):
             raise ValueError("latitude must be between -90 and 90")
@@ -31,12 +31,12 @@ class Latitude(pydantic.BaseModel):
         return hash((self.lat,))
 
 
-class Longitude(pydantic.BaseModel):
+class Longitude(BaseModel):
     """Longitude"""
 
-    lon: float
+    lon: float = Field(description="Longitude", ge=-180, le=180)
 
-    @pydantic.validator("lon")
+    @validator("lon")
     def validate_lon(cls, v):
         if not (-180 <= v <= 180):
             raise ValueError("longitude must be between -180 and 180")
@@ -55,7 +55,7 @@ class Longitude(pydantic.BaseModel):
         return hash((self.lon,))
 
 
-class Coordinate(pydantic.BaseModel):
+class Coordinate(BaseModel):
     """Coordinate
 
     Parameters
@@ -81,21 +81,13 @@ class Coordinate(pydantic.BaseModel):
         return hash((self.lon, self.lat))
 
 
-class Bbox(pydantic.BaseModel):
-    """Bounding box
+class Bbox(BaseModel):
+    """Bounding box"""
 
-    Parameters
-    ----------
-    minlon: Longitude
-    minlat: Latitude
-    maxlon: Longitude
-    maxlat: Latitude
-    """
-
-    minlon: Longitude
-    minlat: Latitude
-    maxlon: Longitude
-    maxlat: Latitude
+    minlon: Longitude = Field(description="Minimum longitude")
+    minlat: Latitude = Field(description="Minimum latitude")
+    maxlon: Longitude = Field(description="Maximum longitude")
+    maxlat: Latitude = Field(description="Maximum latitude")
 
     def __repr__(self):
         return f"Bbox(minlon={self.minlon}, minlat={self.minlat}, maxlon={self.maxlon}, maxlat={self.maxlat})"
@@ -114,25 +106,25 @@ class Bbox(pydantic.BaseModel):
     def __hash__(self):
         return hash((self.minlon, self.minlat, self.maxlon, self.maxlat))
 
-    @pydantic.validator("minlon")
+    @validator("minlon")
     def validate_minlon(cls, v, values):
         if v > values["maxlon"]:
             raise ValueError("minlon must be less than maxlon")
         return v
 
-    @pydantic.validator("minlat")
+    @validator("minlat")
     def validate_minlat(cls, v, values):
         if v > values["maxlat"]:
             raise ValueError("minlat must be less than maxlat")
         return v
 
-    @pydantic.validator("maxlon")
+    @validator("maxlon")
     def validate_maxlon(cls, v, values):
         if v < values["minlon"]:
             raise ValueError("maxlon must be greater than minlon")
         return v
 
-    @pydantic.validator("maxlat")
+    @validator("maxlat")
     def validate_maxlat(cls, v, values):
         if v < values["minlat"]:
             raise ValueError("maxlat must be greater than minlat")
@@ -305,8 +297,8 @@ class Bbox(pydantic.BaseModel):
 class Spectrum(RompyBaseModel):
     """A class to represent a wave spectrum."""
 
-    fmin: float = 0.0464
-    fmax: float = 1.0
-    nfreqs: int = 31
-    ndirs: int = 36
+    fmin: float = Field(0.0464, description="Minimum frequency in Hz")
+    fmax: float = Field(1.0, description="Maximum frequency in Hz")
+    nfreqs: int = Field(31, description="Number of frequency components")
+    ndirs: int = Field(36, description="Number of directional components")
     # TODO make more flexible.
