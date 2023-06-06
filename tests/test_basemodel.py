@@ -37,7 +37,8 @@ def test_datetime_parse():
         "%Y%m%dT%H%M%S",
         "%Y%m%dT%H%M",
     ]:
-        model = ModelRun(period=TimeRange(end=end.strftime(format), duration="1d"))
+        model = ModelRun(period=TimeRange(
+            end=end.strftime(format), duration="1d"))
         for period in ["year", "month", "day", "hour"]:
             assert getattr(model.period.end, period) == getattr(end, period)
 
@@ -49,7 +50,8 @@ def test_datetime_parse_fail():
         "%Y%m%dhello",
     ]:
         try:
-            model = ModelRun(period=TimeRange(end=end.strftime(format), duration="1d"))
+            model = ModelRun(period=TimeRange(
+                end=end.strftime(format), duration="1d"))
         except ValueError:
             pass
         else:
@@ -60,7 +62,7 @@ def test_datetime_parse_fail():
 def test_generate(model):
     model.generate()
     compare_files(
-        os.path.join(here, "template_output/test_base/INPUT"),
+        os.path.join(here, "simulations/test_base/INPUT"),
         os.path.join(here, "simulations/test_base_ref/INPUT"),
     )
 
