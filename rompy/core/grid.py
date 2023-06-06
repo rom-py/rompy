@@ -5,7 +5,6 @@ import numpy as np
 from pydantic import Field, root_validator
 from pydantic_numpy import NDArray
 from shapely.geometry import Polygon
-from typing_extensions import Literal
 
 from .types import Bbox, RompyBaseModel
 

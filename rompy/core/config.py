@@ -1,9 +1,8 @@
 import logging
-from typing import Optional
+from typing import Optional, Literal
 from pathlib import Path
 
 from pydantic import Field
-from typing_extensions import Literal
 
 from .types import RompyBaseModel
 
