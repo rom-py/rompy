@@ -142,13 +142,14 @@ class DataGrid(RompyBaseModel):
             ds = self.filter(ds)
         return ds
 
-    def plot(self, param, isel={}, model_grid=None, cmap="turbo"):
+    def plot(self, param, isel={}, model_grid=None, cmap="turbo", fscale=10):
         """Plot the grid"""
 
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
+                                           LONGITUDE_FORMATTER)
 
         ds = self.ds
         if param not in ds:
@@ -167,19 +168,19 @@ class DataGrid(RompyBaseModel):
         fig, ax = plt.subplots(
             1,
             1,
-            figsize=(fscale, fscale * (maxLon - minLon) / (maxLat - minLat)),
+            figsize=(fscale, fscale * (maxLat - minLat) / (maxLon - minLon)),
             subplot_kw={"projection": ccrs.PlateCarree()},
         )
-        ax.set_extent(extents, crs=ccrs.PlateCarree())
+        # ax.set_extent(extents, crs=ccrs.PlateCarree())
 
         coastline = cfeature.GSHHSFeature(
             scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
         )
-        ax.add_feature(coastline, zorder=0)
-        ax.add_feature(cfeature.BORDERS, linewidth=2)
 
-        ds[params].isel(isel).plot(
-            ax=ax, transform=ccrs.PlateCarree(), cmap=cmap)
+        ds[param].isel(isel).plot(ax=ax, cmap=cmap)
+
+        ax.add_feature(coastline)
+        ax.add_feature(cfeature.BORDERS, linewidth=2)
 
         gl = ax.gridlines(
             crs=ccrs.PlateCarree(),
@@ -195,7 +196,7 @@ class DataGrid(RompyBaseModel):
 
         # Plot the model domain
         if model_grid:
-            bx, by = self.boundary_points()
+            bx, by = model_grid.boundary_points()
             poly = plt.Polygon(list(zip(bx, by)), facecolor="r", alpha=0.05)
             ax.add_patch(poly)
             ax.plot(bx, by, lw=2, color="k")
