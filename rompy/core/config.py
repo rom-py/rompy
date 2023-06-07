@@ -20,7 +20,7 @@ class BaseConfig(RompyBaseModel):
         default=DEFAULT_TEMPLATE,
     )
     checkout: Optional[str] = Field(
-        description="The git branch to use",
+        description="The git branch to use if the template is a git repo",
         default="main",
     )
 
