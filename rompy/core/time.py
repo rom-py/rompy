@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, Field, root_validator, validator
 
-from .types import RompyBaseModel
+from rompy.core.types import RompyBaseModel
 
 time_units = {
     "h": "hours",
@@ -90,15 +90,16 @@ class TimeRange(BaseModel):
         if isinstance(v, datetime):
             return v
         for fmt in [
-            "%Y%m%d.%H%M%S",
-            "%Y%m%d.%H%M",
-            "%Y%m%dT%H%M%S",
-            "%Y%m%dT%H%M",
+            "%Y%m%d",
             "%Y%m%dT%H",
-            "%Y%m%dT",
-            "%Y-%m-%dT%H%M",
-            "%Y-%m-%dT%H",
+            "%Y%m%dT%H%M",
+            "%Y%m%dT%H%M%S",
+            "%Y%m%d.%H",
+            "%Y%m%d.%H%M",
+            "%Y%m%d.%H%M%S",
             "%Y-%m-%d",
+            "%Y-%m-%dT%H",
+            "%Y-%m-%dT%H%M",
         ]:
             try:
                 ret = datetime.strptime(v, fmt)
