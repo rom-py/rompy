@@ -1,13 +1,15 @@
 import logging
-from typing import Optional
+from typing import Optional, Literal
+
 from pathlib import Path
 
 from pydantic import Field
-from typing_extensions import Literal
 
 from .types import RompyBaseModel
 
+
 logger = logging.getLogger(__name__)
+
 
 DEFAULT_TEMPLATE = str(Path(__file__).parent.parent / "templates" / "base")
 
@@ -26,6 +28,3 @@ class BaseConfig(RompyBaseModel):
 
     class Config:
         extra = "allow"
-
-    def __call__(self, runtime):
-        return self.dict()
