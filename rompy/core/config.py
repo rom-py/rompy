@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, Literal
+
 from pathlib import Path
 
 from pydantic import Field
@@ -9,8 +10,8 @@ from .types import RompyBaseModel
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_TEMPLATE = str(Path(__file__).parent.parent / "templates/base")
 
+DEFAULT_TEMPLATE = str(Path(__file__).parent.parent / "templates" / "base")
 
 class BaseConfig(RompyBaseModel):
     """A base class for all templates"""
@@ -21,7 +22,7 @@ class BaseConfig(RompyBaseModel):
         default=DEFAULT_TEMPLATE,
     )
     checkout: Optional[str] = Field(
-        description="The git branch to use",
+        description="The git branch to use if the template is a git repo",
         default="main",
     )
 
