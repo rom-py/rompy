@@ -113,9 +113,12 @@ class BaseGrid(RompyBaseModel):
             A Shapely MultiPoint object containing the points along the boundary.
 
         """
-        pol = self.boundary(tolerance=0)
-        num_points = int(np.ceil(pol.length / spacing))
-        points = [pol.boundary.interpolate(i * spacing) for i in range(num_points)]
+        polygon = self.boundary(tolerance=0)
+        perimeter = polygon.length
+        if perimeter < spacing:
+            raise ValueError(f"Spacing = {spacing} > grid perimeter = {perimeter}")
+        num_points = int(np.ceil(perimeter / spacing))
+        points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
     def plot(self, fscale=10):
