@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import numpy as np
 from pydantic import Field, root_validator
 from pydantic_numpy import NDArray
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPoint
 
 from .types import Bbox, RompyBaseModel
 
@@ -61,8 +61,6 @@ class BaseGrid(RompyBaseModel):
         return bbox
 
     def _get_boundary(self, tolerance=0.2) -> Polygon:
-        from shapely.geometry import MultiPoint
-
         xys = list(zip(self.x.flatten(), self.y.flatten()))
         polygon = MultiPoint(xys).convex_hull
         polygon = polygon.simplify(tolerance=tolerance)
@@ -100,6 +98,25 @@ class BaseGrid(RompyBaseModel):
         polygon = self.boundary(tolerance=tolerance)
         hull_x, hull_y = polygon.exterior.coords.xy
         return hull_x, hull_y
+
+    def points_along_boundary(self, spacing):
+        """Points evenly spaced along the grid boundary.
+
+        Parameters
+        ----------
+        spacing : float
+            The spacing between points along the boundary
+
+        Returns
+        -------
+        points : MultiPoint
+            A Shapely MultiPoint object containing the points along the boundary.
+
+        """
+        pol = self.boundary(tolerance=0)
+        num_points = int(np.ceil(pol.length / spacing))
+        points = [pol.boundary.interpolate(i * spacing) for i in range(num_points)]
+        return MultiPoint(points)
 
     def plot(self, fscale=10):
         """Plot the grid"""
