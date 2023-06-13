@@ -140,7 +140,7 @@ def timenorm_filter(ds, interval="hour", reftime=None) -> xr.Dataset:
 
     dt = to_timedelta("1 " + interval)
     if reftime is None:
-        ds["init"] = ds["time"][0]
+        ds["init"] = (("time",), [ds["time"].values[0],])
     else:
         ds["init"] = (("time",), to_datetime(ds[reftime].values))
     ds["lead"] = ((ds["time"] - ds["init"]) / dt).astype("int")
@@ -189,4 +189,5 @@ def _open_preprocess(url, chunks, filters, xarray_kwargs):
         if isinstance(fn, str):
             fn = filter_fns[fn]
         ds = fn(ds, **params)
+                
     return ds
