@@ -29,7 +29,8 @@ class ModelRun(RompyBaseModel):
         description="The time period to run the model",
     )
     output_dir: str = Field("simulations", description="The output directory")
-    config: BaseConfig = Field(BaseConfig(), description="The configuration object")
+    config: BaseConfig = Field(
+        BaseConfig(), description="The configuration object")
     _datefmt: str = "%Y%m%d.%H%M%S"
 
     @property
