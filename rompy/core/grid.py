@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import numpy as np
 from pydantic import Field, root_validator
 from pydantic_numpy import NDArray
-from shapely.geometry import Polygon, MultiPoint
+from shapely.geometry import MultiPoint, Polygon
 
 from .types import Bbox, RompyBaseModel
 
@@ -116,12 +116,14 @@ class BaseGrid(RompyBaseModel):
         polygon = self.boundary(tolerance=0)
         perimeter = polygon.length
         if perimeter < spacing:
-            raise ValueError(f"Spacing = {spacing} > grid perimeter = {perimeter}")
+            raise ValueError(
+                f"Spacing = {spacing} > grid perimeter = {perimeter}")
         num_points = int(np.ceil(perimeter / spacing))
-        points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
+        points = [polygon.boundary.interpolate(
+            i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
-    def plot(self, fscale=10):
+    def plot(self, fscale=10, ax=None):
         """Plot the grid"""
 
         import cartopy.crs as ccrs
@@ -135,19 +137,21 @@ class BaseGrid(RompyBaseModel):
         extents = [minLon, maxLon, minLat, maxLat]
 
         # create figure and plot/map
-        fig, ax = plt.subplots(
-            1,
-            1,
-            figsize=(fscale, fscale * (maxLon - minLon) / (maxLat - minLat)),
-            subplot_kw={"projection": ccrs.PlateCarree()},
-        )
-        ax.set_extent(extents, crs=ccrs.PlateCarree())
+        if ax is None:
+            fig, ax = plt.subplots(
+                1,
+                1,
+                figsize=(fscale, fscale * (maxLon - minLon) /
+                         (maxLat - minLat)),
+                subplot_kw={"projection": ccrs.PlateCarree()},
+            )
+            ax.set_extent(extents, crs=ccrs.PlateCarree())
 
-        coastline = cfeature.GSHHSFeature(
-            scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
-        )
-        ax.add_feature(coastline, zorder=0)
-        ax.add_feature(cfeature.BORDERS, linewidth=2)
+            coastline = cfeature.GSHHSFeature(
+                scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
+            )
+            ax.add_feature(coastline, zorder=0)
+            ax.add_feature(cfeature.BORDERS, linewidth=2)
 
         gl = ax.gridlines(
             crs=ccrs.PlateCarree(),
@@ -184,8 +188,10 @@ class RegularGrid(BaseGrid):
     grid_type: Literal["regular"] = Field(
         "regular", description="Type of grid, must be 'regular'"
     )
-    x0: Optional[float] = Field(None, description="X coordinate of the grid origin")
-    y0: Optional[float] = Field(None, description="Y coordinate of the grid origin")
+    x0: Optional[float] = Field(
+        None, description="X coordinate of the grid origin")
+    y0: Optional[float] = Field(
+        None, description="Y coordinate of the grid origin")
     rot: Optional[float] = Field(
         0.0, description="Rotation angle of the grid in degrees"
     )
@@ -228,7 +234,8 @@ class RegularGrid(BaseGrid):
             return values
         for var in [x0, y0, dx, dy, nx, ny]:
             if var is None:
-                raise ValueError("x0, y0, dx, dy, nx, ny must be provided for REG grid")
+                raise ValueError(
+                    "x0, y0, dx, dy, nx, ny must be provided for REG grid")
         return values
 
     def __init__(self, **data):
@@ -256,7 +263,8 @@ class RegularGrid(BaseGrid):
 
         # Rotation
         alpha = -self.rot * np.pi / 180.0
-        R = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
+        R = np.array([[np.cos(alpha), -np.sin(alpha)],
+                     [np.sin(alpha), np.cos(alpha)]])
         gg = np.dot(np.vstack([ii.ravel(), jj.ravel()]).T, R)
 
         # Translation
