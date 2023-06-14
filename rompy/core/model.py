@@ -28,8 +28,10 @@ class ModelRun(RompyBaseModel):
         ),
         description="The time period to run the model",
     )
-    output_dir: str = Field("simulations", description="The output directory")
-    config: BaseConfig = Field(BaseConfig(), description="The configuration object")
+    output_dir: str = Field(
+        "./simulations", description="The output directory")
+    config: BaseConfig = Field(
+        BaseConfig(), description="The configuration object")
     _datefmt: str = "%Y%m%d.%H%M%S"
 
     @property
@@ -64,7 +66,8 @@ class ModelRun(RompyBaseModel):
         logger.info("-----------------------------------------------------")
         logger.info("Model settings:")
         logger.info(self)
-        logger.info(f"Template used to generate model: {self.config.template}")
+        logger.info("-----------------------------------------------------")
+        logger.info(f"Generating model input files in {self.output_dir}")
 
         cc_full = {}
         cc_full["runtime"] = self.dict()
@@ -128,8 +131,7 @@ class ModelRun(RompyBaseModel):
         return self.generate()
 
     def __str__(self):
-        ret = f"period: self.period\n"
-        ret += f"output_dir: self.output_dir\n"
-        ret += f"config: {self.config}\n"
-        ret += f"template: {self.config.template}\n"
+        ret = f"\nperiod: \n{self.period}\n\n"
+        ret += f"output_dir: \n{self.output_dir}\n\n"
+        ret += f"config: \n{self.config}"
         return ret
