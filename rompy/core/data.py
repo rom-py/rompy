@@ -86,6 +86,9 @@ class DatasetXarray(Dataset):
     def open(self):
         return xr.open_dataset(self.uri, engine=self.engine, **self.kwargs)
 
+    def __str__(self):
+        return f"DatasetXarray(uri={self.uri}"
+
 
 class DatasetIntake(Dataset):
     """Wavespectra dataset from intake catalog."""
@@ -106,6 +109,9 @@ class DatasetIntake(Dataset):
     def open(self):
         cat = intake.open_catalog(self.catalog_uri)
         return cat[self.dataset_id](**self.kwargs).to_dask()
+
+    def __str__(self):
+        return f"DatasetIntake(catalog_uri={self.catalog_uri}, dataset_id={self.dataset_id})"
 
 
 class DataGrid(RompyBaseModel):
@@ -171,7 +177,8 @@ class DataGrid(RompyBaseModel):
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
         import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        from cartopy.mpl.gridliner import (LATITUDE_FORMATTER,
+                                           LONGITUDE_FORMATTER)
 
         ds = self.ds
         if param not in ds:
