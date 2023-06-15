@@ -1,6 +1,8 @@
-==================
-Physics components
-==================
+=======
+Physics
+=======
+
+SWAN physics commands
 
 .. autosummary::
    :nosignatures:
