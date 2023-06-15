@@ -8,7 +8,8 @@ import pytest
 import xarray as xr
 
 import rompy
-from rompy.core import BaseGrid, DataBlob, DataGrid, TimeRange
+from rompy.core import (BaseGrid, DataBlob, DataGrid, DatasetIntake,
+                        DatasetXarray, TimeRange)
 
 
 # create dummy local datasource for testing
@@ -89,7 +90,7 @@ def nc_data_source():
         }
     )
     ds.to_netcdf(source)
-    return DataGrid(id="grid", path=source)
+    return DataGrid(id="grid", dataset=DatasetXarray(uri=source))
 
 
 def test_netcdf_grid(nc_data_source):
