@@ -9,12 +9,18 @@ Components and subcomponents to describe all physics settings in SWAN.
 Components
 ----------
 
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.PHYSICS
+
 Generation
 ~~~~~~~~~~
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.components.physics.GEN1
    rompy.swan.components.physics.GEN2
@@ -26,7 +32,7 @@ Swell dissipation
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.components.physics.NEGATINP
    rompy.swan.components.physics.ARDHUIN
@@ -38,7 +44,7 @@ Whitecapping
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.components.physics.WCAPKOMEN
    rompy.swan.components.physics.WCAPAB
@@ -48,7 +54,7 @@ Quadruplet interactions
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.components.physics.QUADRUPL
 
@@ -57,7 +63,7 @@ Wave breaking
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.components.physics.BREAKCONSTANT
    rompy.swan.components.physics.BREAKBKD
@@ -67,7 +73,7 @@ Bottom friction
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.components.physics.JONSWAP
    rompy.swan.components.physics.COLLINS
@@ -82,7 +88,7 @@ Source terms
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.subcomponents.physics.JANSSEN
    rompy.swan.subcomponents.physics.KOMEN
@@ -96,7 +102,7 @@ The following presets are available to easily prescribe one of those combination
 
 .. autosummary::
    :nosignatures:
-   :toctree: generated/
+   :toctree: _generated/
 
    rompy.swan.subcomponents.physics.ST6C1
    rompy.swan.subcomponents.physics.ST6C2
