@@ -1,13 +1,6 @@
-.. currentmodule: rompy
-
-=======
-Physics
-=======
-
-Components and subcomponents to describe all physics settings in SWAN.
-
-Components
-----------
+==================
+Physics components
+==================
 
 .. autosummary::
    :nosignatures:
@@ -80,36 +73,67 @@ Bottom friction
    rompy.swan.components.physics.MADSEN
    rompy.swan.components.physics.RIPPLES
 
-Subcomponents
--------------
+Wave triads
+~~~~~~~~~~~
 
-Source terms
-~~~~~~~~~~~~
+Not implemented.
 
-.. autosummary::
-   :nosignatures:
-   :toctree: _generated/
+Vegetaion dumping
+~~~~~~~~~~~~~~~~~
 
-   rompy.swan.subcomponents.physics.JANSSEN
-   rompy.swan.subcomponents.physics.KOMEN
-   rompy.swan.subcomponents.physics.WESTHUYSEN
-   rompy.swan.subcomponents.physics.ST6
+Not implemented.
 
-**ST6 presets**
+Mud dumping
+~~~~~~~~~~~
 
-Combinations of calibrated coefficients for ST6 are defined in the `SWAN Manual`_.
-The following presets are available to easily prescribe one of those combinations.
+Not implemented.
 
-.. autosummary::
-   :nosignatures:
-   :toctree: _generated/
+Sea ice dissipation
+~~~~~~~~~~~~~~~~~~~
 
-   rompy.swan.subcomponents.physics.ST6C1
-   rompy.swan.subcomponents.physics.ST6C2
-   rompy.swan.subcomponents.physics.ST6C3
-   rompy.swan.subcomponents.physics.ST6C4
-   rompy.swan.subcomponents.physics.ST6C5
+Not implemented.
 
+Turbulent viscosity
+~~~~~~~~~~~~~~~~~~~
 
+Not implemented.
 
-.. _`SWAN Manual`: https://swanmodel.sourceforge.io/online_doc/swanuse/node28.html
+Bragg scattering
+~~~~~~~~~~~~~~~~
+
+Not implemented.
+
+Limiter
+~~~~~~~
+
+Not implemented.
+
+Obstacles
+~~~~~~~~~
+
+Not implemented.
+
+Free infragravity ratiation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Not implemented.
+
+Wave setup
+~~~~~~~~~~
+
+Not implemented.
+
+Wave diffraction
+~~~~~~~~~~~~~~~~
+
+Not implemented.
+
+Surfbeat
+~~~~~~~~
+
+Not implemented.
+
+Scattering
+~~~~~~~~~~
+
+Not implemented.
