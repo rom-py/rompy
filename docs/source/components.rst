@@ -2,6 +2,13 @@
 Model Components
 ================
 
+Add quick paragraph describing the idea behind the components and subcomponents.
+Describe the minimum requirement of component and subcomponent classes. The role
+of `model_type` when using a declarative approach. The render() method and how
+it is used to generate the command line specification.
+
+TODO: Ensure the `model_type` is shown next to each class in the autosummaries.
+
 Components
 ----------
 
