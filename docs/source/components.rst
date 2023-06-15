@@ -2,17 +2,36 @@
 Model Components
 ================
 
-Add quick paragraph describing the idea behind the components and subcomponents.
-Describe the minimum requirement of component and subcomponent classes. The role
-of `model_type` when using a declarative approach. The render() method and how
-it is used to generate the command line specification.
+The SWAN command instructions are described in Rompy by a set of pydantic models
+defined as `components`. Each component defines a full command instruction such
+as `PROJECT`, `CGRID`, `GEN3`, etc. Inputs to the components may include other
+pydantic models called `subcomponents` to handle more complex arguments.
+
+Components are subclasses of the :py:class:`~rompy.swan.components.base.BaseComponent`.
+The base component class implements the following attribues:
+
+* The **model_type** required field that must be overwritten in each component subclass.
+  `model_type` is defined as a `Literal`_ type and is used to specify the exact
+  component class when using a declarative approach.
+
+* The **cmd()** method that must be overwritten in each component subclass. The `cmd()`
+  method should return either a string or a list of strings to fully define a SWAN
+  command line instruction. A list of string defines multiple command line instructions
+  that are executed in sequence such as the [INPGRID, READGRID] components.
+
+* The **render()** method that constructs the command line instruction from the content
+  returned from the `cmd()` method. The `render()` method is typically called inside
+  the model template to construct the specific command line instruction from that
+  component, taking care of maximum line size, line break and line continuation.
 
 TODO: Ensure the `model_type` is shown next to each class in the autosummaries.
+TODO: Fix broken linkes to classes and modules.
 
 Components
 ----------
 
-Components render an entire SWAN command line specification.
+Components are defined within the :py:module:`rompy.swan.components` subpackage and
+render an entire SWAN command line specification. The following modules are available:
 
 * :doc:`components/startup`
 * :doc:`components/cgrid`
@@ -27,8 +46,9 @@ Components render an entire SWAN command line specification.
 Subcomponents
 -------------
 
-Subcomponents render part of a SWAN command line specification. They typically define
-specific arguments to one or more component.
+Subcomponents are defined within the :py:module:`rompy.swan.subcomponents` subpackage
+and render part of a SWAN command line specification. They typically define specific
+arguments to one or more component. The following modules are available:
 
 * :doc:`subcomponents/startup`
 * :doc:`subcomponents/spectrum`
@@ -37,3 +57,5 @@ specific arguments to one or more component.
 * :doc:`subcomponents/readgrid`
 * :doc:`subcomponents/boundary`
 * :doc:`subcomponents/physics`
+
+.. _`Literal`: https://docs.python.org/3/library/typing.html#typing.Literal
