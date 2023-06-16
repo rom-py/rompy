@@ -8,5 +8,5 @@ Thumbnails gallery
 
 .. nbgallery::
   notebooks/demo
-  notebooks/template_demo
+  notebooks/templates_demo
   notebooks/swan-config-components.ipynb
