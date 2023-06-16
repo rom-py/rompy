@@ -16,7 +16,7 @@ jobs:
           python-version: "3.10"
       - name: Install dependencies
         run: |
-          sudo apt install pandoc
+          sudo apt install pandoc gfortran
           python -m pip install --upgrade pip
           pip install .
           pip install -r docs/requirements.txt
