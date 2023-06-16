@@ -50,9 +50,9 @@ def main(model, config, kwargs):
         setattr(instance, split[0], type(current)(split[1]))
     config_args = args.pop("config")
     if model == "base":
-        config = config = BaseConfig(**config_args)
+        config = BaseConfig(**config_args)
     if model == "swan":
-        config = config = SwanConfig(**config_args)
+        config = SwanConfig(**config_args)
     model = ModelRun(**args, config=config, **kw)
     model()
 
