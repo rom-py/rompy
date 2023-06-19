@@ -35,6 +35,7 @@ The final main component of the library is an intake driver that builds on the i
    :maxdepth: 1
    :caption: Contents:
    
+   quickstart.rst
    api.rst
    demo.rst
    components.rst
