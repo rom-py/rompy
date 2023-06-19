@@ -8,16 +8,24 @@ from typing import Optional
 
 from pydantic import Field
 
-from .config import BaseConfig
-from .render import render
-from .time import TimeRange
-from .types import RompyBaseModel
+from rompy.swan import SwanConfig
+
+from .core import BaseConfig, RompyBaseModel, TimeRange
+from .core.render import render
 
 logger = logging.getLogger(__name__)
 
 
 class ModelRun(RompyBaseModel):
-    """A base class for all models"""
+    """A model run.
+
+    It is intented to be model agnostic.
+    It deals primarily with how the model is to be run, i.e. the period of the run
+    and where the output is going. The actual configuration of the run is
+    provided by the config object.
+
+    Further explanation is given in the rompy.core.Baseconfig docstring.
+    """
 
     run_id: str = Field("run_id", description="The run id")
     period: TimeRange = Field(
@@ -30,8 +38,11 @@ class ModelRun(RompyBaseModel):
     )
     output_dir: str = Field(
         "./simulations", description="The output directory")
-    config: BaseConfig = Field(
-        BaseConfig(), description="The configuration object")
+    config: BaseConfig | SwanConfig = Field(
+        BaseConfig(),
+        description="The configuration object",
+        discriminator="model_type",
+    )
     _datefmt: str = "%Y%m%d.%H%M%S"
 
     @property
