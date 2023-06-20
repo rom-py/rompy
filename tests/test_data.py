@@ -8,8 +8,18 @@ import pytest
 import xarray as xr
 
 import rompy
-from rompy.core import (BaseGrid, DataBlob, DataGrid, DatasetIntake,
-                        DatasetXarray, TimeRange)
+from rompy.core import (
+    BaseGrid,
+    DataBlob,
+    DataGrid,
+    DatasetIntake,
+    DatasetXarray,
+    DatasetDatamesh,
+    TimeRange,
+)
+
+
+DATAMESH_TOKEN = os.environ.get("DATAMESH_TOKEN")
 
 
 # create dummy local datasource for testing
@@ -129,3 +139,10 @@ def test_time_filter(nc_data_source):
     assert nc_data_source.ds.longitude.min() == 2
     assert nc_data_source.ds.time.max() == np.datetime64("2000-01-03")
     assert nc_data_source.ds.time.min() == np.datetime64("2000-01-02")
+
+
+@pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
+def test_datamesh_reader():
+    data = DatasetDatamesh(dataset_id="era5_wind10m", token=DATAMESH_TOKEN)
+    dset = data.open()
+    assert(isinstance(dset, xr.Dataset))
