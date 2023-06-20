@@ -10,6 +10,7 @@ import cloudpathlib
 import intake
 import xarray as xr
 from pydantic import Field, root_validator
+from oceanum.datamesh import Connector
 
 from .filters import Filter
 from .time import TimeRange
@@ -91,16 +92,18 @@ class DatasetXarray(Dataset):
 
 
 class DatasetIntake(Dataset):
-    """Wavespectra dataset from intake catalog."""
+    """Dataset from intake catalog."""
 
     model_type: Literal["intake"] = Field(
         default="intake",
         description="Model type discriminator",
     )
     dataset_id: str = Field(
-        description="The id of the dataset to read in the catalog")
+        description="The id of the dataset to read in the catalog",
+    )
     catalog_uri: str | Path = Field(
-        description="The URI of the catalog to read from")
+        description="The URI of the catalog to read from",
+    )
     kwargs: dict = Field(
         default={},
         description="Keyword arguments to pass to intake.open_catalog",
@@ -114,6 +117,37 @@ class DatasetIntake(Dataset):
         return f"DatasetIntake(catalog_uri={self.catalog_uri}, dataset_id={self.dataset_id})"
 
 
+class DatasetDatamesh(Dataset):
+    """Dataset from Datamesh."""
+
+    model_type: Literal["datamesh"] = Field(
+        default="datamesh",
+        description="Model type discriminator",
+    )
+    dataset_id: str = Field(
+        description="The id of the dataset on Datamesh",
+    )
+    token: Optional[str] = Field(
+        description="The Datamesh API token, taken from the environment if not provided",
+    )
+    kwargs: dict = Field(
+        default={},
+        description="Keyword arguments to pass to `oceanum.datamesh.Connector`",
+    )
+
+    @property
+    def connector(self):
+        """The Datamesh connector instance."""
+        return Connector(token=self.token, **self.kwargs)
+
+    def open(self):
+        ds = self.connector.load_datasource(self.dataset_id)
+        return ds
+
+    def __str__(self):
+        return f"DatasetDatamesh(dataset_id={self.dataset_id})"
+
+
 class DataGrid(RompyBaseModel):
     """Data source for model ingestion. This is intended to be a generic data
     source for xarray datasets that need to be filtered and written to netcdf.
@@ -124,8 +158,8 @@ class DataGrid(RompyBaseModel):
     """
 
     id: str = Field(description="Unique identifier for this data source")
-    dataset: DatasetXarray | DatasetIntake = Field(
-        description="Dataset reader, must return a wavespectra-enabled xarray dataset in the open method",
+    dataset: DatasetXarray | DatasetIntake | DatasetDatamesh = Field(
+        description="Dataset reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
     filter: Optional[Filter] = Field(
