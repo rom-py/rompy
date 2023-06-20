@@ -118,7 +118,11 @@ class DatasetIntake(Dataset):
 
 
 class DatasetDatamesh(Dataset):
-    """Dataset from Datamesh."""
+    """Dataset from Datamesh.
+
+    Datamesh documentation: https://docs.oceanum.io/datamesh/index.html
+
+    """
 
     model_type: Literal["datamesh"] = Field(
         default="datamesh",
