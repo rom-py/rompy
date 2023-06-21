@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import tempfile
 from datetime import datetime
 
@@ -8,10 +9,13 @@ import pytest
 import xarray as xr
 
 import rompy
+from rompy.core.filters import Filter
+from rompy.core.data import Coords
 from rompy.core import (
     BaseGrid,
     DataBlob,
     DataGrid,
+    Dataset,
     DatasetIntake,
     DatasetXarray,
     DatasetDatamesh,
@@ -19,6 +23,7 @@ from rompy.core import (
 )
 
 
+HERE = Path(__file__).parent
 DATAMESH_TOKEN = os.environ.get("DATAMESH_TOKEN")
 
 
@@ -141,8 +146,32 @@ def test_time_filter(nc_data_source):
     assert nc_data_source.ds.time.min() == np.datetime64("2000-01-02")
 
 
+def test_dataset():
+    dset = xr.open_dataset(HERE / "data" / "aus-20230101.nc")
+    dataset = Dataset(dataset=dset)
+    assert isinstance(dataset.open(), xr.Dataset)
+
+
+def test_dataset_xarray():
+    dataset = DatasetXarray(dataset=HERE / "data" / "aus-20230101.nc")
+    assert isinstance(dataset.open(), xr.Dataset)
+
+
+def test_dataset_intake():
+    dataset = DatasetIntake(
+        dataset="ausspec",
+        catalog_uri=HERE / "data" / "catalog.yaml",
+    )
+    assert isinstance(dataset.open(), xr.Dataset)
+
+
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
-def test_datamesh_reader():
-    data = DatasetDatamesh(dataset_id="era5_wind10m", token=DATAMESH_TOKEN)
-    dset = data.open()
+def test_dataset_datamesh():
+    dataset = DatasetDatamesh(dataset="era5_wind10m", token=DATAMESH_TOKEN)
+    filters = Filter()
+    filters.crop.update(dict(time=slice("2000-01-01T00:00:00", "2000-01-01T03:00:00")))
+    filters.crop.update(
+        dict(longitude=slice(115.5, 116.0), latitude=slice(-33.0, -32.5))
+    )
+    dset = dataset.open(variables=["u10"], filters=filters, coords=Coords(x="longitude", y="latitude"))
     assert(isinstance(dset, xr.Dataset))

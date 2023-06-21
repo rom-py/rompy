@@ -1,43 +1,53 @@
-# write pydantic model to read xarray data from intake catalogs, filter, and write to netcdf
-
+"""Rompy core data objects."""
+import logging
 import os
-import pathlib
+import json
+from pathlib import Path
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Literal, Optional
 
-import cloudpathlib
+from cloudpathlib import CloudPath
 import intake
+from intake.catalog import Catalog
 import xarray as xr
 from pydantic import Field, root_validator
-from oceanum.datamesh import Connector
+from oceanum.datamesh import Connector, Query
+import geopandas
+from shapely.geometry import Polygon
 
 from .filters import Filter
 from .time import TimeRange
 from .types import RompyBaseModel
 
 
+logger = logging.getLogger(__name__)
+
+
+class Coords(RompyBaseModel):
+    """Coordinates representation."""
+    t: Optional[str] = Field("time", description="Name of the time coordinate")
+    x: Optional[str] = Field("longitude", description="Name of the x coordinate")
+    y: Optional[str] = Field("latitude", description="Name of the y coordinate")
+    z: Optional[str] = Field("depth", description="Name of the z coordinate")
+
+
 class DataBlob(RompyBaseModel):
-    """Data source for model ingestion. This is intended to be a generic data
-    source for files that simply need to be copied to the model directory.
+    """Data source for model ingestion.
 
-    Must be a local file or a remote file.
+    This is intended to be a generic data source for files that simply need to be
+    copied to the model directory.
 
-    Attributes:
-    -----------
-    id: str
-        Unique identifier for this data source
-    path: Optional[pathlib.Path]
-        Optional local file path
-    url: Optional[cloudpathlib.CloudPath]
-        Optional remote file url
+    TODO: If we are happy to support cloudpathlib here than we could use
+    cloudlib.AnyPath and only have say URI parameter.
+
     """
 
     id: str = Field(description="Unique identifier for this data source")
-    path: Optional[pathlib.Path] = Field(
+    path: Optional[Path] = Field(
         default=None, description="Optional local file path"
     )
-    url: Optional[cloudpathlib.CloudPath] = Field(
+    url: Optional[CloudPath] = Field(
         default=None, description="Optional remote file url"
     )
 
@@ -52,43 +62,92 @@ class DataBlob(RompyBaseModel):
     def get(self, dest: str) -> "DataBlob":
         """Copy the data source to a new location"""
         if self.path:
-            pathlib.Path(dest).write_bytes(self.path.read_bytes())
+            Path(dest).write_bytes(self.path.read_bytes())
         elif self.url:
-            pathlib.Path(dest).write_bytes(self.url.read_bytes())
+            Path(dest).write_bytes(self.url.read_bytes())
         return DataBlob(id=self.id, path=dest)
 
 
-class Dataset(RompyBaseModel, ABC):
-    """Abstract base class for a dataset."""
+class Dataset(RompyBaseModel):
+    """Dataset input base class.
 
-    @abstractmethod
-    def open(self):
-        """Return a dataset instance with the wavespectra accessor."""
-        pass
+    This is the base dataset class to provide an xarray Dataset object to the DataGrid.
+    It is intended to be subclassed by other dataset classes that can deal with
+    different types of data sources such as intake, datamesh or xarray. It can also
+    be used directly if a Dataset object is already available.
+
+    """
+    model_type: Literal["dataset"] = Field(
+        default="dataset",
+        description="Model type discriminator",
+    )
+    dataset: xr.Dataset = Field(
+        description="xarray Dataset object",
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __str__(self) -> str:
+        return f"Dataset(dataset={self.dataset})"
+
+    def _open(self) -> xr.Dataset:
+        """Returns the xarray dataset.
+
+        This is a private method that should be implemented by subclasses.
+
+        """
+        return self.dataset
+
+    def open(self, variables: list = [], filters: Filter = {}, **kwargs) -> xr.Dataset:
+        """Return the filtered dataset object.
+
+        Parameters
+        ----------
+        variables : list, optional
+            List of variables to select from the dataset.
+        filters : Filter, optional
+            Filters to apply to the dataset.
+
+        Notes
+        -----
+        The kwargs are only a placeholder in case a subclass needs to pass additional
+        arguments to the open method. The DatasetDatamesh for instance needs to pass
+        the Coords to allow constructing the Query object.
+
+        TODO: Should we validate variables against the dataset variables?
+
+        """
+        ds = self._open()
+        if variables:
+            ds = ds[variables]
+        if filters:
+            ds = filters(ds)
+        return ds
 
 
 class DatasetXarray(Dataset):
-    """Dataset from xarray reader."""
+    """Dataset input from xarray reader."""
 
     model_type: Literal["xarray"] = Field(
         default="xarray",
         description="Model type discriminator",
     )
-    uri: str | Path = Field(description="Path to the dataset")
+    dataset: str | Path = Field(description="Path to the xarray dataset")
     engine: Optional[str] = Field(
         default=None,
         description="Engine to use for reading the dataset with xarray.open_dataset",
     )
-    kwargs: dict = Field(
+    kwargs: Optional[dict] = Field(
         default={},
         description="Keyword arguments to pass to xarray.open_dataset",
     )
 
-    def open(self):
-        return xr.open_dataset(self.uri, engine=self.engine, **self.kwargs)
+    def __str__(self) -> str:
+        return f"DatasetXarray(dataset={self.dataset})"
 
-    def __str__(self):
-        return f"DatasetXarray(uri={self.uri}"
+    def _open(self) -> xr.Dataset:
+        return xr.open_dataset(self.dataset, engine=self.engine, **self.kwargs)
 
 
 class DatasetIntake(Dataset):
@@ -98,8 +157,8 @@ class DatasetIntake(Dataset):
         default="intake",
         description="Model type discriminator",
     )
-    dataset_id: str = Field(
-        description="The id of the dataset to read in the catalog",
+    dataset: str = Field(
+        description="The id of the dataset to read in the intake catalog",
     )
     catalog_uri: str | Path = Field(
         description="The URI of the catalog to read from",
@@ -109,12 +168,16 @@ class DatasetIntake(Dataset):
         description="Keyword arguments to pass to intake.open_catalog",
     )
 
-    def open(self):
-        cat = intake.open_catalog(self.catalog_uri)
-        return cat[self.dataset_id](**self.kwargs).to_dask()
+    def __str__(self) -> str:
+        return f"DatasetIntake(catalog_uri={self.catalog_uri}, dataset={self.dataset})"
 
-    def __str__(self):
-        return f"DatasetIntake(catalog_uri={self.catalog_uri}, dataset_id={self.dataset_id})"
+    @property
+    def cat(self) -> Catalog:
+        """Returns the intake catalog instance."""
+        return intake.open_catalog(self.catalog_uri)
+
+    def _open(self) -> xr.Dataset:
+        return self.cat[self.dataset](**self.kwargs).to_dask()
 
 
 class DatasetDatamesh(Dataset):
@@ -122,13 +185,19 @@ class DatasetDatamesh(Dataset):
 
     Datamesh documentation: https://docs.oceanum.io/datamesh/index.html
 
+    TODO: Should we validate the dataset id / variables / times against the Datamesh
+          API before querying or are we happy with the DAtameshQueryError exception?
+
+    TODO: Should we raise exceptions if no enough info is available in the crop filter
+          to construct geo- and time-filters or are we happy to proceed without them?
+
     """
 
     model_type: Literal["datamesh"] = Field(
         default="datamesh",
         description="Model type discriminator",
     )
-    dataset_id: str = Field(
+    dataset: str = Field(
         description="The id of the dataset on Datamesh",
     )
     token: Optional[str] = Field(
@@ -139,25 +208,85 @@ class DatasetDatamesh(Dataset):
         description="Keyword arguments to pass to `oceanum.datamesh.Connector`",
     )
 
+    def __str__(self) -> str:
+        return f"DatasetDatamesh(dataset={self.dataset})"
+
     @property
-    def connector(self):
+    def connector(self) -> Connector:
         """The Datamesh connector instance."""
         return Connector(token=self.token, **self.kwargs)
 
-    def open(self):
-        ds = self.connector.load_datasource(self.dataset_id)
-        return ds
+    def _geofilter(self, filters, coords) -> dict:
+        """The Datamesh geofilter."""
+        xslice = filters.crop.get(coords.x)
+        yslice = filters.crop.get(coords.y)
+        if xslice is None or yslice is None:
+            logger.warning(
+                f"No slices found for x={coords.x} and y={coords.y} in the crop "
+                f"filter {filters.crop}, cannot define a geofilter for querying"
+            )
+            return None
 
-    def __str__(self):
-        return f"DatasetDatamesh(dataset_id={self.dataset_id})"
+        coords = [
+            [xslice.start, yslice.start],
+            [xslice.stop, yslice.start],
+            [xslice.stop, yslice.stop],
+            [xslice.start, yslice.stop],
+            [xslice.start, yslice.start],
+        ]
+        geofilter = dict(
+            type="feature",
+            geom=dict(
+                type="Feature",
+                geometry=dict(
+                    type="Polygon",
+                    coordinates=[coords],
+                ),
+             ),
+        )
+        return geofilter
+
+    def _timefilter(self, filters, coords) -> dict:
+        """The Datamesh timefilter."""
+        tslice = filters.crop.get(coords.t)
+        if tslice is None:
+            logger.warning(
+                f"No time slice found in the crop filter {filters.crop}, "
+                "cannot define a timefilter for querying datamesh"
+            )
+            return None
+        timefilter = dict(
+            type="range",
+            times=[tslice.start, tslice.stop],
+        )
+        return timefilter
+
+    def open(
+        self,
+        filters: Filter,
+        coords: Coords,
+        variables: list = []
+    ) -> xr.Dataset:
+        """Returns the filtered dataset object.
+
+        Override this method to allow providing geo and time filters for query.
+
+        """
+        query = dict(
+            datasource=self.dataset,
+            variables=variables,
+            geofilter=self._geofilter(filters, coords),
+            timefilter=self._timefilter(filters, coords),
+        )
+        ds = self.connector.query(query)
+        if filters:
+            ds = filters(ds)
+        return ds
 
 
 class DataGrid(RompyBaseModel):
     """Data source for model ingestion. This is intended to be a generic data
     source for xarray datasets that need to be filtered and written to netcdf.
-
-    Must be a local file (path) or a remote file (url) or intake and dataset
-    id combination.
 
     """
 
@@ -172,22 +301,18 @@ class DataGrid(RompyBaseModel):
     variables: Optional[list[str]] = Field(
         [], description="Subset of variables to extract from the dataset"
     )
-    latname: Optional[str] = Field(
-        "latitude", description="Name of the latitude variable"
+    coords: Optional[Coords] = Field(
+        default=Coords(),
+        description="Names of the coordinates in the dataset",
     )
-    lonname: Optional[str] = Field(
-        "longitude", description="Name of the longitude variable"
-    )
-    timename: Optional[str] = Field(
-        "time", description="Name of the time variable")
 
     def _filter_grid(self, grid, buffer=0.1):
         """Define the filters to use to extract data to this grid"""
         minLon, minLat, maxLon, maxLat = grid.bbox()
         self.filter.crop.update(
             {
-                self.lonname: slice(minLon - buffer, maxLon + buffer),
-                self.latname: slice(minLat - buffer, maxLat + buffer),
+                self.coords.x: slice(minLon - buffer, maxLon + buffer),
+                self.coords.y: slice(minLat - buffer, maxLat + buffer),
             }
         )
 
@@ -195,18 +320,16 @@ class DataGrid(RompyBaseModel):
         """Define the filters to use to extract data to this grid"""
         self.filter.crop.update(
             {
-                self.timename: slice(time.start, time.end),
+                self.coords.t: slice(time.start, time.end),
             }
         )
 
     @property
     def ds(self):
         """Return the xarray dataset for this data source."""
-        ds = self.dataset.open()
-        if self.variables:
-            ds = ds[self.variables]
-        if self.filter:
-            ds = self.filter(ds)
+        ds = self.dataset.open(
+            variables=self.variables, filters=self.filter, coords=self.coords
+        )
         return ds
 
     def plot(self, param, isel={}, model_grid=None, cmap="turbo", fscale=10, **kwargs):
