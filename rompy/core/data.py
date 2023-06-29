@@ -112,10 +112,7 @@ class Dataset(RompyBaseModel):
         Notes
         -----
         The kwargs are only a placeholder in case a subclass needs to pass additional
-        arguments to the open method. The DatasetDatamesh for instance needs to pass
-        the Coords to allow constructing the Query object.
-
-        TODO: Should we validate variables against the dataset variables?
+        arguments to the open method.
 
         """
         ds = self._open()
@@ -184,12 +181,6 @@ class DatasetDatamesh(Dataset):
     """Dataset from Datamesh.
 
     Datamesh documentation: https://docs.oceanum.io/datamesh/index.html
-
-    TODO: Should we validate the dataset id / variables / times against the Datamesh
-          API before querying or are we happy with the DAtameshQueryError exception?
-
-    TODO: Should we raise exceptions if no enough info is available in the crop filter
-          to construct geo- and time-filters or are we happy to proceed without them?
 
     """
 
