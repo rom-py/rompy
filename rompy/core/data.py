@@ -18,18 +18,10 @@ from shapely.geometry import Polygon
 
 from .filters import Filter
 from .time import TimeRange
-from .types import RompyBaseModel
+from .types import RompyBaseModel, DatasetCoords
 
 
 logger = logging.getLogger(__name__)
-
-
-class Coords(RompyBaseModel):
-    """Coordinates representation."""
-    t: Optional[str] = Field("time", description="Name of the time coordinate")
-    x: Optional[str] = Field("longitude", description="Name of the x coordinate")
-    y: Optional[str] = Field("latitude", description="Name of the y coordinate")
-    z: Optional[str] = Field("depth", description="Name of the z coordinate")
 
 
 class DataBlob(RompyBaseModel):
@@ -255,7 +247,7 @@ class DatasetDatamesh(Dataset):
     def open(
         self,
         filters: Filter,
-        coords: Coords,
+        coords: DatasetCoords,
         variables: list = []
     ) -> xr.Dataset:
         """Returns the filtered dataset object.
@@ -292,8 +284,8 @@ class DataGrid(RompyBaseModel):
     variables: Optional[list[str]] = Field(
         [], description="Subset of variables to extract from the dataset"
     )
-    coords: Optional[Coords] = Field(
-        default=Coords(),
+    coords: Optional[DatasetCoords] = Field(
+        default=DatasetCoords(),
         description="Names of the coordinates in the dataset",
     )
 
