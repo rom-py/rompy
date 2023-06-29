@@ -70,10 +70,10 @@ class SourceDataset(SourceBase):
         arbitrary_types_allowed = True
 
     def __str__(self) -> str:
-        return f"SourceDataset(dataset={self.obj})"
+        return f"SourceDataset(obj={self.obj})"
 
     def _open(self) -> xr.Dataset:
-        return self.dataset
+        return self.obj
 
 
 class SourceOpenDataset(SourceBase):
@@ -135,11 +135,11 @@ class SourceDatamesh(SourceBase):
         default="datamesh",
         description="Model type discriminator",
     )
-    dataset_id: str = Field(
-        description="The id of the dataset on Datamesh",
+    datasource: str = Field(
+        description="The id of the datasource on Datamesh",
     )
     token: Optional[str] = Field(
-        description="The Datamesh API token, taken from the environment if not provided",
+        description="Datamesh API token, taken from the environment if not provided",
     )
     kwargs: dict = Field(
         default={},
@@ -147,14 +147,14 @@ class SourceDatamesh(SourceBase):
     )
 
     def __str__(self) -> str:
-        return f"SourceDatamesh(dataset={self.dataset_id})"
+        return f"SourceDatamesh(datasource={self.datasource})"
 
     @property
     def connector(self) -> Connector:
         """The Datamesh connector instance."""
         return Connector(token=self.token, **self.kwargs)
 
-    def _geofilter(self, filters, coords) -> dict:
+    def _geofilter(self, filters: Filter, coords: DatasetCoords) -> dict:
         """The Datamesh geofilter."""
         xslice = filters.crop.get(coords.x)
         yslice = filters.crop.get(coords.y)
@@ -184,7 +184,7 @@ class SourceDatamesh(SourceBase):
         )
         return geofilter
 
-    def _timefilter(self, filters, coords) -> dict:
+    def _timefilter(self, filters: Filter, coords: DatasetCoords) -> dict:
         """The Datamesh timefilter."""
         tslice = filters.crop.get(coords.t)
         if tslice is None:
@@ -199,6 +199,15 @@ class SourceDatamesh(SourceBase):
         )
         return timefilter
 
+    def _open(self, variables: list, geofilter: dict, timefilter: dict) -> xr.Dataset:
+        query = dict(
+            datasource=self.datasource,
+            variables=variables,
+            geofilter=geofilter,
+            timefilter=timefilter,
+        )
+        return self.connector.query(query)
+
     def open(
         self,
         filters: Filter,
@@ -211,13 +220,11 @@ class SourceDatamesh(SourceBase):
         be converted to a geofilter and timefilter for querying Datamesh.
 
         """
-        query = dict(
-            datasource=self.dataset,
+        ds = self._open(
             variables=variables,
             geofilter=self._geofilter(filters, coords),
             timefilter=self._timefilter(filters, coords),
         )
-        ds = self.connector.query(query)
         if filters:
             ds = filters(ds)
         return ds

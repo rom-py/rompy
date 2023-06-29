@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 import tempfile
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -10,17 +9,9 @@ import xarray as xr
 
 import rompy
 from rompy.core.filters import Filter
-from rompy.core.data import DatasetCoords
-from rompy.core import (
-    BaseGrid,
-    DataBlob,
-    DataGrid,
-    Dataset,
-    DatasetIntake,
-    DatasetXarray,
-    DatasetDatamesh,
-    TimeRange,
-)
+from rompy.core.types import DatasetCoords
+from rompy.core.data import SourceDataset, SourceOpenDataset, SourceIntake, SourceDatamesh
+from rompy.core import BaseGrid, DataBlob, DataGrid, TimeRange
 
 
 HERE = Path(__file__).parent
@@ -43,7 +34,10 @@ def grid_data_source():
     return DataGrid(
         id="wind",
         catalog=os.path.join(rompy.__path__[0], "catalogs", "oceanum.yaml"),
-        dataset="era5_wind10m",
+        source=SourceIntake(
+            dataset_id="era5_wind10m",
+            catalog_url="",
+        ),
         filter={
             "sort": {"coords": ["latitude"]},
             "crop": {
@@ -105,7 +99,7 @@ def nc_data_source():
         }
     )
     ds.to_netcdf(source)
-    return DataGrid(id="grid", dataset=DatasetXarray(dataset=source))
+    return DataGrid(id="grid", source=SourceOpenDataset(uri=source))
 
 
 def test_netcdf_grid(nc_data_source):
@@ -146,20 +140,20 @@ def test_time_filter(nc_data_source):
     assert nc_data_source.ds.time.min() == np.datetime64("2000-01-02")
 
 
-def test_dataset():
+def test_source_dataset():
     dset = xr.open_dataset(HERE / "data" / "aus-20230101.nc")
-    dataset = Dataset(dataset=dset)
+    dataset = SourceDataset(obj=dset)
     assert isinstance(dataset.open(), xr.Dataset)
 
 
-def test_dataset_xarray():
-    dataset = DatasetXarray(dataset=HERE / "data" / "aus-20230101.nc")
+def test_source_open_dataset():
+    dataset = SourceOpenDataset(uri=HERE / "data" / "aus-20230101.nc")
     assert isinstance(dataset.open(), xr.Dataset)
 
 
 def test_dataset_intake():
-    dataset = DatasetIntake(
-        dataset="ausspec",
+    dataset = SourceIntake(
+        dataset_id="ausspec",
         catalog_uri=HERE / "data" / "catalog.yaml",
     )
     assert isinstance(dataset.open(), xr.Dataset)
@@ -167,7 +161,7 @@ def test_dataset_intake():
 
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
 def test_dataset_datamesh():
-    dataset = DatasetDatamesh(dataset="era5_wind10m", token=DATAMESH_TOKEN)
+    dataset = SourceDatamesh(datasource="era5_wind10m", token=DATAMESH_TOKEN)
     filters = Filter()
     filters.crop.update(dict(time=slice("2000-01-01T00:00:00", "2000-01-01T03:00:00")))
     filters.crop.update(
