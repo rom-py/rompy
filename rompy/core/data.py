@@ -1,7 +1,5 @@
 """Rompy core data objects."""
 import logging
-import os
-import json
 from pathlib import Path
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -12,9 +10,7 @@ import intake
 from intake.catalog import Catalog
 import xarray as xr
 from pydantic import Field, root_validator
-from oceanum.datamesh import Connector, Query
-import geopandas
-from shapely.geometry import Polygon
+from oceanum.datamesh import Connector
 
 from .filters import Filter
 from .time import TimeRange
@@ -24,72 +20,16 @@ from .types import RompyBaseModel, DatasetCoords
 logger = logging.getLogger(__name__)
 
 
-class DataBlob(RompyBaseModel):
-    """Data source for model ingestion.
-
-    This is intended to be a generic data source for files that simply need to be
-    copied to the model directory.
-
-    TODO: If we are happy to support cloudpathlib here than we could use
-    cloudlib.AnyPath and only have say URI parameter.
-
-    """
-
-    id: str = Field(description="Unique identifier for this data source")
-    path: Optional[Path] = Field(
-        default=None, description="Optional local file path"
-    )
-    url: Optional[CloudPath] = Field(
-        default=None, description="Optional remote file url"
+class SourceBase(RompyBaseModel, ABC):
+    """Abstract base class for a source dataset."""
+    model_type: Literal["base_source"] = Field(
+        description="Model type discriminator, must be overriden by a subclass",
     )
 
-    @root_validator
-    def check_path_or_url(cls, values):
-        if values.get("path") is None and values.get("url") is None:
-            raise ValueError("Must provide either a path or a url")
-        if values.get("path") is not None and values.get("url") is not None:
-            raise ValueError("Must provide either a path or a url, not both")
-        return values
-
-    def get(self, dest: str) -> "DataBlob":
-        """Copy the data source to a new location"""
-        if self.path:
-            Path(dest).write_bytes(self.path.read_bytes())
-        elif self.url:
-            Path(dest).write_bytes(self.url.read_bytes())
-        return DataBlob(id=self.id, path=dest)
-
-
-class Dataset(RompyBaseModel):
-    """Dataset input base class.
-
-    This is the base dataset class to provide an xarray Dataset object to the DataGrid.
-    It is intended to be subclassed by other dataset classes that can deal with
-    different types of data sources such as intake, datamesh or xarray. It can also
-    be used directly if a Dataset object is already available.
-
-    """
-    model_type: Literal["dataset"] = Field(
-        default="dataset",
-        description="Model type discriminator",
-    )
-    dataset: xr.Dataset = Field(
-        description="xarray Dataset object",
-    )
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    def __str__(self) -> str:
-        return f"Dataset(dataset={self.dataset})"
-
+    @abstractmethod
     def _open(self) -> xr.Dataset:
-        """Returns the xarray dataset.
-
-        This is a private method that should be implemented by subclasses.
-
-        """
-        return self.dataset
+        """This abstract private method should return a xarray dataset object."""
+        pass
 
     def open(self, variables: list = [], filters: Filter = {}, **kwargs) -> xr.Dataset:
         """Return the filtered dataset object.
@@ -115,62 +55,77 @@ class Dataset(RompyBaseModel):
         return ds
 
 
-class DatasetXarray(Dataset):
-    """Dataset input from xarray reader."""
+class SourceDataset(SourceBase):
+    """Source dataset from an existing xarray Dataset object."""
 
-    model_type: Literal["xarray"] = Field(
-        default="xarray",
+    model_type: Literal["dataset"] = Field(
+        default="dataset",
         description="Model type discriminator",
     )
-    dataset: str | Path = Field(description="Path to the xarray dataset")
-    engine: Optional[str] = Field(
-        default=None,
-        description="Engine to use for reading the dataset with xarray.open_dataset",
+    obj: xr.Dataset = Field(
+        description="xarray Dataset object",
     )
-    kwargs: Optional[dict] = Field(
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    def __str__(self) -> str:
+        return f"SourceDataset(dataset={self.obj})"
+
+    def _open(self) -> xr.Dataset:
+        return self.dataset
+
+
+class SourceOpenDataset(SourceBase):
+    """Source dataset from xarray.open_dataset reader."""
+
+    model_type: Literal["open_dataset"] = Field(
+        default="open_dataset",
+        description="Model type discriminator",
+    )
+    uri: str | Path = Field(description="Path to the dataset")
+    kwargs: dict = Field(
         default={},
         description="Keyword arguments to pass to xarray.open_dataset",
     )
 
     def __str__(self) -> str:
-        return f"DatasetXarray(dataset={self.dataset})"
+        return f"SourceOpenDataset(uri={self.uri}"
 
     def _open(self) -> xr.Dataset:
-        return xr.open_dataset(self.dataset, engine=self.engine, **self.kwargs)
+        return xr.open_dataset(self.uri, **self.kwargs)
 
 
-class DatasetIntake(Dataset):
-    """Dataset from intake catalog."""
+class SourceIntake(SourceBase):
+    """Source dataset from intake catalog."""
 
     model_type: Literal["intake"] = Field(
         default="intake",
         description="Model type discriminator",
     )
-    dataset: str = Field(
-        description="The id of the dataset to read in the intake catalog",
-    )
+    dataset_id: str = Field(
+        description="The id of the dataset to read in the catalog")
     catalog_uri: str | Path = Field(
-        description="The URI of the catalog to read from",
-    )
+        description="The URI of the catalog to read from")
     kwargs: dict = Field(
         default={},
-        description="Keyword arguments to pass to intake.open_catalog",
+        description="Keyword arguments to define intake dataset parameters",
     )
 
     def __str__(self) -> str:
-        return f"DatasetIntake(catalog_uri={self.catalog_uri}, dataset={self.dataset})"
+        return f"SourceIntake(catalog_uri={self.catalog_uri}, dataset_id={self.dataset_id})"
 
     @property
-    def cat(self) -> Catalog:
-        """Returns the intake catalog instance."""
+    def catalog(self) -> Catalog:
+        """The intake catalog instance."""
         return intake.open_catalog(self.catalog_uri)
 
     def _open(self) -> xr.Dataset:
-        return self.cat[self.dataset](**self.kwargs).to_dask()
+        return self.catalog[self.dataset_id](**self.kwargs).to_dask()
 
 
-class DatasetDatamesh(Dataset):
-    """Dataset from Datamesh.
+class SourceDatamesh(SourceBase):
+    """Source dataset from Datamesh.
 
     Datamesh documentation: https://docs.oceanum.io/datamesh/index.html
 
@@ -180,7 +135,7 @@ class DatasetDatamesh(Dataset):
         default="datamesh",
         description="Model type discriminator",
     )
-    dataset: str = Field(
+    dataset_id: str = Field(
         description="The id of the dataset on Datamesh",
     )
     token: Optional[str] = Field(
@@ -192,7 +147,7 @@ class DatasetDatamesh(Dataset):
     )
 
     def __str__(self) -> str:
-        return f"DatasetDatamesh(dataset={self.dataset})"
+        return f"SourceDatamesh(dataset={self.dataset_id})"
 
     @property
     def connector(self) -> Connector:
@@ -205,7 +160,7 @@ class DatasetDatamesh(Dataset):
         yslice = filters.crop.get(coords.y)
         if xslice is None or yslice is None:
             logger.warning(
-                f"No slices found for x={coords.x} and y={coords.y} in the crop "
+                f"No slices found for x={coords.x} and/or y={coords.y} in the crop "
                 f"filter {filters.crop}, cannot define a geofilter for querying"
             )
             return None
@@ -252,7 +207,8 @@ class DatasetDatamesh(Dataset):
     ) -> xr.Dataset:
         """Returns the filtered dataset object.
 
-        Override this method to allow providing geo and time filters for query.
+        This method is overriden from the base class because the crop filters need to
+        be converted to a geofilter and timefilter for querying Datamesh.
 
         """
         query = dict(
@@ -267,15 +223,55 @@ class DatasetDatamesh(Dataset):
         return ds
 
 
-class DataGrid(RompyBaseModel):
-    """Data source for model ingestion. This is intended to be a generic data
-    source for xarray datasets that need to be filtered and written to netcdf.
+class DataBlob(RompyBaseModel):
+    """Data source for model ingestion.
+
+    This is intended to be a generic data source for files that simply need to be
+    copied to the model directory.
+
+    TODO: If we are happy to support cloudpathlib here than we could use
+    cloudlib.AnyPath and only have say URI parameter.
 
     """
 
     id: str = Field(description="Unique identifier for this data source")
-    dataset: DatasetXarray | DatasetIntake | DatasetDatamesh = Field(
-        description="Dataset reader, must return an xarray dataset in the open method",
+    path: Optional[Path] = Field(
+        default=None, description="Optional local file path"
+    )
+    url: Optional[CloudPath] = Field(
+        default=None, description="Optional remote file url"
+    )
+
+    @root_validator
+    def check_path_or_url(cls, values):
+        if values.get("path") is None and values.get("url") is None:
+            raise ValueError("Must provide either a path or a url")
+        if values.get("path") is not None and values.get("url") is not None:
+            raise ValueError("Must provide either a path or a url, not both")
+        return values
+
+    def get(self, dest: str) -> "DataBlob":
+        """Copy the data source to a new location"""
+        if self.path:
+            Path(dest).write_bytes(self.path.read_bytes())
+        elif self.url:
+            Path(dest).write_bytes(self.url.read_bytes())
+        return DataBlob(id=self.id, path=dest)
+
+
+class DataGrid(RompyBaseModel):
+    """Data object for model ingestion.
+
+    This is intended to be a generic data object for xarray datasets that need to be
+    filtered and written to netcdf.
+
+    TODO: Is there anything griddy about this class? Should it be renamed?
+
+    """
+
+    id: str = Field(description="Unique identifier for this data source")
+    source: SourceDataset | SourceOpenDataset | SourceIntake | SourceDatamesh = Field(
+        description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
     filter: Optional[Filter] = Field(
@@ -310,13 +306,17 @@ class DataGrid(RompyBaseModel):
     @property
     def ds(self):
         """Return the xarray dataset for this data source."""
-        ds = self.dataset.open(
+        ds = self.source.open(
             variables=self.variables, filters=self.filter, coords=self.coords
         )
         return ds
 
     def plot(self, param, isel={}, model_grid=None, cmap="turbo", fscale=10, **kwargs):
-        """Plot the grid"""
+        """Plot the grid.
+
+        TODO: Plotting is a bit slow, optimise this.
+
+        """
 
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
@@ -374,8 +374,12 @@ class DataGrid(RompyBaseModel):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
-    def get(self, stage_dir: str) -> "DataGrid":
-        """Write the data source to a new location"""
-        dest = os.path.join(stage_dir, f"{self.id}.nc")
-        self.ds.to_netcdf(dest, **self.netcdf_kwargs)
-        return DataGrid(id=self.id, path=dest)
+    def get(self, stage_dir: str | Path) -> Path:
+        """Write the data source to a new location.
+
+        TODO: Discuss whether this method should be called something more obvious
+
+        """
+        dest = Path(stage_dir) / f"{self.id}.nc"
+        self.ds.to_netcdf(dest)
+        return dest
