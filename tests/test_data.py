@@ -10,7 +10,7 @@ import xarray as xr
 
 import rompy
 from rompy.core.filters import Filter
-from rompy.core.data import Coords
+from rompy.core.data import DatasetCoords
 from rompy.core import (
     BaseGrid,
     DataBlob,
@@ -105,7 +105,7 @@ def nc_data_source():
         }
     )
     ds.to_netcdf(source)
-    return DataGrid(id="grid", dataset=DatasetXarray(uri=source))
+    return DataGrid(id="grid", dataset=DatasetXarray(dataset=source))
 
 
 def test_netcdf_grid(nc_data_source):
@@ -173,5 +173,5 @@ def test_dataset_datamesh():
     filters.crop.update(
         dict(longitude=slice(115.5, 116.0), latitude=slice(-33.0, -32.5))
     )
-    dset = dataset.open(variables=["u10"], filters=filters, coords=Coords(x="longitude", y="latitude"))
+    dset = dataset.open(variables=["u10"], filters=filters, coords=DatasetCoords(x="longitude", y="latitude"))
     assert(isinstance(dset, xr.Dataset))
