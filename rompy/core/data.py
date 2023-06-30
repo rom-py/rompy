@@ -3,9 +3,9 @@ import logging
 from pathlib import Path
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
-from cloudpathlib import CloudPath
+from cloudpathlib import AnyPath
 import intake
 from intake.catalog import Catalog
 import xarray as xr
@@ -236,37 +236,46 @@ class DataBlob(RompyBaseModel):
     This is intended to be a generic data source for files that simply need to be
     copied to the model directory.
 
-    TODO: If we are happy to support cloudpathlib here than we could use
-    cloudlib.AnyPath and only have say URI parameter.
-
     """
 
+    model_type: Literal["data_blob"] = Field(
+        default="data_blob",
+        description="Model type discriminator",
+    )
     id: str = Field(description="Unique identifier for this data source")
-    path: Optional[Path] = Field(
-        default=None, description="Optional local file path"
-    )
-    url: Optional[CloudPath] = Field(
-        default=None, description="Optional remote file url"
+    source: AnyPath = Field(
+        description=("URI of the data source, either a local file path or a remote uri"),
     )
 
-    @root_validator
-    def check_path_or_url(cls, values):
-        if values.get("path") is None and values.get("url") is None:
-            raise ValueError("Must provide either a path or a url")
-        if values.get("path") is not None and values.get("url") is not None:
-            raise ValueError("Must provide either a path or a url, not both")
-        return values
+    def get(self, dst: str | Path) -> Path:
+        """Copy the data source to a new directory.
 
-    def get(self, dest: str) -> "DataBlob":
-        """Copy the data source to a new location"""
-        if self.path:
-            Path(dest).write_bytes(self.path.read_bytes())
-        elif self.url:
-            Path(dest).write_bytes(self.url.read_bytes())
-        return DataBlob(id=self.id, path=dest)
+        Parameters
+        ----------
+        dst : str | Path
+            The destination directory to copy the data source to.
+
+        Returns
+        -------
+        outfile: Path
+            The path to the copied file.
+
+        """
+        outfile = Path(dst) / self.source.name
+        if outfile.resolve() != self.source.resolve():
+            outfile.write_bytes(self.source.read_bytes())
+        return outfile
 
 
-class DataGrid(RompyBaseModel):
+DATA_SOURCE_TYPES = Union[
+    SourceDataset,
+    SourceOpenDataset,
+    SourceIntake,
+    SourceDatamesh,
+]
+
+
+class DataGrid(DataBlob):
     """Data object for model ingestion.
 
     This is intended to be a generic data object for xarray datasets that need to be
@@ -276,8 +285,11 @@ class DataGrid(RompyBaseModel):
 
     """
 
-    id: str = Field(description="Unique identifier for this data source")
-    source: SourceDataset | SourceOpenDataset | SourceIntake | SourceDatamesh = Field(
+    model_type: Literal["data_grid"] = Field(
+        default="data_grid",
+        description="Model type discriminator",
+    )
+    source: DATA_SOURCE_TYPES = Field(
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
@@ -381,12 +393,22 @@ class DataGrid(RompyBaseModel):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
-    def get(self, stage_dir: str | Path) -> Path:
+    def get(self, dst: str | Path) -> Path:
         """Write the data source to a new location.
+
+        Parameters
+        ----------
+        dst : str | Path
+            The destination directory to write the netcdf data to.
+
+        Returns
+        -------
+        outfile: Path
+            The path to the written file.
 
         TODO: Discuss whether this method should be called something more obvious
 
         """
-        dest = Path(stage_dir) / f"{self.id}.nc"
-        self.ds.to_netcdf(dest)
-        return dest
+        outfile = Path(dst) / f"{self.id}.nc"
+        self.ds.to_netcdf(outfile)
+        return outfile
