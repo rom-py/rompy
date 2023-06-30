@@ -247,12 +247,12 @@ class DataBlob(RompyBaseModel):
         description=("URI of the data source, either a local file path or a remote uri"),
     )
 
-    def get(self, dst: str | Path) -> Path:
+    def get(self, destdir: str | Path) -> Path:
         """Copy the data source to a new directory.
 
         Parameters
         ----------
-        dst : str | Path
+        destdir : str | Path
             The destination directory to copy the data source to.
 
         Returns
@@ -261,7 +261,7 @@ class DataBlob(RompyBaseModel):
             The path to the copied file.
 
         """
-        outfile = Path(dst) / self.source.name
+        outfile = Path(destdir) / self.source.name
         if outfile.resolve() != self.source.resolve():
             outfile.write_bytes(self.source.read_bytes())
         return outfile
@@ -393,12 +393,12 @@ class DataGrid(DataBlob):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
-    def get(self, dst: str | Path) -> Path:
+    def get(self, destdir: str | Path) -> Path:
         """Write the data source to a new location.
 
         Parameters
         ----------
-        dst : str | Path
+        destdir : str | Path
             The destination directory to write the netcdf data to.
 
         Returns
@@ -409,6 +409,6 @@ class DataGrid(DataBlob):
         TODO: Discuss whether this method should be called something more obvious
 
         """
-        outfile = Path(dst) / f"{self.id}.nc"
+        outfile = Path(destdir) / f"{self.id}.nc"
         self.ds.to_netcdf(outfile)
         return outfile
