@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-import tempfile
 
 import numpy as np
 import pandas as pd
@@ -20,71 +19,37 @@ DATAMESH_TOKEN = os.environ.get("DATAMESH_TOKEN")
 
 # create dummy local datasource for testing
 @pytest.fixture
-def txt_data_source():
+def txt_data_source(tmpdir):
     # touch temp text file
-    tmp_path = tempfile.mkdtemp()
-    source = os.path.join(tmp_path, "test.txt")
+    source = tmpdir / "test.txt"
     with open(source, "w") as f:
         f.write("hello world")
-    return DataBlob(id="test", path=source)
+    return DataBlob(id="test", source=source)
 
 
 @pytest.fixture
 def grid_data_source():
     return DataGrid(
         id="wind",
-        catalog=os.path.join(rompy.__path__[0], "catalogs", "oceanum.yaml"),
         source=SourceIntake(
-            dataset_id="era5_wind10m",
-            catalog_url="",
+            dataset_id="era5",
+            catalog_uri=HERE / "data" / "catalog.yaml",
         ),
         filter={
             "sort": {"coords": ["latitude"]},
             "crop": {
-                "time": slice("2000-01-01", "2000-01-02"),
-                "latitude": slice(0, 10),
-                "longitude": slice(0, 10),
+                "time": slice("2023-01-01", "2023-01-02"),
+                "latitude": slice(0, 20),
+                "longitude": slice(0, 20),
             },
         },
     )
 
 
-def test_get(txt_data_source):
-    ds = txt_data_source
-    output = ds.get("./test.txt")
-    assert output.path.is_file()
-
-
-def test_get_no_path(txt_data_source):
-    ds = txt_data_source
-    with pytest.raises(TypeError):
-        ds.get()
-
-
-def test_fails_both_path_and_url():
-    with pytest.raises(ValueError):
-        DataBlob(path="foo", url="bar")
-
-
-@pytest.mark.skip(reason="not reproducible outside of oceanum")
-def test_intake_grid(grid_data_source):
-    data = grid_data_source
-    assert data.ds.latitude.max() == 10
-    assert data.ds.latitude.min() == 0
-    assert data.ds.longitude.max() == 10
-    assert data.ds.longitude.min() == 0
-    downloaded = data.get("simulations")
-    assert downloaded.ds.latitude.max() == 10
-    assert downloaded.ds.latitude.min() == 0
-    assert downloaded.ds.longitude.max() == 10
-    assert downloaded.ds.longitude.min() == 0
-
-
 @pytest.fixture
-def nc_data_source():
+def nc_data_source(tmpdir):
     # touch temp netcdf file
-    tmp_path = tempfile.mkdtemp()
-    source = os.path.join(tmp_path, "test.nc")
+    source = os.path.join(tmpdir, "test.nc")
     ds = xr.Dataset(
         {
             "data": xr.DataArray(
@@ -100,6 +65,29 @@ def nc_data_source():
     )
     ds.to_netcdf(source)
     return DataGrid(id="grid", source=SourceOpenDataset(uri=source))
+
+
+def test_get(tmpdir, txt_data_source):
+    ds = txt_data_source
+    output = ds.get(tmpdir)
+    assert output.is_file()
+
+
+def test_get_no_path(txt_data_source):
+    ds = txt_data_source
+    with pytest.raises(TypeError):
+        ds.get()
+
+
+def test_intake_grid(tmpdir, grid_data_source):
+    data = grid_data_source
+    assert data.ds.latitude.max() == 20
+    assert data.ds.latitude.min() == 0
+    assert data.ds.longitude.max() == 20
+    assert data.ds.longitude.min() == 0
+    outfile = downloaded = data.get(tmpdir)
+    dset = xr.open_dataset(outfile)
+    assert dset.equals(data.ds)
 
 
 def test_netcdf_grid(nc_data_source):
