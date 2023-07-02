@@ -77,7 +77,7 @@ class SourceDataset(SourceBase):
 
 
 class SourceFile(SourceBase):
-    """Source dataset from xarray.open_dataset reader."""
+    """Source dataset from file to open with xarray.open_dataset."""
 
     model_type: Literal["open_dataset"] = Field(
         default="open_dataset",
@@ -90,7 +90,7 @@ class SourceFile(SourceBase):
     )
 
     def __str__(self) -> str:
-        return f"SourceFile(uri={self.uri}"
+        return f"SourceFile(uri={self.uri})"
 
     def _open(self) -> xr.Dataset:
         return xr.open_dataset(self.uri, **self.kwargs)
