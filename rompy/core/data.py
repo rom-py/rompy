@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class SourceBase(RompyBaseModel, ABC):
     """Abstract base class for a source dataset."""
+
     model_type: Literal["base_source"] = Field(
         description="Model type discriminator, must be overriden by a subclass",
     )
@@ -103,10 +104,8 @@ class SourceIntake(SourceBase):
         default="intake",
         description="Model type discriminator",
     )
-    dataset_id: str = Field(
-        description="The id of the dataset to read in the catalog")
-    catalog_uri: str | Path = Field(
-        description="The URI of the catalog to read from")
+    dataset_id: str = Field(description="The id of the dataset to read in the catalog")
+    catalog_uri: str | Path = Field(description="The URI of the catalog to read from")
     kwargs: dict = Field(
         default={},
         description="Keyword arguments to define intake dataset parameters",
@@ -180,7 +179,7 @@ class SourceDatamesh(SourceBase):
                     type="Polygon",
                     coordinates=[coords],
                 ),
-             ),
+            ),
         )
         return geofilter
 
@@ -209,10 +208,7 @@ class SourceDatamesh(SourceBase):
         return self.connector.query(query)
 
     def open(
-        self,
-        filters: Filter,
-        coords: DatasetCoords,
-        variables: list = []
+        self, filters: Filter, coords: DatasetCoords, variables: list = []
     ) -> xr.Dataset:
         """Returns the filtered dataset object.
 
@@ -243,7 +239,9 @@ class DataBlob(RompyBaseModel):
     )
     id: str = Field(description="Unique identifier for this data source")
     source: AnyPath = Field(
-        description=("URI of the data source, either a local file path or a remote uri"),
+        description=(
+            "URI of the data source, either a local file path or a remote uri"
+        ),
     )
 
     def get(self, destdir: str | Path) -> Path:
