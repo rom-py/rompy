@@ -76,7 +76,7 @@ class SourceDataset(SourceBase):
         return self.obj
 
 
-class SourceOpenDataset(SourceBase):
+class SourceFile(SourceBase):
     """Source dataset from xarray.open_dataset reader."""
 
     model_type: Literal["open_dataset"] = Field(
@@ -90,7 +90,7 @@ class SourceOpenDataset(SourceBase):
     )
 
     def __str__(self) -> str:
-        return f"SourceOpenDataset(uri={self.uri}"
+        return f"SourceFile(uri={self.uri}"
 
     def _open(self) -> xr.Dataset:
         return xr.open_dataset(self.uri, **self.kwargs)
@@ -233,8 +233,7 @@ class SourceDatamesh(SourceBase):
 class DataBlob(RompyBaseModel):
     """Data source for model ingestion.
 
-    This is intended to be a generic data source for files that simply need to be
-    copied to the model directory.
+    Generic data source for files that simply need to be copied to the model directory.
 
     """
 
@@ -269,7 +268,7 @@ class DataBlob(RompyBaseModel):
 
 DATA_SOURCE_TYPES = Union[
     SourceDataset,
-    SourceOpenDataset,
+    SourceFile,
     SourceIntake,
     SourceDatamesh,
 ]

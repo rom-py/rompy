@@ -9,7 +9,7 @@ import xarray as xr
 import rompy
 from rompy.core.filters import Filter
 from rompy.core.types import DatasetCoords
-from rompy.core.data import SourceDataset, SourceOpenDataset, SourceIntake, SourceDatamesh
+from rompy.core.data import SourceDataset, SourceFile, SourceIntake, SourceDatamesh
 from rompy.core import BaseGrid, DataBlob, DataGrid, TimeRange
 
 
@@ -64,7 +64,7 @@ def nc_data_source(tmpdir):
         }
     )
     ds.to_netcdf(source)
-    return DataGrid(id="grid", source=SourceOpenDataset(uri=source))
+    return DataGrid(id="grid", source=SourceFile(uri=source))
 
 
 def test_get(tmpdir, txt_data_source):
@@ -135,7 +135,7 @@ def test_source_dataset():
 
 
 def test_source_open_dataset():
-    dataset = SourceOpenDataset(uri=HERE / "data" / "aus-20230101.nc")
+    dataset = SourceFile(uri=HERE / "data" / "aus-20230101.nc")
     assert isinstance(dataset.open(), xr.Dataset)
 
 
