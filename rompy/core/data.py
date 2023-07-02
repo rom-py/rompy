@@ -277,8 +277,8 @@ DATA_SOURCE_TYPES = Union[
 class DataGrid(DataBlob):
     """Data object for model ingestion.
 
-    This is intended to be a generic data object for xarray datasets that need to be
-    filtered and written to netcdf.
+    Generic data object for xarray datasets that need to be filtered and written to
+    netcdf.
 
     TODO: Is there anything griddy about this class? Should it be renamed?
 
