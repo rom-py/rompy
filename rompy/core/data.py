@@ -305,21 +305,14 @@ class DataGrid(DataBlob):
 
     def _filter_grid(self, grid, buffer=0.1):
         """Define the filters to use to extract data to this grid"""
-        minLon, minLat, maxLon, maxLat = grid.bbox()
+        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
         self.filter.crop.update(
-            {
-                self.coords.x: slice(minLon - buffer, maxLon + buffer),
-                self.coords.y: slice(minLat - buffer, maxLat + buffer),
-            }
+            {self.coords.x: slice(x0, x1), self.coords.y: slice(y0, y1)}
         )
 
     def _filter_time(self, time: TimeRange):
         """Define the filters to use to extract data to this grid"""
-        self.filter.crop.update(
-            {
-                self.coords.t: slice(time.start, time.end),
-            }
-        )
+        self.filter.crop.update({self.coords.t: slice(time.start, time.end)})
 
     @property
     def ds(self):
