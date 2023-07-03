@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 from utils import compare_files
 
-from rompy import ModelRun
+from rompy.model import ModelRun
 from rompy.core import BaseConfig, TimeRange
 
 here = os.path.dirname(os.path.abspath(__file__))
