@@ -88,7 +88,11 @@ Wave triads
 Vegetaion dumping
 ~~~~~~~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.VEGETATION
 
 Mud dumping
 ~~~~~~~~~~~
