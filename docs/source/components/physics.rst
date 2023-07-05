@@ -20,7 +20,6 @@ Generation
    rompy.swan.components.physics.GEN1
    rompy.swan.components.physics.GEN2
    rompy.swan.components.physics.GEN3
-   rompy.swan.components.physics.GT6
 
 Swell dissipation
 ~~~~~~~~~~~~~~~~~
@@ -78,7 +77,13 @@ Bottom friction
 Wave triads
 ~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.DCTA
+   rompy.swan.components.physics.LTA
+   rompy.swan.components.physics.SPB
 
 Vegetaion dumping
 ~~~~~~~~~~~~~~~~~
