@@ -97,7 +97,11 @@ Vegetaion dumping
 Mud dumping
 ~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.MUD
 
 Sea ice dissipation
 ~~~~~~~~~~~~~~~~~~~
