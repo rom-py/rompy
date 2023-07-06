@@ -119,7 +119,11 @@ Sea ice dissipation
 Turbulent viscosity
 ~~~~~~~~~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.TURBULENCE
 
 Bragg scattering
 ~~~~~~~~~~~~~~~~
