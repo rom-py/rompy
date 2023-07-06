@@ -133,6 +133,8 @@ Bragg scattering
    :toctree: _generated/
 
    rompy.swan.components.physics.BRAGG
+   rompy.swan.components.physics.BRAGGFT
+   rompy.swan.components.physics.BRAGGFILE
 
 Limiter
 ~~~~~~~
