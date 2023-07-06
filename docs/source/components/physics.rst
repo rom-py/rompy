@@ -128,7 +128,11 @@ Turbulent viscosity
 Bragg scattering
 ~~~~~~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.BRAGG
 
 Limiter
 ~~~~~~~
