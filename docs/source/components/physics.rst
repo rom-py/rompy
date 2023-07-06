@@ -106,7 +106,15 @@ Mud dumping
 Sea ice dissipation
 ~~~~~~~~~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.SICE
+   rompy.swan.components.physics.R19
+   rompy.swan.components.physics.D15
+   rompy.swan.components.physics.M18
+   rompy.swan.components.physics.R21B
 
 Turbulent viscosity
 ~~~~~~~~~~~~~~~~~~~
