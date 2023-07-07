@@ -13,7 +13,7 @@ This is a reference API class listing.
 
    rompy.core
 
-.. autopydantic_model:: rompy.core.model.ModelRun
+.. autopydantic_model:: rompy.model.ModelRun
    :members:
 
 .. autopydantic_model:: rompy.core.time.TimeRange

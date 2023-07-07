@@ -10,7 +10,7 @@ The framework is separated into two broad concepts:
    :nosignatures:
    :toctree: _generated/
 
-   rompy.ModelRun
+   rompy.model.ModelRun
    rompy.core.BaseConfig
 
 There is information about each of these in the documentation of each object, but at a hight leve, is the high level framework 
@@ -25,7 +25,7 @@ Core objects
 ---------------
 
 Grids
-^^^^
+^^^^^
 
 Grids form a core component of any model. Rompy provides a base class for grids, and a regular grid class. 
 Support for other grid types will be added in the future.
@@ -61,7 +61,7 @@ Model Run
    :nosignatures:
    :toctree: _generated/
 
-   rompy.ModelRun
+   rompy.model.ModelRun
 
 
 
