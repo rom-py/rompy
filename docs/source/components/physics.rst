@@ -148,7 +148,11 @@ Limiter
 Obstacles
 ~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.OBSTACLE
 
 Free infragravity ratiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
