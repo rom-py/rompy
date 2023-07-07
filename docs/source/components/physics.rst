@@ -145,8 +145,8 @@ Limiter
 
    rompy.swan.components.physics.LIMITER
 
-Obstacles
-~~~~~~~~~
+Obstacle
+~~~~~~~~
 
 .. autosummary::
    :nosignatures:
