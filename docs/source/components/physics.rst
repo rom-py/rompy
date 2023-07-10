@@ -192,3 +192,13 @@ Scattering
    :toctree: _generated/
 
    rompy.swan.components.physics.SCAT
+
+Off
+~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.OFF
+   rompy.swan.components.physics.OFFS
