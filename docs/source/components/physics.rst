@@ -154,6 +154,7 @@ Obstacle
    :toctree: _generated/
 
    rompy.swan.components.physics.OBSTACLE
+   rompy.swan.components.physics.OBSTACLES
 
 Free infragravity ratiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
