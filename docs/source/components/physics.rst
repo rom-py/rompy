@@ -169,7 +169,11 @@ Wave setup
 Wave diffraction
 ~~~~~~~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.DIFFRACTION
 
 Surfbeat
 ~~~~~~~~
