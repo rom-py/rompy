@@ -201,4 +201,4 @@ Off
    :toctree: _generated/
 
    rompy.swan.components.physics.OFF
-   rompy.swan.components.physics.OFFS
+   rompy.swan.components.physics.DEACTIVATE
