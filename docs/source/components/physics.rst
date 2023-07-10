@@ -178,9 +178,17 @@ Wave diffraction
 Surfbeat
 ~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.SURFBEAT
 
 Scattering
 ~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.SCAT
