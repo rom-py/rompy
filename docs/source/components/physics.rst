@@ -157,15 +157,14 @@ Obstacle
    rompy.swan.components.physics.OBSTACLE_FIG
    rompy.swan.components.physics.OBSTACLES
 
-Free infragravity ratiation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Not implemented.
-
 Wave setup
 ~~~~~~~~~~
 
-Not implemented.
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.physics.SETUP
 
 Wave diffraction
 ~~~~~~~~~~~~~~~~
