@@ -1,3 +1,5 @@
+"""Rompy types."""
+from typing import Optional
 from pydantic import BaseModel, Field, validator
 
 
@@ -306,3 +308,12 @@ class Spectrum(RompyBaseModel):
     nfreqs: int = Field(31, description="Number of frequency components")
     ndirs: int = Field(36, description="Number of directional components")
     # TODO make more flexible.
+
+
+class DatasetCoords(RompyBaseModel):
+    """Coordinates representation."""
+
+    t: Optional[str] = Field("time", description="Name of the time coordinate")
+    x: Optional[str] = Field("longitude", description="Name of the x coordinate")
+    y: Optional[str] = Field("latitude", description="Name of the y coordinate")
+    z: Optional[str] = Field("depth", description="Name of the z coordinate")

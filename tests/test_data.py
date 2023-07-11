@@ -1,6 +1,5 @@
 import os
-import tempfile
-from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -8,74 +7,49 @@ import pytest
 import xarray as xr
 
 import rompy
-from rompy.core import (BaseGrid, DataBlob, DataGrid, DatasetIntake,
-                        DatasetXarray, TimeRange)
+from rompy.core.filters import Filter
+from rompy.core.types import DatasetCoords
+from rompy.core.data import SourceDataset, SourceFile, SourceIntake, SourceDatamesh
+from rompy.core import BaseGrid, DataBlob, DataGrid, TimeRange
+
+
+HERE = Path(__file__).parent
+DATAMESH_TOKEN = os.environ.get("DATAMESH_TOKEN")
 
 
 # create dummy local datasource for testing
 @pytest.fixture
-def txt_data_source():
+def txt_data_source(tmpdir):
     # touch temp text file
-    tmp_path = tempfile.mkdtemp()
-    source = os.path.join(tmp_path, "test.txt")
+    source = tmpdir / "test.txt"
     with open(source, "w") as f:
         f.write("hello world")
-    return DataBlob(id="test", path=source)
+    return DataBlob(id="test", source=source)
 
 
 @pytest.fixture
 def grid_data_source():
     return DataGrid(
         id="wind",
-        catalog=os.path.join(rompy.__path__[0], "catalogs", "oceanum.yaml"),
-        dataset="era5_wind10m",
+        source=SourceIntake(
+            dataset_id="era5",
+            catalog_uri=HERE / "data" / "catalog.yaml",
+        ),
         filter={
             "sort": {"coords": ["latitude"]},
             "crop": {
-                "time": slice("2000-01-01", "2000-01-02"),
-                "latitude": slice(0, 10),
-                "longitude": slice(0, 10),
+                "time": slice("2023-01-01", "2023-01-02"),
+                "latitude": slice(0, 20),
+                "longitude": slice(0, 20),
             },
         },
     )
 
 
-def test_get(txt_data_source):
-    ds = txt_data_source
-    output = ds.get("./test.txt")
-    assert output.path.is_file()
-
-
-def test_get_no_path(txt_data_source):
-    ds = txt_data_source
-    with pytest.raises(TypeError):
-        ds.get()
-
-
-def test_fails_both_path_and_url():
-    with pytest.raises(ValueError):
-        DataBlob(path="foo", url="bar")
-
-
-@pytest.mark.skip(reason="not reproducible outside of oceanum")
-def test_intake_grid(grid_data_source):
-    data = grid_data_source
-    assert data.ds.latitude.max() == 10
-    assert data.ds.latitude.min() == 0
-    assert data.ds.longitude.max() == 10
-    assert data.ds.longitude.min() == 0
-    downloaded = data.get("simulations")
-    assert downloaded.ds.latitude.max() == 10
-    assert downloaded.ds.latitude.min() == 0
-    assert downloaded.ds.longitude.max() == 10
-    assert downloaded.ds.longitude.min() == 0
-
-
 @pytest.fixture
-def nc_data_source():
+def nc_data_source(tmpdir):
     # touch temp netcdf file
-    tmp_path = tempfile.mkdtemp()
-    source = os.path.join(tmp_path, "test.nc")
+    source = os.path.join(tmpdir, "test.nc")
     ds = xr.Dataset(
         {
             "data": xr.DataArray(
@@ -90,7 +64,30 @@ def nc_data_source():
         }
     )
     ds.to_netcdf(source)
-    return DataGrid(id="grid", dataset=DatasetXarray(uri=source))
+    return DataGrid(id="grid", source=SourceFile(uri=source))
+
+
+def test_get(tmpdir, txt_data_source):
+    ds = txt_data_source
+    output = ds.get(tmpdir)
+    assert output.is_file()
+
+
+def test_get_no_path(txt_data_source):
+    ds = txt_data_source
+    with pytest.raises(TypeError):
+        ds.get()
+
+
+def test_intake_grid(tmpdir, grid_data_source):
+    data = grid_data_source
+    assert data.ds.latitude.max() == 20
+    assert data.ds.latitude.min() == 0
+    assert data.ds.longitude.max() == 20
+    assert data.ds.longitude.min() == 0
+    outfile = downloaded = data.get(tmpdir)
+    dset = xr.open_dataset(outfile)
+    assert dset.equals(data.ds)
 
 
 def test_netcdf_grid(nc_data_source):
@@ -129,3 +126,34 @@ def test_time_filter(nc_data_source):
     assert nc_data_source.ds.longitude.min() == 2
     assert nc_data_source.ds.time.max() == np.datetime64("2000-01-03")
     assert nc_data_source.ds.time.min() == np.datetime64("2000-01-02")
+
+
+def test_source_dataset():
+    dset = xr.open_dataset(HERE / "data" / "aus-20230101.nc")
+    dataset = SourceDataset(obj=dset)
+    assert isinstance(dataset.open(), xr.Dataset)
+
+
+def test_source_open_dataset():
+    dataset = SourceFile(uri=HERE / "data" / "aus-20230101.nc")
+    assert isinstance(dataset.open(), xr.Dataset)
+
+
+def test_dataset_intake():
+    dataset = SourceIntake(
+        dataset_id="ausspec",
+        catalog_uri=HERE / "data" / "catalog.yaml",
+    )
+    assert isinstance(dataset.open(), xr.Dataset)
+
+
+@pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
+def test_dataset_datamesh():
+    dataset = SourceDatamesh(datasource="era5_wind10m", token=DATAMESH_TOKEN)
+    filters = Filter()
+    filters.crop.update(dict(time=slice("2000-01-01T00:00:00", "2000-01-01T03:00:00")))
+    filters.crop.update(
+        dict(longitude=slice(115.5, 116.0), latitude=slice(-33.0, -32.5))
+    )
+    dset = dataset.open(variables=["u10"], filters=filters, coords=DatasetCoords(x="longitude", y="latitude"))
+    assert(isinstance(dset, xr.Dataset))
