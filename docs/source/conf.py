@@ -89,6 +89,24 @@ exclude_patterns = []
 #
 html_theme = "pydata_sphinx_theme"
 
+html_theme_options = {
+    "collapse_navigation": True,
+    "show_nav_level": 3,
+    "secondary_sidebar_items": ["page-toc", "edit-this-page", "sourcelink"],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/rom-py/rompy",
+            "icon": "fab fa-github",
+            "type": "fontawesome",
+        }
+   ]
+}
+
+html_sidebars = {
+  "**": ["globaltoc.html"],
+}
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
