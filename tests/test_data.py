@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-import rompy
 from rompy.core.filters import Filter
 from rompy.core.types import DatasetCoords
 from rompy.core.data import SourceDataset, SourceFile, SourceIntake, SourceDatamesh
@@ -49,7 +48,7 @@ def grid_data_source():
 @pytest.fixture
 def nc_data_source(tmpdir):
     # touch temp netcdf file
-    source = os.path.join(tmpdir, "test.nc")
+    source = tmpdir / "test.nc"
     ds = xr.Dataset(
         {
             "data": xr.DataArray(

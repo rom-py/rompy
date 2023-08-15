@@ -1,35 +1,36 @@
-import os
+from pathlib import Path
 from datetime import datetime
 
 import pytest
 from utils import compare_files
 
-from rompy import ModelRun
+from rompy.model import ModelRun
 from rompy.core import BaseConfig, TimeRange
 
-here = os.path.dirname(os.path.abspath(__file__))
+here = Path(__file__).parent
 
 
 @pytest.fixture
-def model():
+def model(tmpdir):
     return ModelRun(
         run_id="test_base",
-        output_dir=os.path.join(here, "simulations"),
+        output_dir=str(tmpdir),
         config=BaseConfig(arg1="foo", arg2="bar"),
         # template=BaseConfig(),
     )
 
 
 @pytest.fixture
-def gitlab_template():
+def gitlab_template(tmpdir):
     return ModelRun(
+        output_dir=str(tmpdir),
         template=BaseConfig(
             template="git@gitlab.com:oceanum/models/test-rompy-template.git",
         )
     )
 
 
-def test_datetime_parse():
+def test_datetime_parse(tmpdir):
     end = datetime(2022, 2, 21, 4)
     for format in [
         "%Y%m%d.%H%M%S",
@@ -37,19 +38,25 @@ def test_datetime_parse():
         "%Y%m%dT%H%M%S",
         "%Y%m%dT%H%M",
     ]:
-        model = ModelRun(period=TimeRange(end=end.strftime(format), duration="1d"))
+        model = ModelRun(
+            period=TimeRange(end=end.strftime(format), duration="1d"),
+            output_dir=str(tmpdir),
+        )
         for period in ["year", "month", "day", "hour"]:
             assert getattr(model.period.end, period) == getattr(end, period)
 
 
-def test_datetime_parse_fail():
+def test_datetime_parse_fail(tmpdir):
     end = datetime(2022, 2, 21, 4)
     for format in [
         "%Y%m%d.%Hhello",
         "%Y%m%dhello",
     ]:
         try:
-            model = ModelRun(period=TimeRange(end=end.strftime(format), duration="1d"))
+            ModelRun(
+                period=TimeRange(end=end.strftime(format), duration="1d"),
+                output_dir=str(tmpdir),
+            )
         except ValueError:
             pass
         else:
@@ -60,8 +67,8 @@ def test_datetime_parse_fail():
 def test_generate(model):
     model.generate()
     compare_files(
-        os.path.join(here, "simulations/test_base/INPUT"),
-        os.path.join(here, "simulations/test_base_ref/INPUT"),
+        Path(model.output_dir) / model.run_id / "INPUT",
+        here / "simulations/test_base_ref/INPUT",
     )
 
 
@@ -70,6 +77,6 @@ def test_generate(model):
 def test_gitlab_template(gitlab_template):
     gitlab_template.generate()
     compare_files(
-        os.path.join(here, "template_output/test_base/INPUT"),
-        os.path.join(here, "simulations/test_base_ref/INPUT"),
+        Path(gitlab_template.output_dir) / gitlab_template.run_id / "INPUT",
+        here / "simulations/test_base_ref/INPUT",
     )

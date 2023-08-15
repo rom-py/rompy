@@ -6,23 +6,15 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
-from ._version import get_versions
-import intake
 import logging
-import os
-import warnings
+from pathlib import Path
 
-from .model import ModelRun
+# from . import _version
 
 logger = logging.getLogger("rompy")
 
+# __version__ = _version.get_versions()["version"]
+__version__ = "0.1.0"
 
-here = os.path.abspath(os.path.dirname(__file__))
-cat = intake.open_catalog(os.path.join(here, "catalogs", "master.yaml"))
-
-
-__version__ = get_versions()["version"]
-del get_versions
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATES_DIR = os.path.join(ROOT_DIR, "templates")
+ROOT_DIR = Path(__file__).parent.resolve()
+TEMPLATES_DIR = ROOT_DIR / "templates"
