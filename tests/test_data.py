@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-import rompy
 from rompy.core.filters import Filter
 from rompy.core.types import DatasetCoords
 from rompy.core.data import SourceDataset, SourceFile, SourceIntake, SourceDatamesh
@@ -49,7 +48,7 @@ def grid_data_source():
 @pytest.fixture
 def nc_data_source(tmpdir):
     # touch temp netcdf file
-    source = os.path.join(tmpdir, "test.nc")
+    source = tmpdir / "test.nc"
     ds = xr.Dataset(
         {
             "data": xr.DataArray(
@@ -147,6 +146,7 @@ def test_dataset_intake():
     assert isinstance(dataset.open(), xr.Dataset)
 
 
+@pytest.mark.skip(reason="This won't work with pydantic<2, fix once migrated")
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
 def test_dataset_datamesh():
     dataset = SourceDatamesh(datasource="era5_wind10m", token=DATAMESH_TOKEN)

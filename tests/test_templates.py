@@ -1,14 +1,13 @@
-import os
-import shutil
+from pathlib import Path
 from datetime import datetime
-
 import pytest
-from utils import compare_files
 
-from rompy import TEMPLATES_DIR, ModelRun
+from utils import compare_files
+from rompy import TEMPLATES_DIR
+from rompy.model import ModelRun
 from rompy.core import BaseConfig, TimeRange
 
-here = os.path.dirname(os.path.abspath(__file__))
+here = Path(__file__).parent
 
 
 @pytest.fixture
@@ -23,37 +22,31 @@ def template():
 #     assert config.template == os.path.join(TEMPLATES_DIR, "base")
 
 
-def test_newbaseconfig():
+def test_newbaseconfig(tmpdir):
     """Test the swantemplate function."""
-    run_dir = os.path.join(here, "simulations")
-    run_id = "test_base"
     config = BaseConfig(arg1="foo", arg2="bar")
     runtime = ModelRun(
-        run_id=run_id,
-        output_dir=run_dir,
+        run_id="test_base",
+        output_dir=str(tmpdir),
         config=config,
     )
     runtime.generate()
     compare_files(
-        os.path.join(here, "simulations/test_base_ref/INPUT"),
-        os.path.join(run_dir, run_id, "INPUT"),
+        tmpdir / runtime.run_id / "INPUT",
+        here / "simulations" / "test_base_ref" / "INPUT",
     )
-    shutil.rmtree(os.path.join(run_dir, run_id))
 
 
-def test_custom_template():
-    run_dir = os.path.join(here, "simulations")
-    run_id = "test_base"
+def test_custom_template(tmpdir):
     config = BaseConfig(arg1="foo", arg2="bar")
     runtime = ModelRun(
-        run_id=run_id,
-        output_dir=run_dir,
+        run_id="test_base",
+        output_dir=str(tmpdir),
         template="simple_templates/base",
         config=config,
     )
     runtime.generate()
     compare_files(
-        os.path.join(here, "simulations/test_base_ref/INPUT"),
-        os.path.join(run_dir, run_id, "INPUT"),
+        here / "simulations" / "test_base_ref" / "INPUT",
+        tmpdir / runtime.run_id / "INPUT",
     )
-    # shutil.rmtree(os.path.join(run_dir, run_id))
