@@ -34,6 +34,17 @@ The following presets are available:
    rompy.swan.subcomponents.physics.ST6C5
 
 
+Biphase
+~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.subcomponents.physics.ELDEBERKY
+   rompy.swan.subcomponents.physics.DEWIT
+
+
 Transmission and reflection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -50,6 +61,7 @@ Transmission and reflection
    rompy.swan.subcomponents.physics.RSPEC
    rompy.swan.subcomponents.physics.RDIFF
    rompy.swan.subcomponents.physics.FREEBOARD
+   rompy.swan.subcomponents.physics.LINE
 
 
 .. _`SWAN Manual`: https://swanmodel.sourceforge.io/online_doc/swanuse/node28.html
