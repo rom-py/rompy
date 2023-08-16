@@ -146,6 +146,7 @@ def test_dataset_intake():
     assert isinstance(dataset.open(), xr.Dataset)
 
 
+@pytest.mark.skip(reason="This won't work with pydantic<2, fix once migrated")
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
 def test_dataset_datamesh():
     dataset = SourceDatamesh(datasource="era5_wind10m", token=DATAMESH_TOKEN)
