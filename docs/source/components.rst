@@ -62,4 +62,12 @@ arguments to one or more component. The following modules are available:
 * :doc:`subcomponents/boundary`
 * :doc:`subcomponents/physics`
 
+
+SWAN Types
+----------
+
+SWAN types provide valid values for a specific SWAN command line argument.
+
+* :doc:`swan/types`
+
 .. _`Literal`: https://docs.python.org/3/library/typing.html#typing.Literal

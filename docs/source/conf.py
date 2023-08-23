@@ -35,6 +35,8 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinxcontrib.autodoc_pydantic",
     "nbsphinx",
+    "IPython.sphinxext.ipython_console_highlighting",
+    "IPython.sphinxext.ipython_directive",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -86,6 +88,24 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
+
+html_theme_options = {
+    "collapse_navigation": True,
+    "show_nav_level": 3,
+    "secondary_sidebar_items": ["page-toc", "edit-this-page", "sourcelink"],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/rom-py/rompy",
+            "icon": "fab fa-github",
+            "type": "fontawesome",
+        }
+   ]
+}
+
+html_sidebars = {
+  "**": ["globaltoc.html"],
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

@@ -16,6 +16,7 @@ Source terms
    rompy.swan.subcomponents.physics.WESTHUYSEN
    rompy.swan.subcomponents.physics.ST6
 
+
 ST6 presets
 ~~~~~~~~~~~
 
@@ -32,6 +33,35 @@ The following presets are available:
    rompy.swan.subcomponents.physics.ST6C4
    rompy.swan.subcomponents.physics.ST6C5
 
+
+Biphase
+~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.subcomponents.physics.ELDEBERKY
+   rompy.swan.subcomponents.physics.DEWIT
+
+
+Transmission and reflection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.subcomponents.physics.TRANSM
+   rompy.swan.subcomponents.physics.TRANS1D
+   rompy.swan.subcomponents.physics.TRANS2D
+   rompy.swan.subcomponents.physics.GODA
+   rompy.swan.subcomponents.physics.DANGREMOND
+   rompy.swan.subcomponents.physics.REFL
+   rompy.swan.subcomponents.physics.RSPEC
+   rompy.swan.subcomponents.physics.RDIFF
+   rompy.swan.subcomponents.physics.FREEBOARD
+   rompy.swan.subcomponents.physics.LINE
 
 
 .. _`SWAN Manual`: https://swanmodel.sourceforge.io/online_doc/swanuse/node28.html
