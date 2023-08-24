@@ -118,12 +118,12 @@ class Bbox(BaseModel):
         return hash((self.minlon, self.minlat, self.maxlon, self.maxlat))
 
     @model_validator(mode="after")
-    def validate_coords(cls, data: Any) -> Any:
-        if data["minlon"] >= data["maxlon"]:
+    def validate_coords(self) -> 'Bbox':
+        if self.minlon >= self.maxlon:
             raise ValueError("minlon must be less than maxlon")
-        if data["minlat"] >= data["maxlat"]:
+        if self.minlat >= self.maxlat:
             raise ValueError("minlat must be less than maxlon")
-        return data
+        return self
 
     @property
     def width(self):
