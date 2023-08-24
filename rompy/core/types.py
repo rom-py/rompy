@@ -1,11 +1,12 @@
 """Rompy types."""
 from typing import Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import field_validator, ConfigDict, BaseModel, Field, validator
 
 
 class RompyBaseModel(BaseModel):
-    class Config:
-        underscore_attrs_are_private = True
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(underscore_attrs_are_private=True)
 
 
 class Latitude(BaseModel):
@@ -13,7 +14,8 @@ class Latitude(BaseModel):
 
     lat: float = Field(..., description="Latitude", ge=-90, le=90)
 
-    @validator("lat")
+    @field_validator("lat")
+    @classmethod
     def validate_lat(cls, v):
         if not (-90 <= v <= 90):
             raise ValueError("latitude must be between -90 and 90")
@@ -37,7 +39,8 @@ class Longitude(BaseModel):
 
     lon: float = Field(..., description="Longitude", ge=-180, le=180)
 
-    @validator("lon")
+    @field_validator("lon")
+    @classmethod
     def validate_lon(cls, v):
         if not (-180 <= v <= 180):
             raise ValueError("longitude must be between -180 and 180")
@@ -62,13 +65,15 @@ class Coordinate(BaseModel):
     lon: float = Field(..., description="Longitude")
     lat: float = Field(..., description="Latitude")
 
-    @validator("lon")
+    @field_validator("lon")
+    @classmethod
     def validate_lon(cls, v):
         if not (-180 <= v <= 180):
             raise ValueError("longitude must be between -180 and 180")
         return v
 
-    @validator("lat")
+    @field_validator("lat")
+    @classmethod
     def validate_lat(cls, v):
         if not (-90 <= v <= 90):
             raise ValueError("latitude must be between -90 and 90")
@@ -112,24 +117,32 @@ class Bbox(BaseModel):
     def __hash__(self):
         return hash((self.minlon, self.minlat, self.maxlon, self.maxlat))
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("minlon")
     def validate_minlon(cls, v, values):
         if v > values["maxlon"]:
             raise ValueError("minlon must be less than maxlon")
         return v
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("minlat")
     def validate_minlat(cls, v, values):
         if v > values["maxlat"]:
             raise ValueError("minlat must be less than maxlat")
         return v
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("maxlon")
     def validate_maxlon(cls, v, values):
         if v < values["minlon"]:
             raise ValueError("maxlon must be greater than minlon")
         return v
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("maxlat")
     def validate_maxlat(cls, v, values):
         if v < values["minlat"]:

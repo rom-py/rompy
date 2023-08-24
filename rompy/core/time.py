@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Union
 
 from dateutil.relativedelta import relativedelta
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import field_validator, ConfigDict, BaseModel, Field, root_validator
 
 from rompy.core.types import RompyBaseModel
 
@@ -64,11 +64,10 @@ class TimeRange(BaseModel):
         True,
         description="Determines if the end date should be included in the range",
     )
+    model_config = ConfigDict(validate_default=True)
 
-    class Config:
-        validate_all = True
-
-    @validator("interval", "duration", pre=True)
+    @field_validator("interval", "duration", mode="before")
+    @classmethod
     def valid_duration_interval(cls, v):
         if v == None:
             return v
@@ -83,7 +82,8 @@ class TimeRange(BaseModel):
             time_delta_value = int(v[:-1])
             return timedelta(**{time_units[time_delta_unit]: time_delta_value})
 
-    @validator("start", "end", pre=True)
+    @field_validator("start", "end", mode="before")
+    @classmethod
     def validate_start_end(cls, v):
         if v == None:
             return v

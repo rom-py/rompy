@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from .types import RompyBaseModel
 
@@ -40,6 +40,4 @@ class BaseConfig(RompyBaseModel):
         description="The git branch to use if the template is a git repo",
         default="main",
     )
-
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
