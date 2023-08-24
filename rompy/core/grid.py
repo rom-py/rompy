@@ -3,15 +3,11 @@ from typing import Literal, Optional
 
 import numpy as np
 from pydantic import Field, root_validator
-from pydantic_numpy import NDArray
+from pydantic_numpy.typing import Np1DArray
 from shapely.geometry import MultiPoint, Polygon
 
 from .types import Bbox, RompyBaseModel
 
-# pydantic interface to BaseNumericalModel
-# https://pydantic-docs.helpmanual.io/usage/models/
-
-# comment using numpy style docstrings
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +21,8 @@ class BaseGrid(RompyBaseModel):
     its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
     """
 
-    x: Optional[NDArray] = Field(description="A 1D array of x coordinates")
-    y: Optional[NDArray] = Field(description="A 1D array of y coordinates")
+    x: Optional[Np1DArray] = Field(description="A 1D array of x coordinates")
+    y: Optional[Np1DArray] = Field(description="A 1D array of y coordinates")
     grid_type: Literal["base"] = "base"
 
     @property
