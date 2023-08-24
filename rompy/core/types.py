@@ -1,6 +1,6 @@
 """Rompy types."""
-from typing import Optional
-from pydantic import field_validator, ConfigDict, BaseModel, Field, validator
+from typing import Any, Optional
+from pydantic import field_validator, model_validator, ConfigDict, BaseModel, Field, validator
 
 
 class RompyBaseModel(BaseModel):
@@ -12,11 +12,11 @@ class RompyBaseModel(BaseModel):
 class Latitude(BaseModel):
     """Latitude"""
 
-    lat: float = Field(..., description="Latitude", ge=-90, le=90)
+    lat: float = Field(description="Latitude", ge=-90, le=90)
 
     @field_validator("lat")
     @classmethod
-    def validate_lat(cls, v):
+    def validate_lat(cls, v: float) -> float:
         if not (-90 <= v <= 90):
             raise ValueError("latitude must be between -90 and 90")
         return v
@@ -37,11 +37,11 @@ class Latitude(BaseModel):
 class Longitude(BaseModel):
     """Longitude"""
 
-    lon: float = Field(..., description="Longitude", ge=-180, le=180)
+    lon: float = Field(description="Longitude", ge=-180, le=180)
 
     @field_validator("lon")
     @classmethod
-    def validate_lon(cls, v):
+    def validate_lon(cls, v: float) -> float:
         if not (-180 <= v <= 180):
             raise ValueError("longitude must be between -180 and 180")
         return v
@@ -62,19 +62,19 @@ class Longitude(BaseModel):
 class Coordinate(BaseModel):
     """Coordinate"""
 
-    lon: float = Field(..., description="Longitude")
-    lat: float = Field(..., description="Latitude")
+    lon: float = Field(description="Longitude")
+    lat: float = Field(description="Latitude")
 
     @field_validator("lon")
     @classmethod
-    def validate_lon(cls, v):
+    def validate_lon(cls, v: float) -> float:
         if not (-180 <= v <= 180):
             raise ValueError("longitude must be between -180 and 180")
         return v
 
     @field_validator("lat")
     @classmethod
-    def validate_lat(cls, v):
+    def validate_lat(cls, v: float) -> float:
         if not (-90 <= v <= 90):
             raise ValueError("latitude must be between -90 and 90")
         return v
@@ -117,37 +117,13 @@ class Bbox(BaseModel):
     def __hash__(self):
         return hash((self.minlon, self.minlat, self.maxlon, self.maxlat))
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("minlon")
-    def validate_minlon(cls, v, values):
-        if v > values["maxlon"]:
+    @model_validator(mode="after")
+    def validate_coords(cls, data: Any) -> Any:
+        if data["minlon"] >= data["maxlon"]:
             raise ValueError("minlon must be less than maxlon")
-        return v
-
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("minlat")
-    def validate_minlat(cls, v, values):
-        if v > values["maxlat"]:
-            raise ValueError("minlat must be less than maxlat")
-        return v
-
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("maxlon")
-    def validate_maxlon(cls, v, values):
-        if v < values["minlon"]:
-            raise ValueError("maxlon must be greater than minlon")
-        return v
-
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("maxlat")
-    def validate_maxlat(cls, v, values):
-        if v < values["minlat"]:
-            raise ValueError("maxlat must be greater than minlat")
-        return v
+        if data["minlat"] >= data["maxlat"]:
+            raise ValueError("minlat must be less than maxlon")
+        return data
 
     @property
     def width(self):
