@@ -2,7 +2,7 @@ import logging
 from typing import Literal, Optional
 
 import numpy as np
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from pydantic_numpy.typing import Np1DArray
 from shapely.geometry import MultiPoint, Polygon
 
@@ -211,28 +211,19 @@ class RegularGrid(BaseGrid):
     _nx: Optional[int]
     _ny: Optional[int]
 
-    @root_validator
-    def validate_grid(cls, values):
-        x = values["x"]
-        y = values["y"]
-        x0 = values["x0"]
-        y0 = values["y0"]
-        dx = values["dx"]
-        dy = values["dy"]
-        nx = values["nx"]
-        ny = values["ny"]
-
-        if isinstance(x, np.ndarray) or isinstance(y, np.ndarray):
-            if any([x0, y0, dx, dy, nx, ny]):
+    @model_validator(mode="after")
+    def validate_grid(self) -> 'RegularGrid':
+        keys = ["x0", "y0", "dx", "dy", "nx", "ny"]
+        if self.x is not None or self.y is not None:
+            if any(getattr(self, key) is not None for key in keys):
                 raise ValueError(
-                    "x, y provided explicitly, cant process x0, y0, dx, dy, nx, ny"
+                    f"x, y provided explicitly, can't process {','.join(keys)}"
                 )
-            return values
-        for var in [x0, y0, dx, dy, nx, ny]:
-            if var is None:
-                raise ValueError(
-                    "x0, y0, dx, dy, nx, ny must be provided for REG grid")
-        return values
+            return self
+        for var in keys:
+            if getattr(self, var) is None:
+                raise ValueError(f"{','.join(keys)} must be provided for REG grid")
+        return self
 
     def __init__(self, **data):
         super().__init__(**data)
