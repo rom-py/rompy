@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
-from typing import List, Optional, Union
+from typing import Optional, Union
 
-from dateutil.relativedelta import relativedelta
-from pydantic import field_validator, ConfigDict, BaseModel, Field, root_validator
+from pydantic import field_validator, model_validator, ConfigDict, BaseModel, Field
 
-from rompy.core.types import RompyBaseModel
 
 time_units = {
     "h": "hours",
@@ -108,43 +106,31 @@ class TimeRange(BaseModel):
                 pass
         return v
 
-    @root_validator
-    def validate_start_end_duration(cls, values):
-        # check two out of start, end, duration are provided
-        if values.get("start"):
-            if not values.get("end") and not values.get("duration"):
-                raise ValueError(
-                    "start provided, must provide either end or duration")
-        if values.get("end"):
-            if not values.get("start") and not values.get("duration"):
-                raise ValueError(
-                    "end provided, must provide either start or duration")
-        if values.get("duration"):
-            if not values.get("start") and not values.get("end"):
-                raise ValueError(
-                    "duration provided, must provide either start or end")
-        if (
-            values.get("start") is None
-            and values.get("end") is None
-            and values.get("duration") is None
-        ):
+    @model_validator(mode="after")
+    def validate_start_end_duration(self) -> 'TimeRange':
+        if self.start is not None:
+            if all(getattr(self, key) is None for key in ["end", "duration"]):
+                raise ValueError("start provided, must provide either end or duration")
+        if self.end is not None:
+            if all(getattr(self, key) is None for key in ["start", "duration"]):
+                raise ValueError("end provided, must provide either start or duration")
+        if self.duration is not None:
+            if all(getattr(self, key) is None for key in ["start", "end"]):
+                raise ValueError("duration provided, must provide either start or end")
+        if all(getattr(self, key) is None for key in ["start", "end", "duration"]):
             raise ValueError("Must provide two of start, end, duration")
-        if (
-            values.get("start") is not None
-            and values.get("end") is not None
-            and values.get("duration") is not None
-        ):
+        if all(getattr(self, key) is not None for key in ["start", "end", "duration"]):
             raise ValueError("Must provide only two of start, end, duration")
-        if values.get("start") is not None and values.get("end") is not None:
-            values["duration"] = values["end"] - values["start"]
-        if values.get("start") is not None and values.get("duration") is not None:
-            values["end"] = values["start"] + values["duration"]
-        if values.get("end") is not None and values.get("duration") is not None:
-            values["start"] = values["end"] - values["duration"]
-        return values
+        if self.start is not None and self.end is not None:
+            self.duration = self.end - self.start
+        if self.start is not None and self.duration is not None:
+            self.end = self.start + self.duration
+        if self.end is not None and self.duration is not None:
+            self.start = self.end - self.duration
+        return self
 
     @property
-    def date_range(self) -> List[datetime]:
+    def date_range(self) -> list[datetime]:
         start = self.start
         end = self.end
         date_range = []
@@ -163,7 +149,7 @@ class TimeRange(BaseModel):
     def contains_range(self, date_range: "TimeRange") -> bool:
         return self.contains(date_range.start) and self.contains(date_range.end)
 
-    def common_times(self, date_range: "TimeRange") -> List[datetime]:
+    def common_times(self, date_range: "TimeRange") -> list[datetime]:
         common_times = []
         for date in self.date_range:
             if date_range.contains(date):
