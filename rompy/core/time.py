@@ -41,22 +41,22 @@ class TimeRange(BaseModel):
     start: Optional[datetime] = Field(
         None,
         description="The start date of the time range",
-        example="2020-01-01",
+        examples=["2020-01-01"],
     )
     end: Optional[datetime] = Field(
         None,
         description="The end date of the time range",
-        example="2020-01-02",
+        examples=["2020-01-02"],
     )
     duration: Optional[Union[str, timedelta]] = Field(
         None,
         description="The duration of the time range",
-        example="1d",
+        examples=["1d"],
     )
     interval: Optional[Union[str, timedelta]] = Field(
         "1h",
         description="The frequency of the time range",
-        example="1h or '1h'",
+        examples=["1h", "'1h'"],
     )
     include_end: bool = Field(
         True,
