@@ -21,8 +21,12 @@ class BaseGrid(RompyBaseModel):
     its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
     """
 
-    x: Optional[Np1DArray] = Field(description="A 1D array of x coordinates")
-    y: Optional[Np1DArray] = Field(description="A 1D array of y coordinates")
+    x: Optional[Np1DArray] = Field(
+        default=None, description="A 1D array of x coordinates"
+    )
+    y: Optional[Np1DArray] = Field(
+        default=None, description="A 1D array of y coordinates"
+    )
     grid_type: Literal["base"] = "base"
 
     @property
@@ -185,23 +189,23 @@ class RegularGrid(BaseGrid):
         "regular", description="Type of grid, must be 'regular'"
     )
     x0: Optional[float] = Field(
-        None, description="X coordinate of the grid origin")
+        default=None, description="X coordinate of the grid origin")
     y0: Optional[float] = Field(
-        None, description="Y coordinate of the grid origin")
+        default=None, description="Y coordinate of the grid origin")
     rot: Optional[float] = Field(
         0.0, description="Rotation angle of the grid in degrees"
     )
     dx: Optional[float] = Field(
-        None, description="Spacing between grid points in the x direction"
+        default=None, description="Spacing between grid points in the x direction"
     )
     dy: Optional[float] = Field(
-        None, description="Spacing between grid points in the y direction"
+        default=None, description="Spacing between grid points in the y direction"
     )
     nx: Optional[int] = Field(
-        None, description="Number of grid points in the x direction"
+        default=None, description="Number of grid points in the x direction"
     )
     ny: Optional[int] = Field(
-        None, description="Number of grid points in the y direction"
+        default=None, description="Number of grid points in the y direction"
     )
     _x0: Optional[float]
     _y0: Optional[float]
