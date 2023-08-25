@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from pydantic import field_validator, model_validator, ConfigDict, BaseModel, Field
 
@@ -106,21 +106,26 @@ class TimeRange(BaseModel):
                 pass
         return v
 
-    @model_validator(mode="after")
-    def validate_start_end_duration(self) -> 'TimeRange':
-        if self.start is not None:
-            if all(getattr(self, key) is None for key in ["end", "duration"]):
+    @model_validator(mode="before")
+    @classmethod
+    def validate_start_end_duration(cls, data: Any) -> Any:
+        if data.get("start") is not None:
+            if all(data.get(key) is None for key in ["end", "duration"]):
                 raise ValueError("start provided, must provide either end or duration")
-        if self.end is not None:
-            if all(getattr(self, key) is None for key in ["start", "duration"]):
+        if data.get("end") is not None:
+            if all(data.get(key) is None for key in ["start", "duration"]):
                 raise ValueError("end provided, must provide either start or duration")
-        if self.duration is not None:
-            if all(getattr(self, key) is None for key in ["start", "end"]):
+        if data.get("duration") is not None:
+            if all(data.get(key) is None for key in ["start", "end"]):
                 raise ValueError("duration provided, must provide either start or end")
-        if all(getattr(self, key) is None for key in ["start", "end", "duration"]):
+        if all(data.get(key) is None for key in ["start", "end", "duration"]):
             raise ValueError("Must provide two of start, end, duration")
-        if all(getattr(self, key) is not None for key in ["start", "end", "duration"]):
+        if all(data.get(key) is not None for key in ["start", "end", "duration"]):
             raise ValueError("Must provide only two of start, end, duration")
+        return data
+
+    @model_validator(mode="after")
+    def parse_start_end_duration(self) -> 'TimeRange':
         if self.start is not None and self.end is not None:
             self.duration = self.end - self.start
         if self.start is not None and self.duration is not None:

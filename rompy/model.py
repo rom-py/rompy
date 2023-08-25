@@ -4,7 +4,7 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional, Union
 
 from pydantic import Field
 
@@ -16,6 +16,8 @@ from .core.render import render
 
 logger = logging.getLogger(__name__)
 
+
+CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
 
 class ModelRun(RompyBaseModel):
     """A model run.
@@ -39,8 +41,8 @@ class ModelRun(RompyBaseModel):
     )
     output_dir: str = Field(
         "./simulations", description="The output directory")
-    config: BaseConfig | SwanConfig | SwanConfigComponents = Field(
-        BaseConfig(),
+    config: CONFIG_TYPES = Field(
+        default_factory=BaseConfig,
         description="The configuration object",
         discriminator="model_type",
     )
