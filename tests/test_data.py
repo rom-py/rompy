@@ -18,9 +18,9 @@ DATAMESH_TOKEN = os.environ.get("DATAMESH_TOKEN")
 
 # create dummy local datasource for testing
 @pytest.fixture
-def txt_data_source(tmpdir):
+def txt_data_source(tmp_path):
     # touch temp text file
-    source = tmpdir / "test.txt"
+    source = tmp_path / "test.txt"
     with open(source, "w") as f:
         f.write("hello world")
     return DataBlob(id="test", source=source)
@@ -46,9 +46,9 @@ def grid_data_source():
 
 
 @pytest.fixture
-def nc_data_source(tmpdir):
+def nc_data_source(tmp_path):
     # touch temp netcdf file
-    source = tmpdir / "test.nc"
+    source = tmp_path / "test.nc"
     ds = xr.Dataset(
         {
             "data": xr.DataArray(
@@ -66,9 +66,9 @@ def nc_data_source(tmpdir):
     return DataGrid(id="grid", source=SourceFile(uri=source))
 
 
-def test_get(tmpdir, txt_data_source):
+def test_get(tmp_path, txt_data_source):
     ds = txt_data_source
-    output = ds.get(tmpdir)
+    output = ds.get(tmp_path)
     assert output.is_file()
 
 
@@ -78,13 +78,13 @@ def test_get_no_path(txt_data_source):
         ds.get()
 
 
-def test_intake_grid(tmpdir, grid_data_source):
+def test_intake_grid(tmp_path, grid_data_source):
     data = grid_data_source
     assert data.ds.latitude.max() == 20
     assert data.ds.latitude.min() == 0
     assert data.ds.longitude.max() == 20
     assert data.ds.longitude.min() == 0
-    outfile = downloaded = data.get(tmpdir)
+    outfile = downloaded = data.get(tmp_path)
     dset = xr.open_dataset(outfile)
     assert dset.equals(data.ds)
 
