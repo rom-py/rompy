@@ -177,7 +177,7 @@ class BaseGrid(RompyBaseModel):
         return f"{self.__class__.__name__}({self.x}, {self.y})"
 
     def __eq__(self, other):
-        return self.dict() == other.dict()
+        return self.model_dump() == other.dict()
 
 
 class RegularGrid(BaseGrid):

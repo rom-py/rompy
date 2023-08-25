@@ -25,7 +25,7 @@ class Filter(RompyBaseModel):
     def __call__(self, ds):
         filters = get_filter_fns()
         for fn in filters:
-            params = self.dict()[fn]
+            params = self.model_dump()[fn]
             if params:
                 ds = filters[fn](ds, **params)
         return ds

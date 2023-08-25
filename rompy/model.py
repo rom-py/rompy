@@ -84,7 +84,7 @@ class ModelRun(RompyBaseModel):
         logger.info(f"Generating model input files in {self.output_dir}")
 
         cc_full = {}
-        cc_full["runtime"] = self.dict()
+        cc_full["runtime"] = self.model_dump()
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
         # TODO calculate from period
