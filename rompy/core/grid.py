@@ -1,5 +1,5 @@
 import logging
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -215,19 +215,20 @@ class RegularGrid(BaseGrid):
     _nx: Optional[int]
     _ny: Optional[int]
 
-    @model_validator(mode="after")
-    def validate_grid(self) -> 'RegularGrid':
+    @model_validator(mode="before")
+    @classmethod
+    def validate_grid(cls, data: Any) -> Any:
         keys = ["x0", "y0", "dx", "dy", "nx", "ny"]
-        if self.x is not None or self.y is not None:
-            if any(getattr(self, key) is not None for key in keys):
+        if data.get("x") is not None or data.get("y") is not None:
+            if any(data.get(key) is not None for key in keys):
                 raise ValueError(
                     f"x, y provided explicitly, can't process {','.join(keys)}"
                 )
-            return self
+            return data
         for var in keys:
-            if getattr(self, var) is None:
+            if data.get(var) is None:
                 raise ValueError(f"{','.join(keys)} must be provided for REG grid")
-        return self
+        return data
 
     def __init__(self, **data):
         super().__init__(**data)
