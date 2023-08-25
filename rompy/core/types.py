@@ -1,12 +1,20 @@
 """Rompy types."""
 from typing import Any, Optional
-from pydantic import field_validator, model_validator, ConfigDict, BaseModel, Field, validator
+from pydantic import (
+    field_validator,
+    model_validator,
+    ConfigDict,
+    BaseModel,
+    Field,
+    validator,
+)
 
 
 class RompyBaseModel(BaseModel):
 
     # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
     model_config = ConfigDict(protected_namespaces=())
+
 
 class Latitude(BaseModel):
     """Latitude"""
@@ -117,7 +125,7 @@ class Bbox(BaseModel):
         return hash((self.minlon, self.minlat, self.maxlon, self.maxlat))
 
     @model_validator(mode="after")
-    def validate_coords(self) -> 'Bbox':
+    def validate_coords(self) -> "Bbox":
         if self.minlon >= self.maxlon:
             raise ValueError("minlon must be less than maxlon")
         if self.minlat >= self.maxlat:

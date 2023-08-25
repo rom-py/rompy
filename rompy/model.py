@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
 
+
 class ModelRun(RompyBaseModel):
     """A model run.
 
@@ -39,8 +40,7 @@ class ModelRun(RompyBaseModel):
         ),
         description="The time period to run the model",
     )
-    output_dir: str = Field(
-        "./simulations", description="The output directory")
+    output_dir: str = Field("./simulations", description="The output directory")
     config: CONFIG_TYPES = Field(
         default_factory=BaseConfig,
         description="The configuration object",

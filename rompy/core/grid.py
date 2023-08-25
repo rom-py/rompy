@@ -117,11 +117,9 @@ class BaseGrid(RompyBaseModel):
         polygon = self.boundary(tolerance=0)
         perimeter = polygon.length
         if perimeter < spacing:
-            raise ValueError(
-                f"Spacing = {spacing} > grid perimeter = {perimeter}")
+            raise ValueError(f"Spacing = {spacing} > grid perimeter = {perimeter}")
         num_points = int(np.ceil(perimeter / spacing))
-        points = [polygon.boundary.interpolate(
-            i * spacing) for i in range(num_points)]
+        points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
     def plot(self, fscale=10, ax=None):
@@ -142,8 +140,7 @@ class BaseGrid(RompyBaseModel):
             fig, ax = plt.subplots(
                 1,
                 1,
-                figsize=(fscale, fscale * (maxLon - minLon) /
-                         (maxLat - minLat)),
+                figsize=(fscale, fscale * (maxLon - minLon) / (maxLat - minLat)),
                 subplot_kw={"projection": ccrs.PlateCarree()},
             )
             ax.set_extent(extents, crs=ccrs.PlateCarree())
@@ -190,9 +187,11 @@ class RegularGrid(BaseGrid):
         "regular", description="Type of grid, must be 'regular'"
     )
     x0: Optional[float] = Field(
-        default=None, description="X coordinate of the grid origin")
+        default=None, description="X coordinate of the grid origin"
+    )
     y0: Optional[float] = Field(
-        default=None, description="Y coordinate of the grid origin")
+        default=None, description="Y coordinate of the grid origin"
+    )
     rot: Optional[float] = Field(
         0.0, description="Rotation angle of the grid in degrees"
     )
@@ -256,8 +255,7 @@ class RegularGrid(BaseGrid):
 
         # Rotation
         alpha = -self.rot * np.pi / 180.0
-        R = np.array([[np.cos(alpha), -np.sin(alpha)],
-                     [np.sin(alpha), np.cos(alpha)]])
+        R = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
         gg = np.dot(np.vstack([ii.ravel(), jj.ravel()]).T, R)
 
         # Translation

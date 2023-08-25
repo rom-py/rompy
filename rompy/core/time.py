@@ -125,7 +125,7 @@ class TimeRange(BaseModel):
         return data
 
     @model_validator(mode="after")
-    def parse_start_end_duration(self) -> 'TimeRange':
+    def parse_start_end_duration(self) -> "TimeRange":
         if self.start is not None and self.end is not None:
             self.duration = self.end - self.start
         if self.start is not None and self.duration is not None:
