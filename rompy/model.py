@@ -4,7 +4,7 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
-from typing import Annotated, Optional, Union
+from typing import Union
 
 from pydantic import Field
 
