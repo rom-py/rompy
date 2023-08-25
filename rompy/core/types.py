@@ -4,7 +4,9 @@ from pydantic import field_validator, model_validator, ConfigDict, BaseModel, Fi
 
 
 class RompyBaseModel(BaseModel):
-    pass
+
+    # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
+    model_config = ConfigDict(protected_namespaces=())
 
 class Latitude(BaseModel):
     """Latitude"""
