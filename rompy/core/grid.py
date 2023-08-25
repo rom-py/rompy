@@ -1,9 +1,9 @@
 import logging
-from typing import Any, Literal, Optional
+from typing import Any, Union, Literal, Optional
 
 import numpy as np
 from pydantic import Field, model_validator
-from pydantic_numpy.typing import Np1DArray
+from pydantic_numpy.typing import Np1DArray, Np2DArray
 from shapely.geometry import MultiPoint, Polygon
 
 from .types import Bbox, RompyBaseModel
@@ -19,13 +19,14 @@ class BaseGrid(RompyBaseModel):
     This is the base class for all Grid objects. The minimum representation of a grid are two
     NumPy array's representing the vertices or nodes of some structured or unstructured grid,
     its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
+
     """
 
-    x: Optional[Np1DArray] = Field(
-        default=None, description="A 1D array of x coordinates"
+    x: Optional[Union[Np1DArray, Np2DArray]] = Field(
+        default=None, description="The x coordinates"
     )
-    y: Optional[Np1DArray] = Field(
-        default=None, description="A 1D array of y coordinates"
+    y: Optional[Union[Np1DArray, Np2DArray]] = Field(
+        default=None, description="The y coordinates"
     )
     grid_type: Literal["base"] = "base"
 

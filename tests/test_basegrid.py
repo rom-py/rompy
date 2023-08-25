@@ -10,7 +10,8 @@ from rompy.core import BaseGrid, RegularGrid
 def grid():
     x = np.arange(10)
     y = np.arange(10)
-    return BaseGrid(x=x, y=y)
+    xx, yy = np.meshgrid(x, y)
+    return BaseGrid(x=xx, y=yy)
 
 
 @pytest.fixture
