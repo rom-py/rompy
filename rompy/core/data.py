@@ -9,7 +9,7 @@ from cloudpathlib import AnyPath
 import intake
 from intake.catalog import Catalog
 import xarray as xr
-from pydantic import Field, root_validator
+from pydantic import ConfigDict, Field, root_validator
 from oceanum.datamesh import Connector
 
 from .filters import Filter
@@ -66,9 +66,7 @@ class SourceDataset(SourceBase):
     obj: xr.Dataset = Field(
         description="xarray Dataset object",
     )
-
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __str__(self) -> str:
         return f"SourceDataset(obj={self.obj})"

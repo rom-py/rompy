@@ -4,7 +4,7 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
-from typing import Optional
+from typing import Union
 
 from pydantic import Field
 
@@ -15,6 +15,9 @@ from .core import BaseConfig, RompyBaseModel, TimeRange
 from .core.render import render
 
 logger = logging.getLogger(__name__)
+
+
+CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
 
 
 class ModelRun(RompyBaseModel):
@@ -37,10 +40,9 @@ class ModelRun(RompyBaseModel):
         ),
         description="The time period to run the model",
     )
-    output_dir: str = Field(
-        "./simulations", description="The output directory")
-    config: BaseConfig | SwanConfig | SwanConfigComponents = Field(
-        BaseConfig(),
+    output_dir: str = Field("./simulations", description="The output directory")
+    config: CONFIG_TYPES = Field(
+        default_factory=BaseConfig,
         description="The configuration object",
         discriminator="model_type",
     )
@@ -82,7 +84,7 @@ class ModelRun(RompyBaseModel):
         logger.info(f"Generating model input files in {self.output_dir}")
 
         cc_full = {}
-        cc_full["runtime"] = self.dict()
+        cc_full["runtime"] = self.model_dump()
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
         # TODO calculate from period

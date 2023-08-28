@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta
-from typing import List, Optional, Union
+from typing import Any, Optional, Union
 
-from dateutil.relativedelta import relativedelta
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import field_validator, model_validator, ConfigDict, BaseModel, Field
 
-from rompy.core.types import RompyBaseModel
 
 time_units = {
     "h": "hours",
@@ -43,32 +41,31 @@ class TimeRange(BaseModel):
     start: Optional[datetime] = Field(
         None,
         description="The start date of the time range",
-        example="2020-01-01",
+        examples=["2020-01-01"],
     )
     end: Optional[datetime] = Field(
         None,
         description="The end date of the time range",
-        example="2020-01-02",
+        examples=["2020-01-02"],
     )
     duration: Optional[Union[str, timedelta]] = Field(
         None,
         description="The duration of the time range",
-        example="1d",
+        examples=["1d"],
     )
     interval: Optional[Union[str, timedelta]] = Field(
         "1h",
         description="The frequency of the time range",
-        example="1h or '1h'",
+        examples=["1h", "'1h'"],
     )
     include_end: bool = Field(
         True,
         description="Determines if the end date should be included in the range",
     )
+    model_config = ConfigDict(validate_default=True)
 
-    class Config:
-        validate_all = True
-
-    @validator("interval", "duration", pre=True)
+    @field_validator("interval", "duration", mode="before")
+    @classmethod
     def valid_duration_interval(cls, v):
         if v == None:
             return v
@@ -83,7 +80,8 @@ class TimeRange(BaseModel):
             time_delta_value = int(v[:-1])
             return timedelta(**{time_units[time_delta_unit]: time_delta_value})
 
-    @validator("start", "end", pre=True)
+    @field_validator("start", "end", mode="before")
+    @classmethod
     def validate_start_end(cls, v):
         if v == None:
             return v
@@ -108,43 +106,36 @@ class TimeRange(BaseModel):
                 pass
         return v
 
-    @root_validator
-    def validate_start_end_duration(cls, values):
-        # check two out of start, end, duration are provided
-        if values.get("start"):
-            if not values.get("end") and not values.get("duration"):
-                raise ValueError(
-                    "start provided, must provide either end or duration")
-        if values.get("end"):
-            if not values.get("start") and not values.get("duration"):
-                raise ValueError(
-                    "end provided, must provide either start or duration")
-        if values.get("duration"):
-            if not values.get("start") and not values.get("end"):
-                raise ValueError(
-                    "duration provided, must provide either start or end")
-        if (
-            values.get("start") is None
-            and values.get("end") is None
-            and values.get("duration") is None
-        ):
+    @model_validator(mode="before")
+    @classmethod
+    def validate_start_end_duration(cls, data: Any) -> Any:
+        if data.get("start") is not None:
+            if all(data.get(key) is None for key in ["end", "duration"]):
+                raise ValueError("start provided, must provide either end or duration")
+        if data.get("end") is not None:
+            if all(data.get(key) is None for key in ["start", "duration"]):
+                raise ValueError("end provided, must provide either start or duration")
+        if data.get("duration") is not None:
+            if all(data.get(key) is None for key in ["start", "end"]):
+                raise ValueError("duration provided, must provide either start or end")
+        if all(data.get(key) is None for key in ["start", "end", "duration"]):
             raise ValueError("Must provide two of start, end, duration")
-        if (
-            values.get("start") is not None
-            and values.get("end") is not None
-            and values.get("duration") is not None
-        ):
+        if all(data.get(key) is not None for key in ["start", "end", "duration"]):
             raise ValueError("Must provide only two of start, end, duration")
-        if values.get("start") is not None and values.get("end") is not None:
-            values["duration"] = values["end"] - values["start"]
-        if values.get("start") is not None and values.get("duration") is not None:
-            values["end"] = values["start"] + values["duration"]
-        if values.get("end") is not None and values.get("duration") is not None:
-            values["start"] = values["end"] - values["duration"]
-        return values
+        return data
+
+    @model_validator(mode="after")
+    def parse_start_end_duration(self) -> "TimeRange":
+        if self.start is not None and self.end is not None:
+            self.duration = self.end - self.start
+        if self.start is not None and self.duration is not None:
+            self.end = self.start + self.duration
+        if self.end is not None and self.duration is not None:
+            self.start = self.end - self.duration
+        return self
 
     @property
-    def date_range(self) -> List[datetime]:
+    def date_range(self) -> list[datetime]:
         start = self.start
         end = self.end
         date_range = []
@@ -163,7 +154,7 @@ class TimeRange(BaseModel):
     def contains_range(self, date_range: "TimeRange") -> bool:
         return self.contains(date_range.start) and self.contains(date_range.end)
 
-    def common_times(self, date_range: "TimeRange") -> List[datetime]:
+    def common_times(self, date_range: "TimeRange") -> list[datetime]:
         common_times = []
         for date in self.date_range:
             if date_range.contains(date):

@@ -1,17 +1,13 @@
 import logging
-from typing import Literal, Optional
+from typing import Any, Union, Literal, Optional
 
 import numpy as np
-from pydantic import Field, root_validator
-from pydantic_numpy import NDArray
+from pydantic import Field, model_validator
+from pydantic_numpy.typing import Np1DArray, Np2DArray
 from shapely.geometry import MultiPoint, Polygon
 
 from .types import Bbox, RompyBaseModel
 
-# pydantic interface to BaseNumericalModel
-# https://pydantic-docs.helpmanual.io/usage/models/
-
-# comment using numpy style docstrings
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +19,15 @@ class BaseGrid(RompyBaseModel):
     This is the base class for all Grid objects. The minimum representation of a grid are two
     NumPy array's representing the vertices or nodes of some structured or unstructured grid,
     its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
+
     """
 
-    x: Optional[NDArray] = Field(description="A 1D array of x coordinates")
-    y: Optional[NDArray] = Field(description="A 1D array of y coordinates")
+    x: Optional[Union[Np1DArray, Np2DArray]] = Field(
+        default=None, description="The x coordinates"
+    )
+    y: Optional[Union[Np1DArray, Np2DArray]] = Field(
+        default=None, description="The y coordinates"
+    )
     grid_type: Literal["base"] = "base"
 
     @property
@@ -116,11 +117,9 @@ class BaseGrid(RompyBaseModel):
         polygon = self.boundary(tolerance=0)
         perimeter = polygon.length
         if perimeter < spacing:
-            raise ValueError(
-                f"Spacing = {spacing} > grid perimeter = {perimeter}")
+            raise ValueError(f"Spacing = {spacing} > grid perimeter = {perimeter}")
         num_points = int(np.ceil(perimeter / spacing))
-        points = [polygon.boundary.interpolate(
-            i * spacing) for i in range(num_points)]
+        points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
     def plot(self, fscale=10, ax=None):
@@ -141,8 +140,7 @@ class BaseGrid(RompyBaseModel):
             fig, ax = plt.subplots(
                 1,
                 1,
-                figsize=(fscale, fscale * (maxLon - minLon) /
-                         (maxLat - minLat)),
+                figsize=(fscale, fscale * (maxLon - minLon) / (maxLat - minLat)),
                 subplot_kw={"projection": ccrs.PlateCarree()},
             )
             ax.set_extent(extents, crs=ccrs.PlateCarree())
@@ -176,7 +174,7 @@ class BaseGrid(RompyBaseModel):
         return f"{self.__class__.__name__}({self.x}, {self.y})"
 
     def __eq__(self, other):
-        return self.dict() == other.dict()
+        return self.model_dump() == other.dict()
 
 
 class RegularGrid(BaseGrid):
@@ -189,23 +187,25 @@ class RegularGrid(BaseGrid):
         "regular", description="Type of grid, must be 'regular'"
     )
     x0: Optional[float] = Field(
-        None, description="X coordinate of the grid origin")
+        default=None, description="X coordinate of the grid origin"
+    )
     y0: Optional[float] = Field(
-        None, description="Y coordinate of the grid origin")
+        default=None, description="Y coordinate of the grid origin"
+    )
     rot: Optional[float] = Field(
         0.0, description="Rotation angle of the grid in degrees"
     )
     dx: Optional[float] = Field(
-        None, description="Spacing between grid points in the x direction"
+        default=None, description="Spacing between grid points in the x direction"
     )
     dy: Optional[float] = Field(
-        None, description="Spacing between grid points in the y direction"
+        default=None, description="Spacing between grid points in the y direction"
     )
     nx: Optional[int] = Field(
-        None, description="Number of grid points in the x direction"
+        default=None, description="Number of grid points in the x direction"
     )
     ny: Optional[int] = Field(
-        None, description="Number of grid points in the y direction"
+        default=None, description="Number of grid points in the y direction"
     )
     _x0: Optional[float]
     _y0: Optional[float]
@@ -215,28 +215,20 @@ class RegularGrid(BaseGrid):
     _nx: Optional[int]
     _ny: Optional[int]
 
-    @root_validator
-    def validate_grid(cls, values):
-        x = values["x"]
-        y = values["y"]
-        x0 = values["x0"]
-        y0 = values["y0"]
-        dx = values["dx"]
-        dy = values["dy"]
-        nx = values["nx"]
-        ny = values["ny"]
-
-        if isinstance(x, np.ndarray) or isinstance(y, np.ndarray):
-            if any([x0, y0, dx, dy, nx, ny]):
+    @model_validator(mode="before")
+    @classmethod
+    def validate_grid(cls, data: Any) -> Any:
+        keys = ["x0", "y0", "dx", "dy", "nx", "ny"]
+        if data.get("x") is not None or data.get("y") is not None:
+            if any(data.get(key) is not None for key in keys):
                 raise ValueError(
-                    "x, y provided explicitly, cant process x0, y0, dx, dy, nx, ny"
+                    f"x, y provided explicitly, can't process {','.join(keys)}"
                 )
-            return values
-        for var in [x0, y0, dx, dy, nx, ny]:
-            if var is None:
-                raise ValueError(
-                    "x0, y0, dx, dy, nx, ny must be provided for REG grid")
-        return values
+            return data
+        for var in keys:
+            if data.get(var) is None:
+                raise ValueError(f"{','.join(keys)} must be provided for REG grid")
+        return data
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -263,8 +255,7 @@ class RegularGrid(BaseGrid):
 
         # Rotation
         alpha = -self.rot * np.pi / 180.0
-        R = np.array([[np.cos(alpha), -np.sin(alpha)],
-                     [np.sin(alpha), np.cos(alpha)]])
+        R = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
         gg = np.dot(np.vstack([ii.ravel(), jj.ravel()]).T, R)
 
         # Translation
