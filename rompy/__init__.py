@@ -1,21 +1,20 @@
-#-----------------------------------------------------------------------------
-# Copyright (c) 2020 - 2021, CSIRO 
+# -----------------------------------------------------------------------------
+# Copyright (c) 2020 - 2021, CSIRO
 #
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import logging
-import warnings
-logger = logging.getLogger('rompy')
+from pathlib import Path
 
-import os
-import intake
+# from . import _version
 
-here = os.path.abspath(os.path.dirname(__file__))
-cat = intake.open_catalog(os.path.join(here, 'catalogs', 'master.yaml'))
+logger = logging.getLogger("rompy")
 
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+# __version__ = _version.get_versions()["version"]
+__version__ = "0.1.0"
+
+ROOT_DIR = Path(__file__).parent.resolve()
+TEMPLATES_DIR = ROOT_DIR / "templates"
