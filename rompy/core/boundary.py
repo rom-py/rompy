@@ -157,16 +157,6 @@ class BoundaryWaveStation(DataGrid):
         ),
         ge=0,
     )
-    rectangle: Literal["closed", "open"] = Field(
-        default="closed",
-        description=(
-            "Defines whether boundary is defined over an closed or open rectangle"
-        ),
-    )
-    filter: Optional[Filter] = Field(
-        default_factory=Filter,
-        description="Optional filter specification to apply to the dataset",
-    )
 
     @model_validator(mode="after")
     def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
