@@ -335,10 +335,10 @@ class DataGrid(DataBlob):
 
         # First set some plot parameters:
         minLon, minLat, maxLon, maxLat = (
-            ds[self.lonname].values[0],
-            ds[self.latname].values[0],
-            ds[self.lonname].values[-1],
-            ds[self.latname].values[-1],
+            ds[self.coords.x].values[0],
+            ds[self.coords.y].values[0],
+            ds[self.coords.x].values[-1],
+            ds[self.coords.y].values[-1],
         )
         extents = [minLon, maxLon, minLat, maxLat]
 
