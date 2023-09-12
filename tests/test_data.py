@@ -146,6 +146,11 @@ def test_dataset_intake():
     assert isinstance(dataset.open(), xr.Dataset)
 
 
+def test_intake_grid_plot(grid_data_source):
+    data = grid_data_source
+    data.plot(param='u10', isel={'time': 0})
+
+
 @pytest.mark.skip(reason="This won't work with pydantic<2, fix once migrated")
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
 def test_dataset_datamesh():
@@ -157,3 +162,4 @@ def test_dataset_datamesh():
     )
     dset = dataset.open(variables=["u10"], filters=filters, coords=DatasetCoords(x="longitude", y="latitude"))
     assert(isinstance(dset, xr.Dataset))
+
