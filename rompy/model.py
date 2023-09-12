@@ -8,6 +8,7 @@ from typing import Union
 
 from pydantic import Field
 
+from rompy.schism import SchismConfig
 from rompy.swan import SwanConfig
 from rompy.swan.config import SwanConfigComponents
 
@@ -17,7 +18,8 @@ from .core.render import render
 logger = logging.getLogger(__name__)
 
 
-CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
+CONFIG_TYPES = Union[BaseConfig, SwanConfig,
+                     SwanConfigComponents, SchismConfig]
 
 
 class ModelRun(RompyBaseModel):
@@ -40,7 +42,8 @@ class ModelRun(RompyBaseModel):
         ),
         description="The time period to run the model",
     )
-    output_dir: str = Field("./simulations", description="The output directory")
+    output_dir: str = Field(
+        "./simulations", description="The output directory")
     config: CONFIG_TYPES = Field(
         default_factory=BaseConfig,
         description="The configuration object",
