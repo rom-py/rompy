@@ -276,8 +276,6 @@ class DataGrid(DataBlob):
     Generic data object for xarray datasets that need to be filtered and written to
     netcdf.
 
-    TODO: Is there anything griddy about this class? Should it be renamed?
-
     """
 
     model_type: Literal["data_grid"] = Field(
@@ -289,7 +287,8 @@ class DataGrid(DataBlob):
         discriminator="model_type",
     )
     filter: Optional[Filter] = Field(
-        Filter(), description="Optional filter specification to apply to the dataset"
+        default_factory=Filter,
+        description="Optional filter specification to apply to the dataset"
     )
     variables: Optional[list[str]] = Field(
         [], description="Subset of variables to extract from the dataset"
@@ -393,8 +392,6 @@ class DataGrid(DataBlob):
         -------
         outfile: Path
             The path to the written file.
-
-        TODO: Discuss whether this method should be called something more obvious
 
         """
         outfile = Path(destdir) / f"{self.id}.nc"
