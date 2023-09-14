@@ -4,4 +4,9 @@ Numerics
 
 SWAN numerics commands
 
-Not implemented.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.swan.components.numerics.PROP
