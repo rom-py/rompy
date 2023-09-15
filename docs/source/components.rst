@@ -61,6 +61,7 @@ arguments to one or more component. The following modules are available:
 * :doc:`subcomponents/readgrid`
 * :doc:`subcomponents/boundary`
 * :doc:`subcomponents/physics`
+* :doc:`subcomponents/numerics`
 
 
 SWAN Types
