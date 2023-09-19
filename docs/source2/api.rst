@@ -92,6 +92,12 @@ Types
 Swan components
 ---------------
 
+Base
+~~~~
+.. automodule:: rompy.swan.components.base
+    :members:
+    :no-index:
+
 Startup
 ~~~~~~~
 .. automodule:: rompy.swan.components.startup
@@ -122,9 +128,21 @@ Physics
     :members:
     :no-index:
 
+Numerics
+~~~~~~~~
+.. automodule:: rompy.swan.components.numerics
+    :members:
+    :no-index:
+
 
 Swan subcomponents
 ------------------
+
+Base
+~~~~
+.. automodule:: rompy.swan.subcomponents.base
+    :members:
+    :no-index:
 
 Startup
 ~~~~~~~
@@ -159,5 +177,11 @@ Boundary
 Physics
 ~~~~~~~
 .. automodule:: rompy.swan.subcomponents.physics
+    :members:
+    :no-index:
+
+Numerics
+~~~~~~~~
+.. automodule:: rompy.swan.subcomponents.numerics
     :members:
     :no-index:
