@@ -23,13 +23,13 @@ Swan Classes
 ------------
 
 .. autosummary::
-   :toctree: _generated
+    :toctree: _generated
 
-   swan.config.SwanConfig
-   swan.config.ForcingData
-   swan.config.SwanSpectrum
-   swan.config.SwanPhysics
-   swan.config.GridOutput
-   swan.config.SpecOutput
-   swan.grid.SwanGrid
-   swan.data.SwanDataGrid
+    swan.config.SwanConfig
+    swan.config.ForcingData
+    swan.config.SwanSpectrum
+    swan.config.SwanPhysics
+    swan.config.GridOutput
+    swan.config.SpecOutput
+    swan.grid.SwanGrid
+    swan.data.SwanDataGrid
