@@ -32,7 +32,7 @@ The final main component of the library is an intake driver that builds on the i
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    quickstart
