@@ -38,7 +38,7 @@ The final main component of the library is an intake driver that builds on the i
    quickstart
    core_concepts
    api
-
+   demo
 
 Indices and tables
 ==================
