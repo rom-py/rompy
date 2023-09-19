@@ -89,7 +89,7 @@ html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
     "collapse_navigation": True,
-    "show_nav_level": 3,
+    "show_nav_level": 2,
     "secondary_sidebar_items": ["page-toc", "edit-this-page", "sourcelink"],
     "icon_links": [
         {
