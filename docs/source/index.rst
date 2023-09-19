@@ -34,12 +34,12 @@ The final main component of the library is an intake driver that builds on the i
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
-   
-   quickstart.rst
-   core_concepts.rst
-   api.rst
-   demo.rst
-   components.rst
+
+   quickstart
+   core_concepts
+   models
+   api
+   demo
 
 Indices and tables
 ==================

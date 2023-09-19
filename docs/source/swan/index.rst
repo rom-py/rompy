@@ -1,8 +1,6 @@
-.. currentmodule:: rompy
-
-================
-Model Components
-================
+====
+SWAN
+====
 
 The SWAN command instructions are described in Rompy by a set of pydantic models
 defined as `components`. Each component defines a full command instruction such
@@ -37,14 +35,17 @@ Components
 Components are defined within the :py:mod:`rompy.swan.components` subpackage and
 render an entire SWAN command line specification. The following modules are available:
 
-* :doc:`components/startup`
-* :doc:`components/cgrid`
-* :doc:`components/inpgrid`
-* :doc:`components/boundary`
-* :doc:`components/physics`
-* :doc:`components/numerics`
-* :doc:`components/output`
-* :doc:`components/lockup`
+.. toctree::
+   :maxdepth: 1
+
+    components/startup
+    components/cgrid
+    components/inpgrid
+    components/boundary
+    components/physics
+    components/numerics
+    components/output
+    components/lockup
 
 
 Subcomponents
