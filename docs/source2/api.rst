@@ -6,9 +6,7 @@ API  Documentation
 
 
 Core Classes
-============
-
-This is a reference API class listing.
+------------
 
 .. autosummary::
    :toctree: _generated
@@ -19,3 +17,19 @@ This is a reference API class listing.
    core.grid.BaseGrid
    core.data.DataBlob
    core.data.DataGrid
+
+
+Swan Classes
+------------
+
+.. autosummary::
+   :toctree: _generated
+
+   swan.config.SwanConfig
+   swan.config.ForcingData
+   swan.config.SwanSpectrum
+   swan.config.SwanPhysics
+   swan.config.GridOutput
+   swan.config.SpecOutput
+   swan.grid.SwanGrid
+   swan.data.SwanDataGrid
