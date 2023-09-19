@@ -9,14 +9,14 @@ Core Classes
 ------------
 
 .. autosummary::
-   :toctree: _generated
+    :toctree: _generated
 
-   model.ModelRun
-   core.config.BaseConfig
-   core.time.TimeRange
-   core.grid.BaseGrid
-   core.data.DataBlob
-   core.data.DataGrid
+    model.ModelRun
+    core.config.BaseConfig
+    core.time.TimeRange
+    core.grid.BaseGrid
+    core.data.DataBlob
+    core.data.DataGrid
 
 
 Swan Classes
