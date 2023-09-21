@@ -29,11 +29,12 @@ The final main component of the library is an intake driver that builds on the i
 
 .. toctree::
     :hidden:
-    :maxdepth: 3
+    :maxdepth: 4
 
     Home <self>
     quickstart
     core_concepts
+    models
     demo
     api
 
