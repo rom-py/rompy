@@ -123,7 +123,7 @@ class BaseGrid(RompyBaseModel):
         points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
-    def plot(self, fscale=10, ax=None):
+    def plot(self, fscale=10, ax=None, borders=True, land=True, coastline=True):
         """Plot the grid"""
 
         import cartopy.crs as ccrs
@@ -146,11 +146,12 @@ class BaseGrid(RompyBaseModel):
             )
             ax.set_extent(extents, crs=ccrs.PlateCarree())
 
-            coastline = cfeature.GSHHSFeature(
-                scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
-            )
-            ax.add_feature(coastline, zorder=0)
-            ax.add_feature(cfeature.BORDERS, linewidth=2)
+            if borders:
+                ax.add_feature(cfeature.BORDERS)
+            if land:
+                ax.add_feature(cfeature.LAND)
+            if coastline:
+                ax.add_feature(cfeature.COASTLINE)
 
         gl = ax.gridlines(
             crs=ccrs.PlateCarree(),
