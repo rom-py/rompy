@@ -337,23 +337,28 @@ class DataGrid(DataBlob):
         projection = ccrs.PlateCarree()
         transform = ccrs.PlateCarree()
 
-        ds = self.ds
-        if param not in ds:
-            raise ValueError(f"Parameter {param} not in dataset")
+        # Sanity checks
+        try:
+            ds = self.ds[param].isel(isel)
+        except KeyError as err:
+            raise ValueError(f"Parameter {param} not in dataset") from err
+
+        if ds[self.coords.x].size <= 1:
+            raise ValueError(f"Cannot plot {param} with only one x coordinate\n\n{ds}")
+        if ds[self.coords.y].size <= 1:
+            raise ValueError(f"Cannot plot {param} with only one y coordinate\n\n{ds}")
 
         # Set some plot parameters:
-        x0, y0, x1, y1 = (
-            ds[self.coords.x].values[0],
-            ds[self.coords.y].values[0],
-            ds[self.coords.x].values[-1],
-            ds[self.coords.y].values[-1],
-        )
+        x0 = ds[self.coords.x].values[0]
+        y0 = ds[self.coords.y].values[0]
+        x1 = ds[self.coords.x].values[-1]
+        y1 = ds[self.coords.y].values[-1]
 
         # create figure and plot/map
-        fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0)))
+        fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0) or fscale))
         ax = fig.add_subplot(111, projection=projection)
 
-        ds[param].isel(isel).plot(ax=ax, cmap=cmap, **kwargs)
+        ds.plot.pcolormesh(ax=ax, cmap=cmap, **kwargs)
 
         if borders:
             ax.add_feature(cfeature.BORDERS)
