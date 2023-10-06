@@ -9,12 +9,16 @@ from cloudpathlib import AnyPath
 import intake
 from intake.catalog import Catalog
 import xarray as xr
-from pydantic import ConfigDict, Field, root_validator
+from pydantic import ConfigDict, Field
 from oceanum.datamesh import Connector
 
-from .filters import Filter
-from .time import TimeRange
-from .types import RompyBaseModel, DatasetCoords
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
+
+from rompy.core.filters import Filter
+from rompy.core.time import TimeRange
+from rompy.core.types import RompyBaseModel, DatasetCoords
 
 
 logger = logging.getLogger(__name__)
@@ -316,60 +320,56 @@ class DataGrid(DataBlob):
         )
         return ds
 
-    def plot(self, param, isel={}, model_grid=None, cmap="turbo", fscale=10, **kwargs):
-        """Plot the grid.
+    def plot(
+        self,
+        param,
+        isel={},
+        model_grid=None,
+        cmap="turbo",
+        fscale=10,
+        borders=True,
+        land=True,
+        coastline=True,
+        **kwargs,
+    ):
+        """Plot the grid."""
 
-        TODO: Plotting is a bit slow, optimise this.
-
-        """
-
-        import cartopy.crs as ccrs
-        import cartopy.feature as cfeature
-        import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        projection = ccrs.PlateCarree()
+        transform = ccrs.PlateCarree()
 
         ds = self.ds
         if param not in ds:
             raise ValueError(f"Parameter {param} not in dataset")
 
-        # First set some plot parameters:
-        minLon, minLat, maxLon, maxLat = (
+        # Set some plot parameters:
+        x0, y0, x1, y1 = (
             ds[self.coords.x].values[0],
             ds[self.coords.y].values[0],
             ds[self.coords.x].values[-1],
             ds[self.coords.y].values[-1],
         )
-        extents = [minLon, maxLon, minLat, maxLat]
 
         # create figure and plot/map
-        fig, ax = plt.subplots(
-            1,
-            1,
-            figsize=(fscale, fscale * (maxLat - minLat) / (maxLon - minLon)),
-            subplot_kw={"projection": ccrs.PlateCarree()},
-        )
-        # ax.set_extent(extents, crs=ccrs.PlateCarree())
-
-        coastline = cfeature.GSHHSFeature(
-            scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
-        )
+        fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0)))
+        ax = fig.add_subplot(111, projection=projection)
 
         ds[param].isel(isel).plot(ax=ax, cmap=cmap, **kwargs)
 
-        ax.add_feature(coastline)
-        ax.add_feature(cfeature.BORDERS, linewidth=2)
+        if borders:
+            ax.add_feature(cfeature.BORDERS)
+        if land:
+            ax.add_feature(cfeature.LAND, zorder=1)
+        if coastline:
+            ax.add_feature(cfeature.COASTLINE)
 
-        gl = ax.gridlines(
-            crs=ccrs.PlateCarree(),
-            draw_labels=True,
-            linewidth=2,
+        ax.gridlines(
+            crs=transform,
+            draw_labels=["left", "bottom"],
+            linewidth=1,
             color="gray",
             alpha=0.5,
             linestyle="--",
         )
-
-        gl.xformatter = LONGITUDE_FORMATTER
-        gl.yformatter = LATITUDE_FORMATTER
 
         # Plot the model domain
         if model_grid:
@@ -391,8 +391,6 @@ class DataGrid(DataBlob):
         -------
         outfile: Path
             The path to the written file.
-
-        TODO: Discuss whether this method should be called something more obvious
 
         """
         outfile = Path(destdir) / f"{self.id}.nc"
