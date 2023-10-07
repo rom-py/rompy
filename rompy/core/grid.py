@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseGrid(RompyBaseModel):
-    """
-    Abstract representation of a grid in geographic space
+    """Representation of a grid in geographic space.
 
     This is the base class for all Grid objects. The minimum representation of a grid
     are two NumPy array's representing the vertices or nodes of some structured or
@@ -139,7 +138,7 @@ class BaseGrid(RompyBaseModel):
 
         # create figure and plot/map
         if ax is None:
-            fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0)))
+            fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0) or fscale))
             ax = fig.add_subplot(111, projection=projection)
             ax.set_extent([x0, x1, y0, y1], crs=transform)
 
@@ -174,9 +173,11 @@ class BaseGrid(RompyBaseModel):
 
 
 class RegularGrid(BaseGrid):
-    """
-    An object which provides an abstract representation of a regular grid in
-    some geographic space
+    """Regular grid in geographic space.
+
+    This object provides an abstract representation of a regular grid in some
+    geographic space.
+
     """
 
     grid_type: Literal["regular"] = Field(
