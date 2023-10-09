@@ -244,6 +244,14 @@ class RegularGrid(BaseGrid):
         self.x = _x
         self.y = _y
 
+    @property
+    def xlen(self):
+        return self.dx * self.nx
+
+    @property
+    def ylen(self):
+        return self.dy * self.ny
+
     def _gen_reg_cgrid(self):
         # Grid at origin
         i = np.arange(0.0, self.dx * self.nx, self.dx)
