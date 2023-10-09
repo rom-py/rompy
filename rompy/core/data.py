@@ -239,7 +239,9 @@ class DataBlob(RompyBaseModel):
         default="data_blob",
         description="Model type discriminator",
     )
-    id: str = Field(description="Unique identifier for this data source")
+    id: str = Field(
+        default="data", description="Unique identifier for this data source"
+    )
     source: AnyPath = Field(
         description=(
             "URI of the data source, either a local file path or a remote uri"
