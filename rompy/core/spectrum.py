@@ -40,7 +40,7 @@ class LogFrequency(RompyBaseModel):
 
     Frequencies are defined according to:
 
-    :math:`f_{i+1} = f_{inc} * f_{i}`
+    :math:`f_{i+1} = \gamma * f_{i}`
 
     Note
     ----
