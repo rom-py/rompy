@@ -141,3 +141,7 @@ class LogFrequency(RompyBaseModel):
     @property
     def gamma(self):
         return self.finc + 1
+
+    @property
+    def flen(self)
+        return self.f1 - self.f0
