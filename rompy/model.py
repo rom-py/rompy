@@ -89,8 +89,6 @@ class ModelRun(RompyBaseModel):
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
 
-        # Run the __call__() method of the config object and fill in the context with
-        # what is returned which by default is the config instance itself
         if callable(self.config):
             # Run the __call__() method of the config object if it is callable passing
             # the runtime instance, and fill in the context with what is returned
