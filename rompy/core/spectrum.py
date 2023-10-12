@@ -143,5 +143,5 @@ class LogFrequency(RompyBaseModel):
         return self.finc + 1
 
     @property
-    def flen(self)
+    def flen(self):
         return self.f1 - self.f0
