@@ -25,10 +25,10 @@ however, is is functional and can be used to demonstrate core concepts.
 
 
 Core objects 
----------------
+------------
 
-Grids
-^^^^^
+Grid
+^^^^
 
 Grids form a core component of any model. Rompy provides a base class for grids, and a
 regular grid class. Support for other grid types will be added in the future.
@@ -42,8 +42,8 @@ regular grid class. Support for other grid types will be added in the future.
     rompy.core.grid.RegularGrid
 
 
-Data Objects
-^^^^^^^^^^^^
+Data
+^^^^
 
 Data objects are used to represent data inputs into the model. Rompy provides the
 following base classes for data objects:
@@ -55,6 +55,14 @@ following base classes for data objects:
     rompy.core.data.DataBlob
     rompy.core.data.DataGrid
 
+Spectrum
+^^^^^^^^
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _generated/
+
+    rompy.core.spectrum.LogFrequency
 
 
 Model Run 
