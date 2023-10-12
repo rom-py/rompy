@@ -88,12 +88,16 @@ class ModelRun(RompyBaseModel):
         cc_full["runtime"] = self.model_dump()
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
-        # TODO calculate from period
-        cc_full["runtime"]["frequency"] = "0.25 HR"
 
         # Run the __call__() method of the config object and fill in the context with
         # what is returned which by default is the config instance itself
-        cc_full["config"] = self.config(self)
+        if callable(self.config):
+            # Run the __call__() method of the config object if it is callable passing
+            # the runtime instance, and fill in the context with what is returned
+            cc_full["config"] = self.config(self)
+        else:
+            # Otherwise just fill in the context with the config instance itself
+            cc_full["config"] = self.config
 
         staging_dir = render(
             cc_full, self.config.template, self.output_dir, self.config.checkout
