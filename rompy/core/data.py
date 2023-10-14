@@ -17,6 +17,7 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 
 from rompy.core.filters import Filter
+from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
 from rompy.core.types import RompyBaseModel, DatasetCoords
 
@@ -274,13 +275,20 @@ DATA_SOURCE_TYPES = Union[
     SourceIntake,
     SourceDatamesh,
 ]
-
+GRID_TYPES = Union[BaseGrid, RegularGrid]
 
 class DataGrid(DataBlob):
     """Data object for model ingestion.
 
     Generic data object for xarray datasets that need to be filtered and written to
     netcdf.
+
+    Note
+    ----
+    The fields `filter_grid` and `filter_time` trigger updates to the crop filter from
+    the grid and time range objects passed to the get method. This is useful for data
+    sources that are not defined on the same grid as the model grid or the same time
+    range as the model run.
 
     """
 
@@ -302,10 +310,22 @@ class DataGrid(DataBlob):
         default=DatasetCoords(),
         description="Names of the coordinates in the dataset",
     )
+    filter_grid: bool = Field(
+        default=True,
+        description="Update crop filter from Grid object if passed to get method",
+    )
+    filter_time: bool = Field(
+        default=True,
+        description="Update crop filter from TimeRange object if passed to get method",
+    )
+    buffer: float = Field(
+        default=0.0,
+        description="Space to buffer the grid bounding box if `filter_grid` is True",
+    )
 
-    def _filter_grid(self, grid, buffer=0.1):
+    def _filter_grid(self, grid: GRID_TYPES):
         """Define the filters to use to extract data to this grid"""
-        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
+        x0, y0, x1, y1 = grid.bbox(buffer=self.buffer)
         self.filter.crop.update(
             {self.coords.x: slice(x0, x1), self.coords.y: slice(y0, y1)}
         )
@@ -386,13 +406,21 @@ class DataGrid(DataBlob):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
-    def get(self, destdir: str | Path) -> Path:
+    def get(
+            self, destdir: str | Path,
+            grid: Optional[GRID_TYPES] = None,
+            time: Optional[TimeRange] = None,
+        ) -> Path:
         """Write the data source to a new location.
 
         Parameters
         ----------
         destdir : str | Path
             The destination directory to write the netcdf data to.
+        grid: GRID_TYPES, optional
+            The grid to filter the data to, only used if `self.filter_grid` is True.
+        time: TimeRange, optional
+            The times to filter the data to, only used if `self.filter_time` is True.
 
         Returns
         -------
@@ -400,6 +428,10 @@ class DataGrid(DataBlob):
             The path to the written file.
 
         """
+        if grid is not None and self.filter_grid:
+            self._filter_grid(grid)
+        if time is not None and self.filter_time:
+            self._filter_time(time)
         outfile = Path(destdir) / f"{self.id}.nc"
         self.ds.to_netcdf(outfile)
         return outfile
