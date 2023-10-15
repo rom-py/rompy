@@ -406,11 +406,11 @@ class DataGrid(DataBlob):
         return fig, ax
 
     def get(
-            self,
-            destdir: str | Path,
-            grid: Optional[GRID_TYPES] = None,
-            time: Optional[TimeRange] = None,
-        ) -> Path:
+        self,
+        destdir: str | Path,
+        grid: Optional[GRID_TYPES] = None,
+        time: Optional[TimeRange] = None,
+    ) -> Path:
         """Write the data source to a new location.
 
         Parameters

@@ -97,7 +97,7 @@ class LogFrequency(RompyBaseModel):
         elif self.nbin is None:
             self.nbin = self._nbin(self.f0, self.f1, self.finc)
         elif self.f1 is None:
-            self.f1 = self.f0 * self.gamma ** self.nbin
+            self.f1 = self.f0 * self.gamma**self.nbin
         else:
             self.f0 = self._f0(self.f1, self.nbin, self.gamma)
 
@@ -125,7 +125,7 @@ class LogFrequency(RompyBaseModel):
         return (self()[1] - self()[0]) / self()[0]
 
     def _nbin(self, f0, f1, finc):
-        return np.round(np.log(f1/f0) / np.log(1 + finc)).astype("int")
+        return np.round(np.log(f1 / f0) / np.log(1 + finc)).astype("int")
 
     def _f0(self, f1, nbin, gamma):
         """Returns f0 given f1, nbin and gamma."""
