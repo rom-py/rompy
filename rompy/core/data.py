@@ -277,6 +277,7 @@ DATA_SOURCE_TYPES = Union[
 ]
 GRID_TYPES = Union[BaseGrid, RegularGrid]
 
+
 class DataGrid(DataBlob):
     """Data object for model ingestion.
 
@@ -310,13 +311,11 @@ class DataGrid(DataBlob):
         default=DatasetCoords(),
         description="Names of the coordinates in the dataset",
     )
-    filter_grid: bool = Field(
+    crop_data: bool = Field(
         default=True,
-        description="Update crop filter from Grid object if passed to get method",
-    )
-    filter_time: bool = Field(
-        default=True,
-        description="Update crop filter from TimeRange object if passed to get method",
+        description=(
+            "Update crop filters from Grid and Time objects if passed to get method"
+        ),
     )
     buffer: float = Field(
         default=0.0,
@@ -418,9 +417,9 @@ class DataGrid(DataBlob):
         destdir : str | Path
             The destination directory to write the netcdf data to.
         grid: GRID_TYPES, optional
-            The grid to filter the data to, only used if `self.filter_grid` is True.
+            The grid to filter the data to, only used if `self.crop_data` is True.
         time: TimeRange, optional
-            The times to filter the data to, only used if `self.filter_time` is True.
+            The times to filter the data to, only used if `self.crop_data` is True.
 
         Returns
         -------
@@ -428,10 +427,11 @@ class DataGrid(DataBlob):
             The path to the written file.
 
         """
-        if grid is not None and self.filter_grid:
-            self._filter_grid(grid)
-        if time is not None and self.filter_time:
-            self._filter_time(time)
+        if self.crop_data:
+            if grid is not None:
+                self._filter_grid(grid)
+            if time is not None:
+                self._filter_time(time)
         outfile = Path(destdir) / f"{self.id}.nc"
         self.ds.to_netcdf(outfile)
         return outfile
