@@ -148,6 +148,8 @@ class BaseGrid(RompyBaseModel):
                 ax.add_feature(cfeature.LAND)
             if coastline:
                 ax.add_feature(cfeature.COASTLINE)
+        else:
+            fig = ax.figure
 
         ax.gridlines(
             crs=transform,
