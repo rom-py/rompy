@@ -9,12 +9,17 @@ from cloudpathlib import AnyPath
 import intake
 from intake.catalog import Catalog
 import xarray as xr
-from pydantic import ConfigDict, Field, root_validator
+from pydantic import ConfigDict, Field
 from oceanum.datamesh import Connector
 
-from .filters import Filter
-from .time import TimeRange
-from .types import RompyBaseModel, DatasetCoords
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
+
+from rompy.core.filters import Filter
+from rompy.core.grid import BaseGrid, RegularGrid
+from rompy.core.time import TimeRange
+from rompy.core.types import RompyBaseModel, DatasetCoords
 
 
 logger = logging.getLogger(__name__)
@@ -235,7 +240,9 @@ class DataBlob(RompyBaseModel):
         default="data_blob",
         description="Model type discriminator",
     )
-    id: str = Field(description="Unique identifier for this data source")
+    id: str = Field(
+        default="data", description="Unique identifier for this data source"
+    )
     source: AnyPath = Field(
         description=(
             "URI of the data source, either a local file path or a remote uri"
@@ -268,6 +275,7 @@ DATA_SOURCE_TYPES = Union[
     SourceIntake,
     SourceDatamesh,
 ]
+GRID_TYPES = Union[BaseGrid, RegularGrid]
 
 
 class DataGrid(DataBlob):
@@ -276,7 +284,12 @@ class DataGrid(DataBlob):
     Generic data object for xarray datasets that need to be filtered and written to
     netcdf.
 
-    TODO: Is there anything griddy about this class? Should it be renamed?
+    Note
+    ----
+    The fields `filter_grid` and `filter_time` trigger updates to the crop filter from
+    the grid and time range objects passed to the get method. This is useful for data
+    sources that are not defined on the same grid as the model grid or the same time
+    range as the model run.
 
     """
 
@@ -298,10 +311,20 @@ class DataGrid(DataBlob):
         default=DatasetCoords(),
         description="Names of the coordinates in the dataset",
     )
+    crop_data: bool = Field(
+        default=True,
+        description=(
+            "Update crop filters from Grid and Time objects if passed to get method"
+        ),
+    )
+    buffer: float = Field(
+        default=0.0,
+        description="Space to buffer the grid bounding box if `filter_grid` is True",
+    )
 
-    def _filter_grid(self, grid, buffer=0.1):
+    def _filter_grid(self, grid: GRID_TYPES):
         """Define the filters to use to extract data to this grid"""
-        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
+        x0, y0, x1, y1 = grid.bbox(buffer=self.buffer)
         self.filter.crop.update(
             {self.coords.x: slice(x0, x1), self.coords.y: slice(y0, y1)}
         )
@@ -318,60 +341,73 @@ class DataGrid(DataBlob):
         )
         return ds
 
-    def plot(self, param, isel={}, model_grid=None, cmap="turbo", fscale=10, **kwargs):
-        """Plot the grid.
+    def _figsize(self, x0, x1, y0, y1, fscale):
+        xlen = abs(x1 - x0)
+        ylen = abs(y1 - y0)
+        if xlen >= ylen:
+            figsize = (fscale, (fscale * ylen / xlen or fscale) * 0.8)
+        else:
+            figsize = ((fscale * xlen / ylen) * 1.2 or fscale, fscale)
+        return figsize
 
-        TODO: Plotting is a bit slow, optimise this.
+    def plot(
+        self,
+        param,
+        isel={},
+        model_grid=None,
+        cmap="turbo",
+        figsize=None,
+        fscale=10,
+        borders=True,
+        land=True,
+        coastline=True,
+        **kwargs,
+    ):
+        """Plot the grid."""
 
-        """
+        projection = ccrs.PlateCarree()
+        transform = ccrs.PlateCarree()
 
-        import cartopy.crs as ccrs
-        import cartopy.feature as cfeature
-        import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        # Sanity checks
+        try:
+            ds = self.ds[param].isel(isel)
+        except KeyError as err:
+            raise ValueError(f"Parameter {param} not in dataset") from err
 
-        ds = self.ds
-        if param not in ds:
-            raise ValueError(f"Parameter {param} not in dataset")
+        if ds[self.coords.x].size <= 1:
+            raise ValueError(f"Cannot plot {param} with only one x coordinate\n\n{ds}")
+        if ds[self.coords.y].size <= 1:
+            raise ValueError(f"Cannot plot {param} with only one y coordinate\n\n{ds}")
 
-        # First set some plot parameters:
-        minLon, minLat, maxLon, maxLat = (
-            ds[self.coords.x].values[0],
-            ds[self.coords.y].values[0],
-            ds[self.coords.x].values[-1],
-            ds[self.coords.y].values[-1],
-        )
-        extents = [minLon, maxLon, minLat, maxLat]
+        # Set some plot parameters:
+        x0 = ds[self.coords.x].values[0]
+        y0 = ds[self.coords.y].values[0]
+        x1 = ds[self.coords.x].values[-1]
+        y1 = ds[self.coords.y].values[-1]
 
         # create figure and plot/map
-        fig, ax = plt.subplots(
-            1,
-            1,
-            figsize=(fscale, fscale * (maxLat - minLat) / (maxLon - minLon)),
-            subplot_kw={"projection": ccrs.PlateCarree()},
-        )
-        # ax.set_extent(extents, crs=ccrs.PlateCarree())
+        if figsize is None:
+            figsize = self._figsize(x0, x1, y0, y1, fscale)
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111, projection=projection)
 
-        coastline = cfeature.GSHHSFeature(
-            scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
-        )
+        ds.plot.pcolormesh(ax=ax, cmap=cmap, **kwargs)
 
-        ds[param].isel(isel).plot(ax=ax, cmap=cmap, **kwargs)
+        if borders:
+            ax.add_feature(cfeature.BORDERS)
+        if land:
+            ax.add_feature(cfeature.LAND, zorder=1)
+        if coastline:
+            ax.add_feature(cfeature.COASTLINE)
 
-        ax.add_feature(coastline)
-        ax.add_feature(cfeature.BORDERS, linewidth=2)
-
-        gl = ax.gridlines(
-            crs=ccrs.PlateCarree(),
-            draw_labels=True,
-            linewidth=2,
+        ax.gridlines(
+            crs=transform,
+            draw_labels=["left", "bottom"],
+            linewidth=1,
             color="gray",
             alpha=0.5,
             linestyle="--",
         )
-
-        gl.xformatter = LONGITUDE_FORMATTER
-        gl.yformatter = LATITUDE_FORMATTER
 
         # Plot the model domain
         if model_grid:
@@ -381,22 +417,34 @@ class DataGrid(DataBlob):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
-    def get(self, destdir: str | Path) -> Path:
+    def get(
+        self,
+        destdir: str | Path,
+        grid: Optional[GRID_TYPES] = None,
+        time: Optional[TimeRange] = None,
+    ) -> Path:
         """Write the data source to a new location.
 
         Parameters
         ----------
         destdir : str | Path
             The destination directory to write the netcdf data to.
+        grid: GRID_TYPES, optional
+            The grid to filter the data to, only used if `self.crop_data` is True.
+        time: TimeRange, optional
+            The times to filter the data to, only used if `self.crop_data` is True.
 
         Returns
         -------
         outfile: Path
             The path to the written file.
 
-        TODO: Discuss whether this method should be called something more obvious
-
         """
+        if self.crop_data:
+            if grid is not None:
+                self._filter_grid(grid)
+            if time is not None:
+                self._filter_time(time)
         outfile = Path(destdir) / f"{self.id}.nc"
         self.ds.to_netcdf(outfile)
         return outfile

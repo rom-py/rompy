@@ -78,6 +78,7 @@ class ModelRun(RompyBaseModel):
         returns
         -------
         staging_dir : str
+
         """
         logger.info("")
         logger.info("-----------------------------------------------------")
@@ -90,12 +91,13 @@ class ModelRun(RompyBaseModel):
         cc_full["runtime"] = self.model_dump()
         cc_full["runtime"].update(self._generation_medatadata)
         cc_full["runtime"].update({"_datefmt": self._datefmt})
-        # TODO calculate from period
-        cc_full["runtime"]["frequency"] = "0.25 HR"
 
         if callable(self.config):
+            # Run the __call__() method of the config object if it is callable passing
+            # the runtime instance, and fill in the context with what is returned
             cc_full["config"] = self.config(self)
         else:
+            # Otherwise just fill in the context with the config instance itself
             cc_full["config"] = self.config
 
         staging_dir = render(
@@ -148,7 +150,8 @@ class ModelRun(RompyBaseModel):
         return self.generate()
 
     def __str__(self):
-        ret = f"\nperiod: \n{self.period}\n\n"
-        ret += f"output_dir: \n{self.output_dir}\n\n"
-        ret += f"config: \n{self.config}"
-        return ret
+        repr = f"\nrun_id: {self.run_id}"
+        repr += f"\nperiod: {self.period}"
+        repr += f"\noutput_dir: {self.output_dir}"
+        repr += f"\nconfig: {type(self.config)}\n"
+        return repr

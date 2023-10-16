@@ -41,3 +41,6 @@ class BaseConfig(RompyBaseModel):
         default="main",
     )
     model_config = ConfigDict(extra="allow")
+
+    def __call__(self, *args, **kwargs):
+        return self
