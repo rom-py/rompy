@@ -147,7 +147,8 @@ class ModelRun(RompyBaseModel):
         return self.generate()
 
     def __str__(self):
-        ret = f"\nperiod: \n{self.period}\n\n"
-        ret += f"output_dir: \n{self.output_dir}\n\n"
-        ret += f"config: \n{self.config}"
-        return ret
+        repr = f"\nrun_id: {self.run_id}"
+        repr += f"\nperiod: {self.period}"
+        repr += f"\noutput_dir: {self.output_dir}"
+        repr += f"\nconfig: {type(self.config)}\n"
+        return repr
