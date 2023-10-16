@@ -135,7 +135,9 @@ class BaseGrid(RompyBaseModel):
             figsize = (fscale * xlen / ylen or fscale, fscale)
         return figsize
 
-    def plot(self, fscale=10, buffer=0.1, ax=None, borders=True, land=True, coastline=True):
+    def plot(
+            self, ax=None, figsize=None, fscale=10, buffer=0.1, borders=True, land=True, coastline=True
+        ):
         """Plot the grid"""
 
         projection = ccrs.PlateCarree()
@@ -146,7 +148,9 @@ class BaseGrid(RompyBaseModel):
 
         # create figure and plot/map
         if ax is None:
-            fig = plt.figure(figsize=self._figsize(fscale, buffer))
+            if figsize is None:
+                figsize = self._figsize(x0, x1, y0, y1, fscale)
+            fig = plt.figure(figsize=figsize)
             ax = fig.add_subplot(111, projection=projection)
             ax.set_extent([x0, x1, y0, y1], crs=transform)
 
