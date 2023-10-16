@@ -13,3 +13,4 @@ Thumbnails gallery
     notebooks/oceanum_example.ipynb
     notebooks/swan-config-components.ipynb
     notebooks/physics.ipynb
+    notebooks/schism_procedural.ipynb
