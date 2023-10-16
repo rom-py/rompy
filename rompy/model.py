@@ -8,7 +8,7 @@ from typing import Union
 
 from pydantic import Field
 
-from rompy.schism import SchismConfig
+from rompy.schism.config import SchismCSIROConfig
 from rompy.swan import SwanConfig
 from rompy.swan.config import SwanConfigComponents
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 CONFIG_TYPES = Union[BaseConfig, SwanConfig,
-                     SwanConfigComponents, SchismConfig]
+                     SwanConfigComponents, SchismCSIROConfig]
 
 
 class ModelRun(RompyBaseModel):
