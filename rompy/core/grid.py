@@ -126,19 +126,27 @@ class BaseGrid(RompyBaseModel):
         points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
-    def plot(self, fscale=10, ax=None, borders=True, land=True, coastline=True):
+    def _figsize(self, x0, x1, y0, y1, fscale):
+        xlen = abs(x1 - x0)
+        ylen = abs(y1 - y0)
+        if xlen >= ylen:
+            figsize = (fscale, fscale * ylen / xlen or fscale)
+        else:
+            figsize = (fscale * xlen / ylen or fscale, fscale)
+        return figsize
+
+    def plot(self, fscale=10, buffer=0.1, ax=None, borders=True, land=True, coastline=True):
         """Plot the grid"""
 
         projection = ccrs.PlateCarree()
         transform = ccrs.PlateCarree()
 
         # Set some plot parameters:
-        bbox = self.bbox(buffer=0.1)
-        x0, y0, x1, y1 = bbox
+        x0, y0, x1, y1 = self.bbox(buffer=buffer)
 
         # create figure and plot/map
         if ax is None:
-            fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0) or fscale))
+            fig = plt.figure(figsize=self._figsize(fscale, buffer))
             ax = fig.add_subplot(111, projection=projection)
             ax.set_extent([x0, x1, y0, y1], crs=transform)
 

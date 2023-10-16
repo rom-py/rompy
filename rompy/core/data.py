@@ -341,6 +341,15 @@ class DataGrid(DataBlob):
         )
         return ds
 
+    def _figsize(self, x0, x1, y0, y1, fscale):
+        xlen = abs(x1 - x0)
+        ylen = abs(y1 - y0)
+        if xlen >= ylen:
+            figsize = (fscale, fscale * ylen / xlen or fscale)
+        else:
+            figsize = (fscale * xlen / ylen or fscale, fscale)
+        return figsize
+
     def plot(
         self,
         param,
@@ -376,7 +385,7 @@ class DataGrid(DataBlob):
         y1 = ds[self.coords.y].values[-1]
 
         # create figure and plot/map
-        fig = plt.figure(figsize=(fscale, fscale * (x1 - x0) / (y1 - y0) or fscale))
+        fig = plt.figure(figsize=self._figsize(x0, x1, y0, y1, fscale))
         ax = fig.add_subplot(111, projection=projection)
 
         ds.plot.pcolormesh(ax=ax, cmap=cmap, **kwargs)
