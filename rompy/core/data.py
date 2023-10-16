@@ -1,26 +1,23 @@
 """Rompy core data objects."""
 import logging
-from pathlib import Path
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Literal, Optional, Union
 
-from cloudpathlib import AnyPath
-import intake
-from intake.catalog import Catalog
-import xarray as xr
-from pydantic import ConfigDict, Field
-from oceanum.datamesh import Connector
-
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import intake
 import matplotlib.pyplot as plt
+import xarray as xr
+from cloudpathlib import AnyPath
+from intake.catalog import Catalog
+from oceanum.datamesh import Connector
+from pydantic import ConfigDict, Field, PrivateAttr
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
-from rompy.core.types import RompyBaseModel, DatasetCoords
-
+from rompy.core.types import DatasetCoords, RompyBaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -107,8 +104,10 @@ class SourceIntake(SourceBase):
         default="intake",
         description="Model type discriminator",
     )
-    dataset_id: str = Field(description="The id of the dataset to read in the catalog")
-    catalog_uri: str | Path = Field(description="The URI of the catalog to read from")
+    dataset_id: str = Field(
+        description="The id of the dataset to read in the catalog")
+    catalog_uri: str | Path = Field(
+        description="The URI of the catalog to read from")
     kwargs: dict = Field(
         default={},
         description="Keyword arguments to define intake dataset parameters",
@@ -248,6 +247,7 @@ class DataBlob(RompyBaseModel):
             "URI of the data source, either a local file path or a remote uri"
         ),
     )
+    _copied: str = PrivateAttr(default=None)
 
     def get(self, destdir: str | Path) -> Path:
         """Copy the data source to a new directory.
@@ -266,6 +266,7 @@ class DataBlob(RompyBaseModel):
         outfile = Path(destdir) / self.source.name
         if outfile.resolve() != self.source.resolve():
             outfile.write_bytes(self.source.read_bytes())
+        self._copied = outfile
         return outfile
 
 
@@ -375,9 +376,11 @@ class DataGrid(DataBlob):
             raise ValueError(f"Parameter {param} not in dataset") from err
 
         if ds[self.coords.x].size <= 1:
-            raise ValueError(f"Cannot plot {param} with only one x coordinate\n\n{ds}")
+            raise ValueError(
+                f"Cannot plot {param} with only one x coordinate\n\n{ds}")
         if ds[self.coords.y].size <= 1:
-            raise ValueError(f"Cannot plot {param} with only one y coordinate\n\n{ds}")
+            raise ValueError(
+                f"Cannot plot {param} with only one y coordinate\n\n{ds}")
 
         # Set some plot parameters:
         x0 = ds[self.coords.x].values[0]
