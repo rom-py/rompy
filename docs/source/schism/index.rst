@@ -15,10 +15,19 @@ Grids
 Config
 -------
 
-This object is an implemntation of the CSIRO cookiecutter implementation. It is likely that this will be superceded by the full implementation. 
+This object has been implemented to meet the initial operational requirements of CSIRO. It is likely that this will be superceded by the full implementation. 
 
 .. autosummary::
    :nosignatures:
    :toctree: _generated/
 
    rompy.schism.config.SchismCSIROConfig
+
+Full Implementation
+-----------------------------
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.param.PARAM
