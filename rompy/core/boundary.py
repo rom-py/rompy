@@ -234,7 +234,9 @@ class BoundaryWaveStation(DataGrid):
         )
         return ds
 
-    def get(self, destdir: str | Path, grid: RegularGrid, time: Optional[TimeRange] = None) -> str:
+    def get(
+        self, destdir: str | Path, grid: RegularGrid, time: Optional[TimeRange] = None
+    ) -> str:
         """Write the selected boundary data to a netcdf file.
 
         Parameters
@@ -299,7 +301,7 @@ def scatter_plot(bnd, ds=None, fscale=10, ax=None, **kwargs):
 
     if ax is None:
         # create figure and plot/map
-        figsize = figsize=(fscale, fscale * (maxLat - minLat) / (maxLon - minLon))
+        figsize = figsize = (fscale, fscale * (maxLat - minLat) / (maxLon - minLon))
         subplot_kw = {"projection": ccrs.PlateCarree()}
         fig, ax = plt.subplots(1, 1, figsize=figsize, subplot_kw=subplot_kw)
         # ax.set_extent(extents, crs=ccrs.PlateCarree())
