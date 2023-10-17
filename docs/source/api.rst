@@ -3,62 +3,213 @@ API  Documentation
 ===================
 
 
-Base Classes
-==============
+Core Classes
+------------
 
-This is a reference API class listing.
+Model
+~~~~~
+.. automodule:: rompy.model
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autosummary::
-   :toctree: classes/rompy
+Config
+~~~~~~
+.. automodule:: rompy.core.config
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-   rompy.core
+Time
+~~~~
+.. automodule:: rompy.core.time
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.model.ModelRun
-   :members:
+Grid
+~~~~
+.. automodule:: rompy.core.grid
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.core.time.TimeRange
-   :members:
+Data
+~~~~
+.. automodule:: rompy.core.data
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.core.config.BaseConfig
-   :members:
+Filters
+~~~~~~~
+.. automodule:: rompy.core.filters
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.core.grid.BaseGrid
-   :members:
+Boundary
+~~~~~~~~
+.. automodule:: rompy.core.render
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.core.data.DataBlob
-   :members:
+Types
+~~~~~
+.. automodule:: rompy.core.types
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.core.data.DataGrid
-   :members:
 
-Swan Classes
-==============
+Swan classes
+------------
 
-.. autosummary::
-   :toctree: classes/swan
+Config
+~~~~~~
+.. automodule:: rompy.swan.config
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-   rompy.swan
+Grid
+~~~~
+.. automodule:: rompy.swan.grid
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.swan.config.SwanConfig
-   :members:
+Data
+~~~~
+.. automodule:: rompy.swan.data
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.swan.grid.SwanGrid
-   :members:
+Boundary
+~~~~~~~~
+.. automodule:: rompy.swan.boundary
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.swan.config.ForcingData
-   :members:
+Types
+~~~~~
+.. automodule:: rompy.swan.types
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.swan.data.SwanDataGrid
-   :members:
 
-.. autopydantic_model:: rompy.swan.config.SwanSpectrum
-   :members:
+Swan components
+---------------
 
-.. autopydantic_model:: rompy.swan.config.SwanPhysics
-   :members:
+Base
+~~~~
+.. automodule:: rompy.swan.components.base
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.swan.config.GridOutput
-   :members:
+Startup
+~~~~~~~
+.. automodule:: rompy.swan.components.startup
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
 
-.. autopydantic_model:: rompy.swan.config.SpecOutput
-   :members:
+Cgrid
+~~~~~
+.. automodule:: rompy.swan.components.cgrid
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Inpgrid
+~~~~~~~
+.. automodule:: rompy.swan.components.inpgrid
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Boundary
+~~~~~~~~
+.. automodule:: rompy.swan.components.boundary
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Physics
+~~~~~~~
+.. automodule:: rompy.swan.components.physics
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Numerics
+~~~~~~~~
+.. automodule:: rompy.swan.components.numerics
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+
+Swan subcomponents
+------------------
+
+Base
+~~~~
+.. automodule:: rompy.swan.subcomponents.base
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Startup
+~~~~~~~
+.. automodule:: rompy.swan.subcomponents.startup
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Spectrum
+~~~~~~~~
+.. automodule:: rompy.swan.subcomponents.spectrum
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Time
+~~~~
+.. automodule:: rompy.swan.subcomponents.time
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Readgrid
+~~~~~~~~
+.. automodule:: rompy.swan.subcomponents.readgrid
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Boundary
+~~~~~~~~
+.. automodule:: rompy.swan.subcomponents.boundary
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Physics
+~~~~~~~
+.. automodule:: rompy.swan.subcomponents.physics
+    :members:
+    :inherited-members: BaseModel
+    :no-index:
+
+Numerics
+~~~~~~~~
+.. automodule:: rompy.swan.subcomponents.numerics
+    :members:
+    :inherited-members: BaseModel
+    :no-index:

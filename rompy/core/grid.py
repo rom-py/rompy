@@ -6,19 +6,23 @@ from pydantic import Field, model_validator
 from pydantic_numpy.typing import Np1DArray, Np2DArray
 from shapely.geometry import MultiPoint, Polygon
 
-from .types import Bbox, RompyBaseModel
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
+
+from rompy.core.types import Bbox, RompyBaseModel
 
 
 logger = logging.getLogger(__name__)
 
 
 class BaseGrid(RompyBaseModel):
-    """
-    An object which provides an abstract representation of a grid in some geographic space
+    """Representation of a grid in geographic space.
 
-    This is the base class for all Grid objects. The minimum representation of a grid are two
-    NumPy array's representing the vertices or nodes of some structured or unstructured grid,
-    its bounding box and a boundary polygon. No knowledge of the grid connectivity is expected.
+    This is the base class for all Grid objects. The minimum representation of a grid
+    are two NumPy array's representing the vertices or nodes of some structured or
+    unstructured grid, its bounding box and a boundary polygon. No knowledge of the
+    grid connectivity is expected.
 
     """
 
@@ -122,46 +126,51 @@ class BaseGrid(RompyBaseModel):
         points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
         return MultiPoint(points)
 
-    def plot(self, fscale=10, ax=None):
+    def _figsize(self, x0, x1, y0, y1, fscale):
+        xlen = abs(x1 - x0)
+        ylen = abs(y1 - y0)
+        if xlen >= ylen:
+            figsize = (fscale, fscale * ylen / xlen or fscale)
+        else:
+            figsize = (fscale * xlen / ylen or fscale, fscale)
+        return figsize
+
+    def plot(
+            self, ax=None, figsize=None, fscale=10, buffer=0.1, borders=True, land=True, coastline=True
+        ):
         """Plot the grid"""
 
-        import cartopy.crs as ccrs
-        import cartopy.feature as cfeature
-        import matplotlib.pyplot as plt
-        from cartopy.mpl.gridliner import LATITUDE_FORMATTER, LONGITUDE_FORMATTER
+        projection = ccrs.PlateCarree()
+        transform = ccrs.PlateCarree()
 
-        # First set some plot parameters:
-        bbox = self.bbox(buffer=0.1)
-        minLon, minLat, maxLon, maxLat = bbox
-        extents = [minLon, maxLon, minLat, maxLat]
+        # Set some plot parameters:
+        x0, y0, x1, y1 = self.bbox(buffer=buffer)
 
         # create figure and plot/map
         if ax is None:
-            fig, ax = plt.subplots(
-                1,
-                1,
-                figsize=(fscale, fscale * (maxLon - minLon) / (maxLat - minLat)),
-                subplot_kw={"projection": ccrs.PlateCarree()},
-            )
-            ax.set_extent(extents, crs=ccrs.PlateCarree())
+            if figsize is None:
+                figsize = self._figsize(x0, x1, y0, y1, fscale)
+            fig = plt.figure(figsize=figsize)
+            ax = fig.add_subplot(111, projection=projection)
+            ax.set_extent([x0, x1, y0, y1], crs=transform)
 
-            coastline = cfeature.GSHHSFeature(
-                scale="auto", edgecolor="black", facecolor=cfeature.COLORS["land"]
-            )
-            ax.add_feature(coastline, zorder=0)
-            ax.add_feature(cfeature.BORDERS, linewidth=2)
+            if borders:
+                ax.add_feature(cfeature.BORDERS)
+            if land:
+                ax.add_feature(cfeature.LAND)
+            if coastline:
+                ax.add_feature(cfeature.COASTLINE)
+        else:
+            fig = ax.figure
 
-        gl = ax.gridlines(
-            crs=ccrs.PlateCarree(),
-            draw_labels=True,
-            linewidth=2,
+        ax.gridlines(
+            crs=transform,
+            draw_labels=["left", "bottom"],
+            linewidth=1,
             color="gray",
             alpha=0.5,
             linestyle="--",
         )
-
-        gl.xformatter = LONGITUDE_FORMATTER
-        gl.yformatter = LATITUDE_FORMATTER
 
         # Plot the model domain
         bx, by = self.boundary_points()
@@ -178,9 +187,11 @@ class BaseGrid(RompyBaseModel):
 
 
 class RegularGrid(BaseGrid):
-    """
-    An object which provides an abstract representation of a regular grid in
-    some geographic space
+    """Regular grid in geographic space.
+
+    This object provides an abstract representation of a regular grid in some
+    geographic space.
+
     """
 
     grid_type: Literal["regular"] = Field(
@@ -246,6 +257,14 @@ class RegularGrid(BaseGrid):
         _x, _y = self._gen_reg_cgrid()
         self.x = _x
         self.y = _y
+
+    @property
+    def xlen(self):
+        return self.dx * self.nx
+
+    @property
+    def ylen(self):
+        return self.dy * self.ny
 
     def _gen_reg_cgrid(self):
         # Grid at origin

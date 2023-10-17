@@ -7,7 +7,7 @@ import numpy as np
 import wavespectra
 from pydantic import Field, model_validator
 
-from rompy.core.filters import Filter
+from rompy.core.time import TimeRange
 from rompy.core.data import (
     DataGrid,
     SourceBase,
@@ -157,6 +157,10 @@ class BoundaryWaveStation(DataGrid):
         ),
         ge=0,
     )
+    crop_data: bool = Field(
+        default=True,
+        description="Update crop filter from Time object if passed to get method",
+    )
 
     @model_validator(mode="after")
     def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
@@ -173,7 +177,7 @@ class BoundaryWaveStation(DataGrid):
             raise ValueError(f"Empty dataset after applying filter {self.filter}")
         return dset
 
-    def _filter_grid(self, **kwargs):
+    def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
         pass
 
@@ -230,7 +234,7 @@ class BoundaryWaveStation(DataGrid):
         )
         return ds
 
-    def get(self, destdir: str | Path, grid: RegularGrid) -> str:
+    def get(self, destdir: str | Path, grid: RegularGrid, time: Optional[TimeRange] = None) -> str:
         """Write the selected boundary data to a netcdf file.
 
         Parameters
@@ -239,6 +243,8 @@ class BoundaryWaveStation(DataGrid):
             Destination directory for the netcdf file.
         grid : RegularGrid
             Grid instance to use for selecting the boundary points.
+        time: TimeRange, optional
+            The times to filter the data to, only used if `self.crop_data` is True.
 
         Returns
         -------
@@ -246,6 +252,8 @@ class BoundaryWaveStation(DataGrid):
             Path to the netcdf file.
 
         """
+        if self.crop_data and time is not None:
+            self._filter_time(time)
         ds = self._sel_boundary(grid)
         outfile = Path(destdir) / f"{self.id}.nc"
         ds.spec.to_netcdf(outfile)
@@ -282,10 +290,10 @@ def scatter_plot(bnd, ds=None, fscale=10, ax=None, **kwargs):
 
     # First set some plot parameters:
     minLon, minLat, maxLon, maxLat = (
-        ds[bnd.lonname].values[0],
-        ds[bnd.latname].values[0],
-        ds[bnd.lonname].values[-1],
-        ds[bnd.latname].values[-1],
+        ds[bnd.coords.x].values[0],
+        ds[bnd.coords.y].values[0],
+        ds[bnd.coords.x].values[-1],
+        ds[bnd.coords.y].values[-1],
     )
     extents = [minLon, maxLon, minLat, maxLat]
 
@@ -315,4 +323,4 @@ def scatter_plot(bnd, ds=None, fscale=10, ax=None, **kwargs):
         gl.xformatter = LONGITUDE_FORMATTER
         gl.yformatter = LATITUDE_FORMATTER
 
-    ax.scatter(ds[bnd.lonname], ds[bnd.latname], transform=ccrs.PlateCarree())
+    ax.scatter(ds[bnd.coords.x], ds[bnd.coords.y], transform=ccrs.PlateCarree())
