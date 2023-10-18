@@ -136,8 +136,15 @@ class BaseGrid(RompyBaseModel):
         return figsize
 
     def plot(
-            self, ax=None, figsize=None, fscale=10, buffer=0.1, borders=True, land=True, coastline=True
-        ):
+        self,
+        ax=None,
+        figsize=None,
+        fscale=10,
+        buffer=0.1,
+        borders=True,
+        land=True,
+        coastline=True,
+    ):
         """Plot the grid"""
 
         projection = ccrs.PlateCarree()
