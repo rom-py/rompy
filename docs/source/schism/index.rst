@@ -46,6 +46,24 @@ Ice
 
    rompy.schism.namelists.ice.ICE
 
+ICM
+~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.icm.ICM
+
+SEDIMENT
+~~~~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.sediment.SEDIMENT
+
 
 Config Object
 ~~~~~~~~~~~~~~
