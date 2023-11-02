@@ -65,6 +65,16 @@ SEDIMENT
    rompy.schism.namelists.sediment.SEDIMENT
 
 
+COSINE
+~~~~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.cosine.COSINE
+
+
 Config Object
 ~~~~~~~~~~~~~~
 
