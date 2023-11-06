@@ -225,13 +225,6 @@ class RegularGrid(BaseGrid):
     ny: Optional[int] = Field(
         default=None, description="Number of grid points in the y direction"
     )
-    _x0: Optional[float]
-    _y0: Optional[float]
-    _rot: Optional[float]
-    _dx: Optional[float]
-    _dy: Optional[float]
-    _nx: Optional[int]
-    _ny: Optional[int]
 
     @model_validator(mode="before")
     @classmethod
@@ -251,13 +244,6 @@ class RegularGrid(BaseGrid):
     def __init__(self, **data):
         super().__init__(**data)
         if not isinstance(self.x, np.ndarray) or not isinstance(self.y, np.ndarray):
-            self._x0 = self.x0
-            self._y0 = self.y0
-            self._rot = self.rot
-            self._dx = self.dx
-            self._dy = self.dy
-            self._nx = self.nx
-            self._ny = self.ny
             self._regen_grid()
 
     def _regen_grid(self):
