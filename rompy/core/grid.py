@@ -251,9 +251,7 @@ class RegularGrid(BaseGrid):
         self.ny, self.nx = self.x.shape
         self.x0 = self.x[0, 0]
         self.y0 = self.y[0, 0]
-        dx = self.x[0, 1] - self.x0
-        dy = self.y[0, 1] - self.y0
-        self.rot = np.degrees(np.arctan2(dy, dx))
+        self.rot = np.degrees(np.arctan2(self.y[0, 1] - self.y0, self.x[0, 1] - self.x0))
         self.dx = np.sqrt((self.x[0, 1] - self.x0)**2 + (self.y[0, 1] - self.y0)**2)
         self.dy = np.sqrt((self.x[1, 0] - self.x0)**2 + (self.y[1, 0] - self.y0)**2)
 
