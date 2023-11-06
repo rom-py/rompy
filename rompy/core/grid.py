@@ -251,9 +251,11 @@ class RegularGrid(BaseGrid):
         self.ny, self.nx = self.x.shape
         self.x0 = self.x[0, 0]
         self.y0 = self.y[0, 0]
-        self.rot = np.degrees(np.arctan2(self.y[0, 1] - self.y0, self.x[0, 1] - self.x0))
-        self.dx = np.sqrt((self.x[0, 1] - self.x0)**2 + (self.y[0, 1] - self.y0)**2)
-        self.dy = np.sqrt((self.x[1, 0] - self.x0)**2 + (self.y[1, 0] - self.y0)**2)
+        self.rot = np.degrees(
+            np.arctan2(self.y[0, 1] - self.y0, self.x[0, 1] - self.x0)
+        )
+        self.dx = np.sqrt((self.x[0, 1] - self.x0) ** 2 + (self.y[0, 1] - self.y0) ** 2)
+        self.dy = np.sqrt((self.x[1, 0] - self.x0) ** 2 + (self.y[1, 0] - self.y0) ** 2)
 
     @property
     def xlen(self):
@@ -281,6 +283,17 @@ class RegularGrid(BaseGrid):
         x = np.reshape(x, ii.shape)
         y = np.reshape(y, ii.shape)
         return x, y
+
+    def __eq__(self, other):
+        return (
+            (self.nx == other.nx)
+            & (self.ny == other.ny)
+            & (self.rot == other.rot)
+            & (self.x0 == other.x0)
+            & (self.y0 == other.y0)
+            & (self.dx == other.dx)
+            & (self.dy == other.dy)
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.nx}, {self.ny})"
