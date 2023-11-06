@@ -22,6 +22,15 @@ def regulargrid():
     return RegularGrid(x0=x0, y0=y0, dx=dx, dy=dy, nx=nx, ny=ny)
 
 
+def test_regulargrid_xy(regulargrid):
+    grid = RegularGrid(x=regulargrid.x, y=regulargrid.y)
+    assert np.array_equal(grid.x, regulargrid.x)
+    assert np.array_equal(grid.y, regulargrid.y)
+    assert grid.nx == regulargrid.nx
+    assert grid.ny == regulargrid.ny
+    for attr in ["x0", "y0", "dx", "dy", "rot"]:
+        assert getattr(grid, attr) == pytest.approx(getattr(regulargrid, attr))
+
 def test_bbox(grid):
     assert grid.bbox() == [0.0, 0.0, 9.0, 9.0]
 
