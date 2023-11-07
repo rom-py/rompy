@@ -227,7 +227,7 @@ class RegularGrid(BaseGrid):
     )
 
     @model_validator(mode="after")
-    def generate(self):
+    def generate(self) -> "RegularGrid":
         """Generate the grid from the provided parameters."""
         keys = ["x0", "y0", "dx", "dy", "nx", "ny"]
         if self.x is not None and self.y is not None:
@@ -259,11 +259,11 @@ class RegularGrid(BaseGrid):
 
     @property
     def xlen(self):
-        return self.dx * self.nx
+        return self.dx * (self.nx - 1)
 
     @property
     def ylen(self):
-        return self.dy * self.ny
+        return self.dy * (self.ny - 1)
 
     def _gen_reg_cgrid(self):
         # Grid at origin
@@ -284,7 +284,7 @@ class RegularGrid(BaseGrid):
         y = np.reshape(y, ii.shape)
         return x, y
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return (
             (self.nx == other.nx)
             & (self.ny == other.ny)
