@@ -227,7 +227,7 @@ class RegularGrid(BaseGrid):
     )
 
     @model_validator(mode="after")
-    def generate(self):
+    def generate(self) -> "RegularGrid":
         """Generate the grid from the provided parameters."""
         keys = ["x0", "y0", "dx", "dy", "nx", "ny"]
         if self.x is not None and self.y is not None:
@@ -251,17 +251,19 @@ class RegularGrid(BaseGrid):
         self.ny, self.nx = self.x.shape
         self.x0 = self.x[0, 0]
         self.y0 = self.y[0, 0]
-        self.rot = np.degrees(np.arctan2(self.y[0, 1] - self.y0, self.x[0, 1] - self.x0))
-        self.dx = np.sqrt((self.x[0, 1] - self.x0)**2 + (self.y[0, 1] - self.y0)**2)
-        self.dy = np.sqrt((self.x[1, 0] - self.x0)**2 + (self.y[1, 0] - self.y0)**2)
+        self.rot = np.degrees(
+            np.arctan2(self.y[0, 1] - self.y0, self.x[0, 1] - self.x0)
+        )
+        self.dx = np.sqrt((self.x[0, 1] - self.x0) ** 2 + (self.y[0, 1] - self.y0) ** 2)
+        self.dy = np.sqrt((self.x[1, 0] - self.x0) ** 2 + (self.y[1, 0] - self.y0) ** 2)
 
     @property
     def xlen(self):
-        return self.dx * self.nx
+        return self.dx * (self.nx - 1)
 
     @property
     def ylen(self):
-        return self.dy * self.ny
+        return self.dy * (self.ny - 1)
 
     def _gen_reg_cgrid(self):
         # Grid at origin
@@ -281,6 +283,17 @@ class RegularGrid(BaseGrid):
         x = np.reshape(x, ii.shape)
         y = np.reshape(y, ii.shape)
         return x, y
+
+    def __eq__(self, other) -> bool:
+        return (
+            (self.nx == other.nx)
+            & (self.ny == other.ny)
+            & (self.rot == other.rot)
+            & (self.x0 == other.x0)
+            & (self.y0 == other.y0)
+            & (self.dx == other.dx)
+            & (self.dy == other.dy)
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.nx}, {self.ny})"
