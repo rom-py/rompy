@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
-from rompy.core.types import RompyBaseModel, DatasetCoords
+from rompy.core.types import RompyBaseModel, DatasetCoords, Slice
 
 
 logger = logging.getLogger(__name__)
@@ -327,12 +327,15 @@ class DataGrid(DataBlob):
         """Define the filters to use to extract data to this grid"""
         x0, y0, x1, y1 = grid.bbox(buffer=self.buffer)
         self.filter.crop.update(
-            {self.coords.x: slice(x0, x1), self.coords.y: slice(y0, y1)}
+            {
+                self.coords.x: Slice(start=x0, stop=x1),
+                self.coords.y: Slice(start=y0, stop=y1),
+            }
         )
 
     def _filter_time(self, time: TimeRange):
         """Define the filters to use to extract data to this grid"""
-        self.filter.crop.update({self.coords.t: slice(time.start, time.end)})
+        self.filter.crop.update({self.coords.t: Slice(start=time.start, stop=time.end)})
 
     @property
     def ds(self):

@@ -25,7 +25,7 @@ class Filter(RompyBaseModel):
     def __call__(self, ds):
         filters = get_filter_fns()
         for fn in filters:
-            params = self.model_dump()[fn]
+            params = getattr(self, fn)
             if params:
                 ds = filters[fn](ds, **params)
         return ds
@@ -110,7 +110,11 @@ def crop_filter(ds, **data_slice) -> xr.Dataset:
 
     """
     if data_slice is not None:
-        this_crop = {k: data_slice[k] for k in data_slice.keys() if k in ds.dims.keys()}
+        this_crop = {
+            k: data_slice[k].to_slice()
+            for k in data_slice.keys()
+            if k in ds.dims.keys()
+        }
         ds = ds.sel(this_crop)
         for k in data_slice.keys():
             if (k not in ds.dims.keys()) and (k in ds.coords.keys()):
@@ -195,3 +199,5 @@ def _open_preprocess(url, chunks, filters, xarray_kwargs):
         ds = fn(ds, **params)
 
     return ds
+
+
