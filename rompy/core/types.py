@@ -318,8 +318,8 @@ class DatasetCoords(RompyBaseModel):
 class Slice(BaseModel):
     """Basic float or datetime slice representation"""
 
-    start: Optional[Union[float, datetime]] = None
-    stop: Optional[Union[float, datetime]] = None
+    start: Optional[Union[float, datetime, str]] = None
+    stop: Optional[Union[float, datetime, str]] = None
 
     @classmethod
     def from_slice(cls, s: slice):

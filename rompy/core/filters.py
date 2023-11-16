@@ -10,7 +10,11 @@ from typing import Optional
 
 import xarray as xr
 
-from .types import RompyBaseModel
+from .types import RompyBaseModel, Slice
+
+from pydantic import (
+    validator,
+)
 
 
 # pydantic class to apply all the filters to the dataset
@@ -21,6 +25,13 @@ class Filter(RompyBaseModel):
     timenorm: Optional[dict] = {}
     rename: Optional[dict] = {}
     derived: Optional[dict] = {}
+
+    @validator('crop', pre=True)
+    def convert_slices(cls, v):
+        for key, value in v.items():
+            if isinstance(value, slice):
+                v[key] = Slice.from_slice(value)
+        return v
 
     def __call__(self, ds):
         filters = get_filter_fns()
