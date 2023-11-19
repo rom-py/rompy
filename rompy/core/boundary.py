@@ -292,10 +292,10 @@ def scatter_plot(bnd, ds=None, fscale=10, ax=None, **kwargs):
 
     # First set some plot parameters:
     minLon, minLat, maxLon, maxLat = (
-        ds[bnd.coords.x].values[0],
-        ds[bnd.coords.y].values[0],
-        ds[bnd.coords.x].values[-1],
-        ds[bnd.coords.y].values[-1],
+        min(ds[bnd.coords.x]),
+        min(ds[bnd.coords.y]),
+        max(ds[bnd.coords.x]),
+        max(ds[bnd.coords.y]),
     )
     extents = [minLon, maxLon, minLat, maxLat]
 
