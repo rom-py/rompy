@@ -31,6 +31,8 @@ class Filter(RompyBaseModel):
         for key, value in v.items():
             if isinstance(value, slice):
                 v[key] = Slice.from_slice(value)
+            if isinstance(value, dict):
+                v[key] = Slice.from_dict(value)
         return v
 
     def __call__(self, ds):
