@@ -12,6 +12,17 @@ Grids
    rompy.schism.grid.SCHISMGrid2D
    rompy.schism.grid.SCHISMGrid3D
 
+Data
+-----
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.data.SCHISMDataAtmos
+
+
+
+
 Config Minimal
 ---------------
 
