@@ -136,8 +136,15 @@ class BaseGrid(RompyBaseModel):
         return figsize
 
     def plot(
-            self, ax=None, figsize=None, fscale=10, buffer=0.1, borders=True, land=True, coastline=True
-        ):
+        self,
+        ax=None,
+        figsize=None,
+        fscale=10,
+        buffer=0.1,
+        borders=True,
+        land=True,
+        coastline=True,
+    ):
         """Plot the grid"""
 
         projection = ccrs.PlateCarree()
@@ -218,53 +225,45 @@ class RegularGrid(BaseGrid):
     ny: Optional[int] = Field(
         default=None, description="Number of grid points in the y direction"
     )
-    _x0: Optional[float]
-    _y0: Optional[float]
-    _rot: Optional[float]
-    _dx: Optional[float]
-    _dy: Optional[float]
-    _nx: Optional[int]
-    _ny: Optional[int]
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_grid(cls, data: Any) -> Any:
+    @model_validator(mode="after")
+    def generate(self) -> "RegularGrid":
+        """Generate the grid from the provided parameters."""
         keys = ["x0", "y0", "dx", "dy", "nx", "ny"]
-        if data.get("x") is not None or data.get("y") is not None:
-            if any(data.get(key) is not None for key in keys):
-                raise ValueError(
-                    f"x, y provided explicitly, can't process {','.join(keys)}"
-                )
-            return data
-        for var in keys:
-            if data.get(var) is None:
-                raise ValueError(f"{','.join(keys)} must be provided for REG grid")
-        return data
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not isinstance(self.x, np.ndarray) or not isinstance(self.y, np.ndarray):
-            self._x0 = self.x0
-            self._y0 = self.y0
-            self._rot = self.rot
-            self._dx = self.dx
-            self._dy = self.dy
-            self._nx = self.nx
-            self._ny = self.ny
-            self._regen_grid()
+        if self.x is not None and self.y is not None:
+            for key in keys:
+                if getattr(self, key) is not None:
+                    logger.warning(f"x, y provided explicitly, can't process {key}")
+            self._attrs_from_xy()
+        elif None in [getattr(self, key) for key in keys]:
+            raise ValueError(f"All of {','.join(keys)} must be provided for REG grid")
+        # Ensure x, y 2D coordinates are defined
+        self._regen_grid()
+        return self
 
     def _regen_grid(self):
         _x, _y = self._gen_reg_cgrid()
         self.x = _x
         self.y = _y
 
+    def _attrs_from_xy(self):
+        """Generate regular grid attributes from x, y coordinates."""
+        self.ny, self.nx = self.x.shape
+        self.x0 = self.x[0, 0]
+        self.y0 = self.y[0, 0]
+        self.rot = np.degrees(
+            np.arctan2(self.y[0, 1] - self.y0, self.x[0, 1] - self.x0)
+        )
+        self.dx = np.sqrt((self.x[0, 1] - self.x0) ** 2 + (self.y[0, 1] - self.y0) ** 2)
+        self.dy = np.sqrt((self.x[1, 0] - self.x0) ** 2 + (self.y[1, 0] - self.y0) ** 2)
+
     @property
     def xlen(self):
-        return self.dx * self.nx
+        return self.dx * (self.nx - 1)
 
     @property
     def ylen(self):
-        return self.dy * self.ny
+        return self.dy * (self.ny - 1)
 
     def _gen_reg_cgrid(self):
         # Grid at origin
@@ -285,6 +284,17 @@ class RegularGrid(BaseGrid):
         y = np.reshape(y, ii.shape)
         return x, y
 
+    def __eq__(self, other) -> bool:
+        return (
+            (self.nx == other.nx)
+            & (self.ny == other.ny)
+            & (self.rot == other.rot)
+            & (self.x0 == other.x0)
+            & (self.y0 == other.y0)
+            & (self.dx == other.dx)
+            & (self.dy == other.dy)
+        )
+
     def __repr__(self):
         return f"{self.__class__.__name__}({self.nx}, {self.ny})"
 
@@ -293,12 +303,10 @@ class RegularGrid(BaseGrid):
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+    import copy
 
-    # model = BaseModel()
-    x = np.array([0, 1, 2, 3])
-    y = np.array([0, 1, 2, 3])
-    xx, yy = np.meshgrid(x, y)
-    grid = BaseGrid(x=xx, y=yy)
-    grid.plot()
-    plt.show()
+    grid0 = RegularGrid(x0=-1, y0=1, rot=35, nx=10, ny=10, dx=1, dy=2)
+    grid1 = RegularGrid(x=grid0.x, y=grid0.y)
+
+    # print(grid0.rot, grid1.rot)
+    # print(grid0.dx, grid0.dy, grid1.dx, grid1.dy)

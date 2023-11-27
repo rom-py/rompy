@@ -303,7 +303,8 @@ class DataGrid(DataBlob):
         discriminator="model_type",
     )
     filter: Optional[Filter] = Field(
-        Filter(), description="Optional filter specification to apply to the dataset"
+        default_factory=Filter,
+        description="Optional filter specification to apply to the dataset",
     )
     variables: Optional[list[str]] = Field(
         [], description="Subset of variables to extract from the dataset"
