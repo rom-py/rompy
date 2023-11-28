@@ -12,9 +12,7 @@ import xarray as xr
 
 from .types import RompyBaseModel, Slice
 
-from pydantic import (
-    validator,
-)
+from pydantic import field_validator
 
 
 # pydantic class to apply all the filters to the dataset
@@ -26,7 +24,7 @@ class Filter(RompyBaseModel):
     rename: Optional[dict] = {}
     derived: Optional[dict] = {}
 
-    @validator('crop', pre=True)
+    @field_validator("crop", mode="before")
     def convert_slices(cls, v):
         for key, value in v.items():
             if isinstance(value, slice):
