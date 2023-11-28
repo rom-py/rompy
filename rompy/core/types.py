@@ -7,7 +7,6 @@ from pydantic import (
     ConfigDict,
     BaseModel,
     Field,
-    validator,
 )
 
 
@@ -318,8 +317,12 @@ class DatasetCoords(RompyBaseModel):
 class Slice(BaseModel):
     """Basic float or datetime slice representation"""
 
-    start: Optional[Union[float, datetime, str]] = None
-    stop: Optional[Union[float, datetime, str]] = None
+    start: Optional[Union[float, datetime, str]] = Field(
+        default=None, description="Slice start"
+    )
+    stop: Optional[Union[float, datetime, str]] = Field(
+        default=None, description="Slice stop"
+    )
 
     @classmethod
     def from_dict(cls, d: dict):
