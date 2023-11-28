@@ -1,17 +1,16 @@
 """Rompy types."""
-from typing import Any, Optional
+from typing import Any, Optional, Union
+from datetime import datetime
 from pydantic import (
     field_validator,
     model_validator,
     ConfigDict,
     BaseModel,
     Field,
-    validator,
 )
 
 
 class RompyBaseModel(BaseModel):
-
     # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
     model_config = ConfigDict(protected_namespaces=())
 
@@ -313,3 +312,38 @@ class DatasetCoords(RompyBaseModel):
     x: Optional[str] = Field("longitude", description="Name of the x coordinate")
     y: Optional[str] = Field("latitude", description="Name of the y coordinate")
     z: Optional[str] = Field("depth", description="Name of the z coordinate")
+
+
+class Slice(BaseModel):
+    """Basic float or datetime slice representation"""
+
+    start: Optional[Union[float, datetime, str]] = Field(
+        default=None, description="Slice start"
+    )
+    stop: Optional[Union[float, datetime, str]] = Field(
+        default=None, description="Slice stop"
+    )
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        return cls(start=d['start'], stop=d['stop'])
+    
+    @classmethod
+    def from_slice(cls, s: slice):
+        return cls(start=s.start, stop=s.stop)
+
+    def to_slice(self) -> slice:
+        return slice(self.start, self.stop)
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, slice):
+            return cls.from_slice(v)
+        elif isinstance(v, cls):
+            return v
+        else:
+            raise ValueError(f"Cannot convert {type(v)} to Slice")

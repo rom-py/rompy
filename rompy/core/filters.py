@@ -10,7 +10,9 @@ from typing import Optional
 
 import xarray as xr
 
-from .types import RompyBaseModel
+from .types import RompyBaseModel, Slice
+
+from pydantic import field_validator
 
 
 # pydantic class to apply all the filters to the dataset
@@ -22,10 +24,19 @@ class Filter(RompyBaseModel):
     rename: Optional[dict] = {}
     derived: Optional[dict] = {}
 
+    @field_validator("crop", mode="before")
+    def convert_slices(cls, v):
+        for key, value in v.items():
+            if isinstance(value, slice):
+                v[key] = Slice.from_slice(value)
+            if isinstance(value, dict):
+                v[key] = Slice.from_dict(value)
+        return v
+
     def __call__(self, ds):
         filters = get_filter_fns()
         for fn in filters:
-            params = self.model_dump()[fn]
+            params = getattr(self, fn)
             if params:
                 ds = filters[fn](ds, **params)
         return ds
@@ -110,7 +121,11 @@ def crop_filter(ds, **data_slice) -> xr.Dataset:
 
     """
     if data_slice is not None:
-        this_crop = {k: data_slice[k] for k in data_slice.keys() if k in ds.dims.keys()}
+        this_crop = {
+            k: data_slice[k].to_slice()
+            for k in data_slice.keys()
+            if k in ds.dims.keys()
+        }
         ds = ds.sel(this_crop)
         for k in data_slice.keys():
             if (k not in ds.dims.keys()) and (k in ds.coords.keys()):
@@ -195,3 +210,5 @@ def _open_preprocess(url, chunks, filters, xarray_kwargs):
         ds = fn(ds, **params)
 
     return ds
+
+
