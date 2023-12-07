@@ -7,16 +7,16 @@ import numpy as np
 import wavespectra
 from pydantic import Field, model_validator
 
-from rompy.core.time import TimeRange
 from rompy.core.data import (
     DataGrid,
     SourceBase,
+    SourceDatamesh,
     SourceDataset,
     SourceFile,
     SourceIntake,
-    SourceDatamesh,
 )
 from rompy.core.grid import RegularGrid
+from rompy.core.time import TimeRange
 
 logger = logging.getLogger(__name__)
 
@@ -144,18 +144,14 @@ class BoundaryWaveStation(DataGrid):
             "distance between points in the dataset"
         ),
     )
-    sel_method: Literal["idw", "nearest"] = Field(
+    sel_method: Literal["idw", "nearest", "boundary"] = Field(
         default="idw",
         description=(
             "Wavespectra method to use for selecting boundary points from the dataset"
         ),
     )
-    tolerance: float = Field(
-        default=1.0,
-        description=(
-            "Wavespectra tolerance for selecting boundary points from the dataset"
-        ),
-        ge=0,
+    sel_method_kwargs: dict = Field(
+        default={}, description="Keyword arguments for sel_method passed to wavespectra"
     )
     crop_data: bool = Field(
         default=True,
@@ -208,19 +204,22 @@ class BoundaryWaveStation(DataGrid):
 
     def _boundary_points(self, grid):
         """Coordinates of boundary points based on grid bbox and dataset resolution."""
-        if self.spacing is None:
-            dx, dy = self._boundary_resolutions(grid)
-            spacing = min(dx, dy)
-        else:
-            spacing = self.spacing
-        points = grid.points_along_boundary(spacing=spacing)
-        if len(points.geoms) < 4:
-            logger.warning(
-                f"There are only {len(points)} boundary points (less than 1 point per grid side), "
-                f"consider setting a smaller spacing (the current spacing is {spacing})"
-            )
-        xbnd = np.array([p.x for p in points.geoms])
-        ybnd = np.array([p.y for p in points.geoms])
+        if issubclass(grid.__class__, RegularGrid):
+            if self.spacing is None:
+                dx, dy = self._boundary_resolutions(grid)
+                spacing = min(dx, dy)
+            else:
+                spacing = self.spacing
+            points = grid.points_along_boundary(spacing=spacing)
+            if len(points.geoms) < 4:
+                logger.warning(
+                    f"There are only {len(points)} boundary points (less than 1 point per grid side), "
+                    f"consider setting a smaller spacing (the current spacing is {spacing})"
+                )
+            xbnd = np.array([p.x for p in points.geoms])
+            ybnd = np.array([p.y for p in points.geoms])
+        elif grid.__class__.__name__ in ("SCHISMGrid2D", "SCHISMGrid3D"):
+            xbnd, ybnd = grid.ocean_boundary()
         return xbnd, ybnd
 
     def _sel_boundary(self, grid):
@@ -230,7 +229,7 @@ class BoundaryWaveStation(DataGrid):
             lons=xbnd,
             lats=ybnd,
             method=self.sel_method,
-            tolerance=self.tolerance,
+            **self.sel_method_kwargs,
         )
         return ds
 

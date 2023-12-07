@@ -104,10 +104,8 @@ class SourceIntake(SourceBase):
         default="intake",
         description="Model type discriminator",
     )
-    dataset_id: str = Field(
-        description="The id of the dataset to read in the catalog")
-    catalog_uri: str | Path = Field(
-        description="The URI of the catalog to read from")
+    dataset_id: str = Field(description="The id of the dataset to read in the catalog")
+    catalog_uri: str | Path = Field(description="The URI of the catalog to read from")
     kwargs: dict = Field(
         default={},
         description="Keyword arguments to define intake dataset parameters",
@@ -377,11 +375,9 @@ class DataGrid(DataBlob):
             raise ValueError(f"Parameter {param} not in dataset") from err
 
         if ds[self.coords.x].size <= 1:
-            raise ValueError(
-                f"Cannot plot {param} with only one x coordinate\n\n{ds}")
+            raise ValueError(f"Cannot plot {param} with only one x coordinate\n\n{ds}")
         if ds[self.coords.y].size <= 1:
-            raise ValueError(
-                f"Cannot plot {param} with only one y coordinate\n\n{ds}")
+            raise ValueError(f"Cannot plot {param} with only one y coordinate\n\n{ds}")
 
         # Set some plot parameters:
         x0 = ds[self.coords.x].values[0]
