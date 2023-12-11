@@ -420,6 +420,10 @@ class DataGrid(DataBlob):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
+    @property
+    def outfile(self) -> str:
+        return f"{self.id}.nc"
+
     def get(
         self,
         destdir: str | Path,
@@ -448,6 +452,6 @@ class DataGrid(DataBlob):
                 self._filter_grid(grid)
             if time is not None:
                 self._filter_time(time)
-        outfile = Path(destdir) / f"{self.id}.nc"
+        outfile = Path(destdir) / self.outfile
         self.ds.to_netcdf(outfile)
         return outfile
