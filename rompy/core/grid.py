@@ -1,17 +1,15 @@
 import logging
-from typing import Any, Union, Literal, Optional
+from typing import Any, Literal, Optional, Union
 
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import Field, model_validator
 from pydantic_numpy.typing import Np1DArray, Np2DArray
 from shapely.geometry import MultiPoint, Polygon
 
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import matplotlib.pyplot as plt
-
 from rompy.core.types import Bbox, RompyBaseModel
-
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +63,11 @@ class BaseGrid(RompyBaseModel):
         bbox = [ll_x, ll_y, ur_x, ur_y]
         return bbox
 
-    def _get_boundary(self, tolerance=0.2) -> Polygon:
+    def _get_boundary(self, tolerance=None) -> Polygon:
         xys = list(zip(self.x.flatten(), self.y.flatten()))
-        polygon = MultiPoint(xys).convex_hull
-        polygon = polygon.simplify(tolerance=tolerance)
+        polygon = MultiPoint(xys).boundary
+        if tolerance:
+            polygon = polygon.simplify(tolerance=tolerance)
 
         return polygon
 
