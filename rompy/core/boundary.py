@@ -5,6 +5,7 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 import wavespectra
+import xarray as xr
 from pydantic import Field, model_validator
 
 from rompy.core.data import (
@@ -212,6 +213,8 @@ class DataBoundary(DataGrid):
     def _sel_boundary(self, grid):
         """Select the boundary points from the dataset."""
         xbnd, ybnd = self._boundary_points(grid)
+        xbnd = xr.DataArray(xbnd, dims=("site",))
+        ybnd = xr.DataArray(ybnd, dims=("site",))
         if self.sel_method != None:
             ds = self.ds.sel(
                 {self.coords.x: xbnd, self.coords.y: ybnd},
