@@ -14,11 +14,28 @@ Grids
 
 Data
 -----
+
+Supporting objects for SCHISM data files.jects
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+   rompy.schism.data.SfluxSource
+   rompy.schism.data.SfluxAir
+   rompy.schism.data.SfluxRad
+   rompy.schism.data.SfluxPrc
+   rompy.schism.data.SCHISMDataBoundary
+
+Main objects
+
 .. autosummary::
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.data.SCHISMDataAtmos
+   rompy.schism.data.SCHISMDataSflux
+   rompy.schism.data.SCHISMDataWave
+   rompy.schism.data.SCHISMDataOcean
+   rompy.schism.data.SCHISMDataTides
 
 
 
