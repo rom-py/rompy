@@ -8,8 +8,14 @@ import wavespectra
 import xarray as xr
 from pydantic import Field, model_validator
 
-from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
-                             SourceDataset, SourceFile, SourceIntake)
+from rompy.core.data import (
+    DataGrid,
+    SourceBase,
+    SourceDatamesh,
+    SourceDataset,
+    SourceFile,
+    SourceIntake,
+)
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
 
@@ -200,7 +206,7 @@ class DataBoundary(DataGrid):
                 )
             xbnd = np.array([p.x for p in points.geoms])
             ybnd = np.array([p.y for p in points.geoms])
-        elif grid.__class__.__name__ in ("SCHISMGrid2D", "SCHISMGrid3D"):
+        elif grid.__class__.__name__ == "SCHISMGrid":
             xbnd, ybnd = grid.ocean_boundary()
         return xbnd, ybnd
 
