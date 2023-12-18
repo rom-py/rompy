@@ -2,6 +2,7 @@
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
+from shutil import copytree
 from typing import Literal, Optional, Union
 
 import cartopy.crs as ccrs
@@ -261,9 +262,13 @@ class DataBlob(RompyBaseModel):
             The path to the copied file.
 
         """
-        outfile = Path(destdir) / self.source.name
-        if outfile.resolve() != self.source.resolve():
-            outfile.write_bytes(self.source.read_bytes())
+        if self.source.is_dir():
+            # copy directory
+            outfile = copytree(self.source, destdir)
+        else:
+            outfile = Path(destdir) / self.source.name
+            if outfile.resolve() != self.source.resolve():
+                outfile.write_bytes(self.source.read_bytes())
         self._copied = outfile
         return outfile
 
