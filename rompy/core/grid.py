@@ -63,11 +63,10 @@ class BaseGrid(RompyBaseModel):
         bbox = [ll_x, ll_y, ur_x, ur_y]
         return bbox
 
-    def _get_boundary(self, tolerance=None) -> Polygon:
+    def _get_boundary(self, tolerance=0.2) -> Polygon:
         xys = list(zip(self.x.flatten(), self.y.flatten()))
-        polygon = MultiPoint(xys).boundary
-        if tolerance:
-            polygon = polygon.simplify(tolerance=tolerance)
+        polygon = MultiPoint(xys).convex_hull
+        polygon = polygon.simplify(tolerance=tolerance)
 
         return polygon
 
