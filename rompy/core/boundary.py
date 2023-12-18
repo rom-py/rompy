@@ -408,3 +408,4 @@ def scatter_plot(bnd, ds=None, fscale=10, ax=None, **kwargs):
         gl.yformatter = LATITUDE_FORMATTER
 
     ax.scatter(ds[bnd.coords.x], ds[bnd.coords.y], transform=ccrs.PlateCarree())
+    return ax
