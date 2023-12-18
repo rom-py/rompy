@@ -8,14 +8,8 @@ import wavespectra
 import xarray as xr
 from pydantic import Field, model_validator
 
-from rompy.core.data import (
-    DataGrid,
-    SourceBase,
-    SourceDatamesh,
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-)
+from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
+                             SourceDataset, SourceFile, SourceIntake)
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
 
@@ -127,7 +121,7 @@ class DataBoundary(DataGrid):
             "distance between points in the dataset"
         ),
     )
-    sel_method: Literal["idw", "nearest"] = Field(
+    sel_method: Literal["nearest", "interp"] = Field(
         default="nearest",
         description=(
             "Wavespectra method to use for selecting boundary points from the dataset. Only sel_method or interpolate_method can be set, not both."
