@@ -4,6 +4,7 @@ import os
 import platform
 import zipfile as zf
 from datetime import datetime
+from pathlib import Path
 from typing import Union
 
 from pydantic import Field
@@ -18,8 +19,7 @@ from .core.render import render
 logger = logging.getLogger(__name__)
 
 
-CONFIG_TYPES = Union[BaseConfig, SwanConfig,
-                     SwanConfigComponents, SchismCSIROConfig]
+CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents, SchismCSIROConfig]
 
 
 class ModelRun(RompyBaseModel):
@@ -42,8 +42,7 @@ class ModelRun(RompyBaseModel):
         ),
         description="The time period to run the model",
     )
-    output_dir: str = Field(
-        "./simulations", description="The output directory")
+    output_dir: Path = Field("./simulations", description="The output directory")
     config: CONFIG_TYPES = Field(
         default_factory=BaseConfig,
         description="The configuration object",
@@ -60,8 +59,8 @@ class ModelRun(RompyBaseModel):
         staging_dir : str
         """
 
-        odir = os.path.join(self.output_dir, self.run_id)
-        os.makedirs(odir, exist_ok=True)
+        odir = self.output_dir / self.run_id
+        odir.mkdir(parents=True, exist_ok=True)
         return odir
 
     @property
