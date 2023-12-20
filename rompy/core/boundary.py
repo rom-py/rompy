@@ -119,6 +119,10 @@ SPEC_BOUNDARY_SOURCE_TYPES = Union[
 
 
 class DataBoundary(DataGrid):
+    data_type: Literal["boundary"] = Field(
+        default="data_boundary",
+        description="Model type discriminator",
+    )
     id: str = Field(description="Unique identifier for this data source")
     spacing: Optional[float] = Field(
         default=None,
@@ -292,6 +296,10 @@ class BoundaryWaveStation(DataBoundary):
 
     """
 
+    grid_type: Literal["boundary_wave_station"] = Field(
+        default="boundary_wave_station",
+        description="Model type discriminator",
+    )
     source: SPEC_BOUNDARY_SOURCE_TYPES = Field(
         description=(
             "Dataset source reader, must return a wavespectra-enabled "
