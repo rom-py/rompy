@@ -24,7 +24,7 @@ except ImportError:
     pass
 
 try:
-    from rompy import schism
+    from rompy.schism import SchismCSIROConfig
 
     installed.append("schism")
 except ImportError:
