@@ -36,6 +36,7 @@ Main objects
    rompy.schism.data.SCHISMDataWave
    rompy.schism.data.SCHISMDataOcean
    rompy.schism.data.SCHISMDataTides
+   rompy.schism.data.SCHISMData
 
 
 
