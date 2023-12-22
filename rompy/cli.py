@@ -23,6 +23,13 @@ try:
 except ImportError:
     pass
 
+try:
+    from rompy.schism import SchismCSIROConfig
+
+    installed.append("schism")
+except ImportError:
+    pass
+
 
 @click.command()
 @click.argument("model", type=click.Choice(installed))

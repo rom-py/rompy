@@ -1,26 +1,24 @@
 """Rompy core data objects."""
 import logging
-from pathlib import Path
 from abc import ABC, abstractmethod
 from pathlib import Path
+from shutil import copytree
 from typing import Literal, Optional, Union
-
-from cloudpathlib import AnyPath
-import intake
-from intake.catalog import Catalog
-import xarray as xr
-from pydantic import ConfigDict, Field
-from oceanum.datamesh import Connector
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import intake
 import matplotlib.pyplot as plt
+import xarray as xr
+from cloudpathlib import AnyPath
+from intake.catalog import Catalog
+from oceanum.datamesh import Connector
+from pydantic import ConfigDict, Field, PrivateAttr
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
-from rompy.core.types import RompyBaseModel, DatasetCoords, Slice
-
+from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +246,7 @@ class DataBlob(RompyBaseModel):
             "URI of the data source, either a local file path or a remote uri"
         ),
     )
+    _copied: str = PrivateAttr(default=None)
 
     def get(self, destdir: str | Path) -> Path:
         """Copy the data source to a new directory.
@@ -263,9 +262,14 @@ class DataBlob(RompyBaseModel):
             The path to the copied file.
 
         """
-        outfile = Path(destdir) / self.source.name
-        if outfile.resolve() != self.source.resolve():
-            outfile.write_bytes(self.source.read_bytes())
+        if self.source.is_dir():
+            # copy directory
+            outfile = copytree(self.source, destdir)
+        else:
+            outfile = Path(destdir) / self.source.name
+            if outfile.resolve() != self.source.resolve():
+                outfile.write_bytes(self.source.read_bytes())
+        self._copied = outfile
         return outfile
 
 
@@ -421,6 +425,10 @@ class DataGrid(DataBlob):
             ax.plot(bx, by, lw=2, color="k")
         return fig, ax
 
+    @property
+    def outfile(self) -> str:
+        return f"{self.id}.nc"
+
     def get(
         self,
         destdir: str | Path,
@@ -449,6 +457,6 @@ class DataGrid(DataBlob):
                 self._filter_grid(grid)
             if time is not None:
                 self._filter_time(time)
-        outfile = Path(destdir) / f"{self.id}.nc"
+        outfile = Path(destdir) / self.outfile
         self.ds.to_netcdf(outfile)
         return outfile
