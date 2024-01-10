@@ -116,6 +116,8 @@ class BaseGrid(RompyBaseModel):
             A Shapely MultiPoint object containing the points along the boundary.
 
         """
+        if spacing <= 0:
+            raise ValueError(f"Spacing must be greater than zero, got {spacing}")
         polygon = self.boundary(tolerance=0)
         perimeter = polygon.length
         if perimeter < spacing:
