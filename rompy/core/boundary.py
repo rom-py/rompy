@@ -6,7 +6,7 @@ from typing import Literal, Optional, Union
 import numpy as np
 import wavespectra
 import xarray as xr
-from pydantic import Field, model_validator, field_validator
+from pydantic import Field, model_validator
 
 from rompy.core.data import (
     DataGrid,
@@ -159,12 +159,12 @@ class DataBoundary(DataGrid):
 
     # validator that ensures that only one of sel_method and interpolate_method is set
     @model_validator(mode="after")
-    def assert_sel_method(cls, v):
-        if v.sel_method is not None and v.interpolate_method is not None:
+    def assert_sel_method(self) -> "DataBoundary":
+        if self.sel_method is not None and self.interpolate_method is not None:
             raise ValueError("Only one of sel_method and interpolate_method can be set")
-        if v.sel_method is None and v.interpolate_method is None:
+        if self.sel_method is None and self.interpolate_method is None:
             raise ValueError("Either sel_method or interpolate_method must be set")
-        return v
+        return self
 
     @model_validator(mode="after")
     def set_spacing(self) -> "DataBoundary":
@@ -293,7 +293,7 @@ class BoundaryWaveStation(DataBoundary):
         return self
 
     @model_validator(mode="after")
-    def set_spacing(self) -> "DataBoundary":
+    def set_spacing(self) -> "BoundaryWaveStation":
         """Override baseclass since dataset does not have coordinates."""
         return self
 
