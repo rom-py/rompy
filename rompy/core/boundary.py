@@ -6,7 +6,7 @@ from typing import Literal, Optional, Union
 import numpy as np
 import wavespectra
 import xarray as xr
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, field_validator
 
 from rompy.core.data import (
     DataGrid,
@@ -130,6 +130,7 @@ class DataBoundary(DataGrid):
             "Spacing between boundary points, by default defined as the minimum "
             "distance between points in the dataset"
         ),
+        gt=0.0,
     )
     sel_method: Literal["nearest", "interp"] = Field(
         default="nearest",
@@ -165,53 +166,24 @@ class DataBoundary(DataGrid):
             raise ValueError("Either sel_method or interpolate_method must be set")
         return v
 
+    @model_validator(mode="after")
+    def set_spacing(self) -> "DataBoundary":
+        """Define default spacing based on the smallest distance between coords."""
+        if self.spacing is None:
+            dx = np.diff(sorted(self.ds[self.coords.x].values)).min()
+            dy = np.diff(sorted(self.ds[self.coords.y].values)).min()
+            self.spacing = min(dx, dy)
+        return self
+
     def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
         pass
 
-    def _boundary_resolutions(self, grid):
-        """Boundary resolution based on the shortest distance between points.
-
-        The boundary resolution should be based on the dataset resolution instead of
-        the grid resolution to avoid creating points unecessarily. Here we find the
-        minimum distance between points in the dataset and use that to define the
-        boundary resolution ensuring the grid sizes are divisible by the resolution.
-
-        """
-        # Find out the minimum distance between points in the original dataset
-        buffer = 2 * min(grid.dx, grid.dy)
-        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
-        # Select dataset points just outside the actual grid to optimise the search
-        ds = self.ds.spec.sel([x0, x1], [y0, y1], method="bbox")
-        points = list(zip(ds.lon.values, ds.lat.values))
-        min_distance = find_minimum_distance(points)
-        # Calculate resolutions ensuring at least 3 points per side
-        xlen = grid.maxx - grid.minx
-        nx = max(xlen // min_distance, 3)
-        dx = xlen / nx
-        ylen = grid.maxy - grid.miny
-        ny = max(ylen // min_distance, 3)
-        dy = ylen / ny
-        return dx, dy
-
     def _boundary_points(self, grid):
-        """Coordinates of boundary points based on grid bbox and dataset resolution."""
-        if issubclass(grid.__class__, RegularGrid):
-            if self.spacing is None:
-                dx, dy = self._boundary_resolutions(grid)
-                spacing = min(dx, dy)
-            else:
-                spacing = self.spacing
-            points = grid.points_along_boundary(spacing=spacing)
-            if len(points.geoms) < 4:
-                logger.warning(
-                    f"There are only {len(points)} boundary points (less than 1 point per grid side), "
-                    f"consider setting a smaller spacing (the current spacing is {spacing})"
-                )
-            xbnd = np.array([p.x for p in points.geoms])
-            ybnd = np.array([p.y for p in points.geoms])
-        elif grid.__class__.__name__ == "SCHISMGrid":
-            xbnd, ybnd = grid.ocean_boundary()
+        """Coordinates of boundary points based on grid and dataset resolution."""
+        points = grid.points_along_boundary(spacing=self.spacing)
+        xbnd = np.array([p.x for p in points.geoms])
+        ybnd = np.array([p.y for p in points.geoms])
         return xbnd, ybnd
 
     def _sel_boundary(self, grid):
@@ -292,8 +264,6 @@ class BoundaryWaveStation(DataBoundary):
     mask areas but could cause boundary issues when on an open boundary location. To
     avoid this either use `nearest` or increase `tolerance` to include more neighbours.
 
-    TODO: Allow specifying resolutions along x and y instead of a single value.
-
     """
 
     grid_type: Literal["boundary_wave_station"] = Field(
@@ -321,6 +291,37 @@ class BoundaryWaveStation(DataBoundary):
         if not hasattr(dset, "spec"):
             raise ValueError(f"Wavespectra compatible source is required")
         return self
+
+    @model_validator(mode="after")
+    def set_spacing(self) -> "DataBoundary":
+        """Override baseclass since dataset does not have coordinates."""
+        return self
+
+    def _boundary_resolution(self, grid):
+        """Boundary resolution based on the shortest distance between points.
+
+        The boundary resolution should be based on the dataset resolution instead of
+        the grid resolution to avoid creating points unecessarily. Here we find the
+        minimum distance between points in the dataset and use that to define the
+        boundary resolution ensuring the grid sizes are divisible by the resolution.
+
+        """
+        # Select dataset points just outside the actual grid to optimise the search
+        xbnd, ybnd = grid.boundary().exterior.coords.xy
+        dx = np.diff(xbnd).min()
+        dy = np.diff(ybnd).min()
+        buffer = 2 * min(dx, dy)
+        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
+        ds = self.ds.spec.sel([x0, x1], [y0, y1], method="bbox")
+        # Return the closest distance between adjacent points in cropped dataset
+        points = list(zip(ds.lon.values, ds.lat.values))
+        return find_minimum_distance(points)
+
+    def _boundary_points(self, grid):
+        """Coordinates of boundary points based on grid and dataset resolution."""
+        if self.spacing is None:
+            self.spacing = self._boundary_resolution(grid)
+        return super()._boundary_points(grid)
 
     def _sel_boundary(self, grid):
         """Select the boundary points from the dataset."""
