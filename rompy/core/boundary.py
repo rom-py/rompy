@@ -124,33 +124,37 @@ class DataBoundary(DataGrid):
         description="Model type discriminator",
     )
     id: str = Field(description="Unique identifier for this data source")
-    spacing: Optional[float] = Field(
+    spacing: Optional[Union[float, Literal["parent"]]] = Field(
         default=None,
         description=(
-            "Spacing between boundary points, by default defined as the minimum "
-            "distance between points in the dataset"
+            "Spacing between points along the grid boundary to retrieve data for. If "
+            "None (default), points are defined from the the actual grid object "
+            "passed to the `get` method. If 'parent', the resolution of the parent "
+            "dataset is used to define the spacing."
         ),
         gt=0.0,
     )
     sel_method: Literal["nearest", "interp"] = Field(
         default="nearest",
         description=(
-            "Wavespectra method to use for selecting boundary points from the dataset. Only sel_method or interpolate_method can be set, not both."
+            "Xarray sel method to use for selecting boundary points from the "
+            "dataset. Only sel_method or interpolate_method can be set, not both."
         ),
     )
     sel_method_kwargs: dict = Field(
-        default={}, description="Keyword arguments for sel_method passed to wavespectra"
+        default={}, description="Keyword arguments for sel_method"
     )
     interpolate_method: Literal[
         "nearest", "zero", "slinear", "quadratic", "cubic", "polynomial"
     ] = Field(
         default=None,
         description=(
-            "Wavespectra method to use for selecting boundary points from the dataset. Only sel_method or interpolate_method can be set, not both."
+            "Interpolation method to use for selecting boundary points from the "
+            "dataset. Only sel_method or interpolate_method can be set, not both."
         ),
     )
     interp_method_kwargs: dict = Field(
-        default={}, description="Keyword arguments for sel_method passed to wavespectra"
+        default={}, description="Keyword arguments for interp_method"
     )
     crop_data: bool = Field(
         default=True,
@@ -166,24 +170,29 @@ class DataBoundary(DataGrid):
             raise ValueError("Either sel_method or interpolate_method must be set")
         return self
 
-    @model_validator(mode="after")
-    def set_spacing(self) -> "DataBoundary":
-        """Define default spacing based on the smallest distance between coords."""
-        if self.spacing is None:
-            dx = np.diff(sorted(self.ds[self.coords.x].values)).min()
-            dy = np.diff(sorted(self.ds[self.coords.y].values)).min()
-            self.spacing = min(dx, dy)
-        return self
-
     def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
         pass
 
+    def _set_spacing(self, grid):
+        """Define spacing based on the smallest distance between coords."""
+        if self.spacing == "parent":
+            dx = np.diff(sorted(self.ds[self.coords.x].values)).min()
+            dy = np.diff(sorted(self.ds[self.coords.y].values)).min()
+            return min(dx, dy)
+        else:
+            return self.spacing
+
     def _boundary_points(self, grid):
-        """Coordinates of boundary points based on grid and dataset resolution."""
-        points = grid.points_along_boundary(spacing=self.spacing)
-        xbnd = np.array([p.x for p in points.geoms])
-        ybnd = np.array([p.y for p in points.geoms])
+        """Coordinates of boundary points to return data for."""
+        if self.spacing is None:
+            # Use points from the actual grid object
+            xbnd, ybnd = grid.boundary_points()
+        else:
+            # Construct points along the boundary based on the spacing
+            points = grid.points_along_boundary(spacing=self._set_spacing(grid))
+            xbnd = np.array([p.x for p in points.geoms])
+            ybnd = np.array([p.y for p in points.geoms])
         return xbnd, ybnd
 
     def _sel_boundary(self, grid):
@@ -292,11 +301,6 @@ class BoundaryWaveStation(DataBoundary):
             raise ValueError(f"Wavespectra compatible source is required")
         return self
 
-    @model_validator(mode="after")
-    def set_spacing(self) -> "BoundaryWaveStation":
-        """Override baseclass since dataset does not have coordinates."""
-        return self
-
     def _boundary_resolution(self, grid):
         """Boundary resolution based on the shortest distance between points.
 
@@ -317,11 +321,12 @@ class BoundaryWaveStation(DataBoundary):
         points = list(zip(ds.lon.values, ds.lat.values))
         return find_minimum_distance(points)
 
-    def _boundary_points(self, grid):
-        """Coordinates of boundary points based on grid and dataset resolution."""
-        if self.spacing is None:
-            self.spacing = self._boundary_resolution(grid)
-        return super()._boundary_points(grid)
+    def _set_spacing(self, grid):
+        """Define spacing based on the smallest distance between coords."""
+        if self.spacing == "parent":
+            return  self._boundary_resolution(grid)
+        else:
+            return self.spacing
 
     def _sel_boundary(self, grid):
         """Select the boundary points from the dataset."""
