@@ -64,6 +64,12 @@ class BaseGrid(RompyBaseModel):
         return bbox
 
     def _get_boundary(self, tolerance=0.2) -> Polygon:
+        logger.warning(
+            "Default boundary method is actually returning a convex hull. For many applications this is sufficient, but be warned."
+        )
+        return self._get_convex_hull(tolerance=tolerance)
+
+    def _get_convex_hull(self, tolerance=0.2) -> Polygon:
         xys = list(zip(self.x.flatten(), self.y.flatten()))
         polygon = MultiPoint(xys).convex_hull
         polygon = polygon.simplify(tolerance=tolerance)

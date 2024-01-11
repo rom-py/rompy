@@ -8,14 +8,8 @@ import wavespectra
 import xarray as xr
 from pydantic import Field, model_validator
 
-from rompy.core.data import (
-    DataGrid,
-    SourceBase,
-    SourceDatamesh,
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-)
+from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
+                             SourceDataset, SourceFile, SourceIntake)
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
 
@@ -291,7 +285,7 @@ class BoundaryWaveStation(DataBoundary):
     def _set_spacing(self, grid):
         """Define spacing based on the smallest distance between coords."""
         if self.spacing == "parent":
-            return  self._boundary_resolution(grid)
+            return self._boundary_resolution(grid)
         else:
             return self.spacing
 
