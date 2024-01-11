@@ -134,41 +134,19 @@ class DataBoundary(DataGrid):
         ),
         gt=0.0,
     )
-    sel_method: Literal["nearest", "interp"] = Field(
-        default="nearest",
+    sel_method: Literal["sel", "interp"] = Field(
+        default="sel",
         description=(
-            "Xarray sel method to use for selecting boundary points from the "
-            "dataset. Only sel_method or interpolate_method can be set, not both."
+            "Xarray method to use for selecting boundary points from the dataset"
         ),
     )
     sel_method_kwargs: dict = Field(
         default={}, description="Keyword arguments for sel_method"
     )
-    interpolate_method: Literal[
-        "nearest", "zero", "slinear", "quadratic", "cubic", "polynomial"
-    ] = Field(
-        default=None,
-        description=(
-            "Interpolation method to use for selecting boundary points from the "
-            "dataset. Only sel_method or interpolate_method can be set, not both."
-        ),
-    )
-    interp_method_kwargs: dict = Field(
-        default={}, description="Keyword arguments for interp_method"
-    )
     crop_data: bool = Field(
         default=True,
         description="Update crop filter from Time object if passed to get method",
     )
-
-    # validator that ensures that only one of sel_method and interpolate_method is set
-    @model_validator(mode="after")
-    def assert_sel_method(self) -> "DataBoundary":
-        if self.sel_method is not None and self.interpolate_method is not None:
-            raise ValueError("Only one of sel_method and interpolate_method can be set")
-        if self.sel_method is None and self.interpolate_method is None:
-            raise ValueError("Either sel_method or interpolate_method must be set")
-        return self
 
     def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
@@ -198,21 +176,11 @@ class DataBoundary(DataGrid):
     def _sel_boundary(self, grid):
         """Select the boundary points from the dataset."""
         xbnd, ybnd = self._boundary_points(grid)
-        xbnd = xr.DataArray(xbnd, dims=("site",))
-        ybnd = xr.DataArray(ybnd, dims=("site",))
-        if self.sel_method != None:
-            ds = self.ds.sel(
-                {self.coords.x: xbnd, self.coords.y: ybnd},
-                method=self.sel_method,
-                **self.sel_method_kwargs,
-            )
-        else:
-            ds = self.ds.interp(
-                {self.coords.x: xbnd, self.coords.y: ybnd},
-                method=self.interpolate_method,
-                **self.interp_method_kwargs,
-            )
-        return ds
+        coords = {
+            self.coords.x: xr.DataArray(xbnd, dims=("site",)),
+            self.coords.y: xr.DataArray(ybnd, dims=("site",)),
+        }
+        return getattr(self.ds, self.sel_method)(coords, **self.sel_method_kwargs)
 
     def plot(self, model_grid=None, cmap="turbo", fscale=10, ax=None, **kwargs):
         return scatter_plot(
@@ -286,7 +254,6 @@ class BoundaryWaveStation(DataBoundary):
         ),
         discriminator="model_type",
     )
-
     sel_method: Literal["idw", "nearest"] = Field(
         default="idw",
         description=(
