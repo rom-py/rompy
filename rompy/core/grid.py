@@ -63,74 +63,59 @@ class BaseGrid(RompyBaseModel):
         bbox = [ll_x, ll_y, ur_x, ur_y]
         return bbox
 
-    def _get_boundary(self, tolerance=0.2) -> Polygon:
-        logger.warning(
-            "Default boundary method is actually returning a convex hull. For many applications this is sufficient, but be warned."
-        )
-        return self._get_convex_hull(tolerance=tolerance)
-
     def _get_convex_hull(self, tolerance=0.2) -> Polygon:
         xys = list(zip(self.x.flatten(), self.y.flatten()))
         polygon = MultiPoint(xys).convex_hull
         polygon = polygon.simplify(tolerance=tolerance)
-
         return polygon
 
-    def boundary(self, tolerance=0.2):
-        """
-        Returns a boundary polygon as a Shapely Polygon object. Sub-classes can override the private method Grid._get_boundary() but must return a Shapely polygon object.
+    def boundary(self, tolerance=0.2) -> Polygon:
+        """Returns the convex hull boundary polygon from the grid.
 
         Parameters
         ----------
-        tolerance : float
-            See https://shapely.readthedocs.io/en/stable/manual.html#object.simplify
+        tolerance: float
+            Simplify polygon shape based on maximum distance from original geometry,
+            see https://shapely.readthedocs.io/en/stable/manual.html#object.simplify.
 
         Returns
         -------
-        polygon : shapely.Polygon see https://shapely.readthedocs.io/en/stable/manual.html#Polygon
+        polygon: shapely.Polygon
+            See https://shapely.readthedocs.io/en/stable/manual.html#Polygon
 
         """
-        return self._get_boundary(tolerance=tolerance)
+        return self._get_convex_hull(tolerance=tolerance)
 
-    def boundary_points(self, tolerance=0.2):
-        """
-        Convenience function to convert boundary Shapely Polygon
-        to arrays of coordinates
+    def boundary_points(self, spacing=None, tolerance=0.2) -> tuple:
+        """Returns array of coordinates from boundary polygon.
 
         Parameters
         ----------
-        tolerance : float
-            Passed to Grid.boundary
-            See https://shapely.readthedocs.io/en/stable/manual.html#object.simplify
+        tolerance: float
+            Simplify polygon shape based on maximum distance from original geometry,
+            see https://shapely.readthedocs.io/en/stable/manual.html#object.simplify.
+        spacing: float
+            If specified, points are returned evenly spaced along the boundary at the
+            specified spacing, otherwise all points are returned.
+
+        Returns:
+        --------
+        points: tuple
+            Tuple of x and y coordinates of the boundary points.
 
         """
         polygon = self.boundary(tolerance=tolerance)
-        hull_x, hull_y = polygon.exterior.coords.xy
-        return hull_x, hull_y
-
-    def points_along_boundary(self, spacing):
-        """Points evenly spaced along the grid boundary.
-
-        Parameters
-        ----------
-        spacing : float
-            The spacing between points along the boundary
-
-        Returns
-        -------
-        points : MultiPoint
-            A Shapely MultiPoint object containing the points along the boundary.
-
-        """
-        if spacing <= 0:
-            raise ValueError(f"Spacing must be greater than zero, got {spacing}")
-        polygon = self.boundary(tolerance=0)
-        perimeter = polygon.length
-        if perimeter < spacing:
-            raise ValueError(f"Spacing = {spacing} > grid perimeter = {perimeter}")
-        num_points = int(np.ceil(perimeter / spacing))
-        points = [polygon.boundary.interpolate(i * spacing) for i in range(num_points)]
-        return MultiPoint(points)
+        if spacing is None:
+            xpts, ypts = polygon.exterior.coords.xy
+        else:
+            perimeter = polygon.length
+            if perimeter < spacing:
+                raise ValueError(f"Spacing = {spacing} > grid perimeter = {perimeter}")
+            npts = int(np.ceil(perimeter / spacing))
+            points = [polygon.boundary.interpolate(i * spacing) for i in range(npts)]
+            xpts = [point.x for point in points]
+            ypts = [point.y for point in points]
+        return np.array(xpts), np.array(ypts)
 
     def _figsize(self, x0, x1, y0, y1, fscale):
         xlen = abs(x1 - x0)
