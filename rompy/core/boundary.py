@@ -146,52 +146,33 @@ class DataBoundary(DataGrid):
         """Overwrite DataGrid's which assumes a regular grid."""
         pass
 
-    def _set_spacing(self, grid):
-        """Define spacing based on the smallest distance between coords."""
+    def _source_grid_spacing(self) -> float:
+        """Return the lowest grid spacing in the source dataset.
+
+        In a gridded dataset this is defined as the lowest spacing between adjacent
+        points in the dataset. In other dataset types such as a station dataset this
+        method needs to be overriden to return the lowest spacing between points.
+
+        """
+        dx = np.diff(sorted(self.ds[self.coords.x].values)).min()
+        dy = np.diff(sorted(self.ds[self.coords.y].values)).min()
+        return min(dx, dy)
+
+    def _set_spacing(self) -> float:
+        """Define spacing from the parent dataset if required."""
         if self.spacing == "parent":
-            dx = np.diff(sorted(self.ds[self.coords.x].values)).min()
-            dy = np.diff(sorted(self.ds[self.coords.y].values)).min()
-            return min(dx, dy)
+            return self._source_grid_spacing()
         else:
             return self.spacing
 
-    def _boundary_points(self, grid):
-        """Coordinates of boundary points to return data for."""
-        if self.spacing is None:
-            # Use points from the actual grid object
-            xbnd, ybnd = grid.boundary_points()
-        else:
-            # Construct points along the boundary based on the spacing
-            points = grid.points_along_boundary(spacing=self._set_spacing(grid))
-            xbnd = np.array([p.x for p in points.geoms])
-            ybnd = np.array([p.y for p in points.geoms])
-        return xbnd, ybnd
-
-    def _sel_boundary(self, grid):
+    def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = self._boundary_points(grid)
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing())
         coords = {
             self.coords.x: xr.DataArray(xbnd, dims=("site",)),
             self.coords.y: xr.DataArray(ybnd, dims=("site",)),
         }
         return getattr(self.ds, self.sel_method)(coords, **self.sel_method_kwargs)
-
-    def plot(self, model_grid=None, cmap="turbo", fscale=10, ax=None, **kwargs):
-        return scatter_plot(
-            self, model_grid=model_grid, cmap=cmap, fscale=fscale, ax=ax, **kwargs
-        )
-
-    def plot_boundary(self, grid=None, fscale=10, ax=None, **kwargs):
-        """Plot the boundary points on a map."""
-        ds = self._sel_boundary(grid)
-        fig, ax = grid.plot(ax=ax, fscale=fscale, **kwargs)
-        return scatter_plot(
-            self,
-            ds=ds,
-            fscale=fscale,
-            ax=ax,
-            **kwargs,
-        )
 
     def get(
         self, destdir: str | Path, grid: RegularGrid, time: Optional[TimeRange] = None
@@ -220,16 +201,35 @@ class DataBoundary(DataGrid):
         ds.to_netcdf(outfile)
         return outfile
 
+    def plot(self, model_grid=None, cmap="turbo", fscale=10, ax=None, **kwargs):
+        return scatter_plot(
+            self, model_grid=model_grid, cmap=cmap, fscale=fscale, ax=ax, **kwargs
+        )
+
+    def plot_boundary(self, grid=None, fscale=10, ax=None, **kwargs):
+        """Plot the boundary points on a map."""
+        ds = self._sel_boundary(grid)
+        fig, ax = grid.plot(ax=ax, fscale=fscale, **kwargs)
+        return scatter_plot(
+            self,
+            ds=ds,
+            fscale=fscale,
+            ax=ax,
+            **kwargs,
+        )
+
 
 class BoundaryWaveStation(DataBoundary):
     """Wave boundary data from station datasets.
 
-    Notes
-    -----
+    Note
+    ----
     The `tolerance` behaves differently with sel_methods `idw` and `nearest`; in `idw`
     sites with no enough neighbours within `tolerance` are masked whereas in `nearest`
     an exception is raised (see wavespectra documentation for more details).
 
+    Note
+    ----
     Be aware that when using `idw` missing values will be returned for sites with less
     than 2 neighbours within `tolerance` in the original dataset. This is okay for land
     mask areas but could cause boundary issues when on an open boundary location. To
@@ -262,15 +262,8 @@ class BoundaryWaveStation(DataBoundary):
             raise ValueError(f"Wavespectra compatible source is required")
         return self
 
-    def _boundary_resolution(self, grid):
-        """Boundary resolution based on the shortest distance between points.
-
-        The boundary resolution should be based on the dataset resolution instead of
-        the grid resolution to avoid creating points unecessarily. Here we find the
-        minimum distance between points in the dataset and use that to define the
-        boundary resolution ensuring the grid sizes are divisible by the resolution.
-
-        """
+    def _source_grid_spacing(self, grid) -> float:
+        """Return the lowest spacing between points in the source dataset."""
         # Select dataset points just outside the actual grid to optimise the search
         xbnd, ybnd = grid.boundary().exterior.coords.xy
         dx = np.diff(xbnd).min()
@@ -282,16 +275,16 @@ class BoundaryWaveStation(DataBoundary):
         points = list(zip(ds.lon.values, ds.lat.values))
         return find_minimum_distance(points)
 
-    def _set_spacing(self, grid):
-        """Define spacing based on the smallest distance between coords."""
+    def _set_spacing(self, grid) -> float:
+        """Define spacing from the parent dataset if required."""
         if self.spacing == "parent":
-            return self._boundary_resolution(grid)
+            return self._source_grid_spacing(grid)
         else:
             return self.spacing
 
-    def _sel_boundary(self, grid):
+    def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = self._boundary_points(grid)
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing(grid))
         ds = self.ds.spec.sel(
             lons=xbnd,
             lats=ybnd,
