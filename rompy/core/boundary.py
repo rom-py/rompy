@@ -8,14 +8,8 @@ import wavespectra
 import xarray as xr
 from pydantic import Field, model_validator
 
-from rompy.core.data import (
-    DataGrid,
-    SourceBase,
-    SourceDatamesh,
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-)
+from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
+                             SourceDataset, SourceFile, SourceIntake)
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
 
@@ -124,131 +118,61 @@ class DataBoundary(DataGrid):
         description="Model type discriminator",
     )
     id: str = Field(description="Unique identifier for this data source")
-    spacing: Optional[float] = Field(
+    spacing: Optional[Union[float, Literal["parent"]]] = Field(
         default=None,
         description=(
-            "Spacing between boundary points, by default defined as the minimum "
-            "distance between points in the dataset"
+            "Spacing between points along the grid boundary to retrieve data for. If "
+            "None (default), points are defined from the the actual grid object "
+            "passed to the `get` method. If 'parent', the resolution of the parent "
+            "dataset is used to define the spacing."
         ),
+        gt=0.0,
     )
-    sel_method: Literal["nearest", "interp"] = Field(
-        default="nearest",
+    sel_method: Literal["sel", "interp"] = Field(
+        default="sel",
         description=(
-            "Wavespectra method to use for selecting boundary points from the dataset. Only sel_method or interpolate_method can be set, not both."
+            "Xarray method to use for selecting boundary points from the dataset"
         ),
     )
     sel_method_kwargs: dict = Field(
-        default={}, description="Keyword arguments for sel_method passed to wavespectra"
-    )
-    interpolate_method: Literal[
-        "nearest", "zero", "slinear", "quadratic", "cubic", "polynomial"
-    ] = Field(
-        default=None,
-        description=(
-            "Wavespectra method to use for selecting boundary points from the dataset. Only sel_method or interpolate_method can be set, not both."
-        ),
-    )
-    interp_method_kwargs: dict = Field(
-        default={}, description="Keyword arguments for sel_method passed to wavespectra"
+        default={}, description="Keyword arguments for sel_method"
     )
     crop_data: bool = Field(
         default=True,
         description="Update crop filter from Time object if passed to get method",
     )
 
-    # validator that ensures that only one of sel_method and interpolate_method is set
-    @model_validator(mode="after")
-    def assert_sel_method(cls, v):
-        if v.sel_method is not None and v.interpolate_method is not None:
-            raise ValueError("Only one of sel_method and interpolate_method can be set")
-        if v.sel_method is None and v.interpolate_method is None:
-            raise ValueError("Either sel_method or interpolate_method must be set")
-        return v
-
     def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
         pass
 
-    def _boundary_resolutions(self, grid):
-        """Boundary resolution based on the shortest distance between points.
+    def _source_grid_spacing(self) -> float:
+        """Return the lowest grid spacing in the source dataset.
 
-        The boundary resolution should be based on the dataset resolution instead of
-        the grid resolution to avoid creating points unecessarily. Here we find the
-        minimum distance between points in the dataset and use that to define the
-        boundary resolution ensuring the grid sizes are divisible by the resolution.
+        In a gridded dataset this is defined as the lowest spacing between adjacent
+        points in the dataset. In other dataset types such as a station dataset this
+        method needs to be overriden to return the lowest spacing between points.
 
         """
-        # Find out the minimum distance between points in the original dataset
-        buffer = 2 * min(grid.dx, grid.dy)
-        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
-        # Select dataset points just outside the actual grid to optimise the search
-        ds = self.ds.spec.sel([x0, x1], [y0, y1], method="bbox")
-        points = list(zip(ds.lon.values, ds.lat.values))
-        min_distance = find_minimum_distance(points)
-        # Calculate resolutions ensuring at least 3 points per side
-        xlen = grid.maxx - grid.minx
-        nx = max(xlen // min_distance, 3)
-        dx = xlen / nx
-        ylen = grid.maxy - grid.miny
-        ny = max(ylen // min_distance, 3)
-        dy = ylen / ny
-        return dx, dy
+        dx = np.diff(sorted(self.ds[self.coords.x].values)).min()
+        dy = np.diff(sorted(self.ds[self.coords.y].values)).min()
+        return min(dx, dy)
 
-    def _boundary_points(self, grid):
-        """Coordinates of boundary points based on grid bbox and dataset resolution."""
-        if issubclass(grid.__class__, RegularGrid):
-            if self.spacing is None:
-                dx, dy = self._boundary_resolutions(grid)
-                spacing = min(dx, dy)
-            else:
-                spacing = self.spacing
-            points = grid.points_along_boundary(spacing=spacing)
-            if len(points.geoms) < 4:
-                logger.warning(
-                    f"There are only {len(points)} boundary points (less than 1 point per grid side), "
-                    f"consider setting a smaller spacing (the current spacing is {spacing})"
-                )
-            xbnd = np.array([p.x for p in points.geoms])
-            ybnd = np.array([p.y for p in points.geoms])
-        elif grid.__class__.__name__ == "SCHISMGrid":
-            xbnd, ybnd = grid.ocean_boundary()
-        return xbnd, ybnd
-
-    def _sel_boundary(self, grid):
-        """Select the boundary points from the dataset."""
-        xbnd, ybnd = self._boundary_points(grid)
-        xbnd = xr.DataArray(xbnd, dims=("site",))
-        ybnd = xr.DataArray(ybnd, dims=("site",))
-        if self.sel_method != None:
-            ds = self.ds.sel(
-                {self.coords.x: xbnd, self.coords.y: ybnd},
-                method=self.sel_method,
-                **self.sel_method_kwargs,
-            )
+    def _set_spacing(self) -> float:
+        """Define spacing from the parent dataset if required."""
+        if self.spacing == "parent":
+            return self._source_grid_spacing()
         else:
-            ds = self.ds.interp(
-                {self.coords.x: xbnd, self.coords.y: ybnd},
-                method=self.interpolate_method,
-                **self.interp_method_kwargs,
-            )
-        return ds
+            return self.spacing
 
-    def plot(self, model_grid=None, cmap="turbo", fscale=10, ax=None, **kwargs):
-        return scatter_plot(
-            self, model_grid=model_grid, cmap=cmap, fscale=fscale, ax=ax, **kwargs
-        )
-
-    def plot_boundary(self, grid=None, fscale=10, ax=None, **kwargs):
-        """Plot the boundary points on a map."""
-        ds = self._sel_boundary(grid)
-        fig, ax = grid.plot(ax=ax, fscale=fscale, **kwargs)
-        return scatter_plot(
-            self,
-            ds=ds,
-            fscale=fscale,
-            ax=ax,
-            **kwargs,
-        )
+    def _sel_boundary(self, grid) -> xr.Dataset:
+        """Select the boundary points from the dataset."""
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing())
+        coords = {
+            self.coords.x: xr.DataArray(xbnd, dims=("site",)),
+            self.coords.y: xr.DataArray(ybnd, dims=("site",)),
+        }
+        return getattr(self.ds, self.sel_method)(coords, **self.sel_method_kwargs)
 
     def get(
         self, destdir: str | Path, grid: RegularGrid, time: Optional[TimeRange] = None
@@ -277,22 +201,39 @@ class DataBoundary(DataGrid):
         ds.to_netcdf(outfile)
         return outfile
 
+    def plot(self, model_grid=None, cmap="turbo", fscale=10, ax=None, **kwargs):
+        return scatter_plot(
+            self, model_grid=model_grid, cmap=cmap, fscale=fscale, ax=ax, **kwargs
+        )
+
+    def plot_boundary(self, grid=None, fscale=10, ax=None, **kwargs):
+        """Plot the boundary points on a map."""
+        ds = self._sel_boundary(grid)
+        fig, ax = grid.plot(ax=ax, fscale=fscale, **kwargs)
+        return scatter_plot(
+            self,
+            ds=ds,
+            fscale=fscale,
+            ax=ax,
+            **kwargs,
+        )
+
 
 class BoundaryWaveStation(DataBoundary):
     """Wave boundary data from station datasets.
 
-    Notes
-    -----
+    Note
+    ----
     The `tolerance` behaves differently with sel_methods `idw` and `nearest`; in `idw`
     sites with no enough neighbours within `tolerance` are masked whereas in `nearest`
     an exception is raised (see wavespectra documentation for more details).
 
+    Note
+    ----
     Be aware that when using `idw` missing values will be returned for sites with less
     than 2 neighbours within `tolerance` in the original dataset. This is okay for land
     mask areas but could cause boundary issues when on an open boundary location. To
     avoid this either use `nearest` or increase `tolerance` to include more neighbours.
-
-    TODO: Allow specifying resolutions along x and y instead of a single value.
 
     """
 
@@ -307,7 +248,6 @@ class BoundaryWaveStation(DataBoundary):
         ),
         discriminator="model_type",
     )
-
     sel_method: Literal["idw", "nearest"] = Field(
         default="idw",
         description=(
@@ -322,9 +262,29 @@ class BoundaryWaveStation(DataBoundary):
             raise ValueError(f"Wavespectra compatible source is required")
         return self
 
-    def _sel_boundary(self, grid):
+    def _source_grid_spacing(self, grid) -> float:
+        """Return the lowest spacing between points in the source dataset."""
+        # Select dataset points just outside the actual grid to optimise the search
+        xbnd, ybnd = grid.boundary().exterior.coords.xy
+        dx = np.diff(xbnd).min()
+        dy = np.diff(ybnd).min()
+        buffer = 2 * min(dx, dy)
+        x0, y0, x1, y1 = grid.bbox(buffer=buffer)
+        ds = self.ds.spec.sel([x0, x1], [y0, y1], method="bbox")
+        # Return the closest distance between adjacent points in cropped dataset
+        points = list(zip(ds.lon.values, ds.lat.values))
+        return find_minimum_distance(points)
+
+    def _set_spacing(self, grid) -> float:
+        """Define spacing from the parent dataset if required."""
+        if self.spacing == "parent":
+            return self._source_grid_spacing(grid)
+        else:
+            return self.spacing
+
+    def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = self._boundary_points(grid)
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing(grid))
         ds = self.ds.spec.sel(
             lons=xbnd,
             lats=ybnd,
