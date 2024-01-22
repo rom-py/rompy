@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 import platform
+import shutil
 import zipfile as zf
 from datetime import datetime
 from pathlib import Path
@@ -121,28 +122,19 @@ class ModelRun(RompyBaseModel):
         """
 
         # Always remove previous zips
-        zip_fn = self.staging_dir + "/simulation.zip"
-        if os.path.exists(zip_fn):
-            os.remove(zip_fn)
+        zip_fn = Path(str(self.staging_dir) + ".zip")
+        if zip_fn.exists():
+            zip_fn.remove(zip_fn)
 
-        # Zip the input files
-        run_files = glob.glob(self.staging_dir + "/**/*", recursive=True)
         with zf.ZipFile(zip_fn, mode="w", compression=zf.ZIP_DEFLATED) as z:
-            for f in run_files:
-                # strip off the path prefix
-                z.write(f, f.replace(self.staging_dir, ""))
-
-        # Clean up run files leaving the settings.json
-        for f in run_files:
-            if not os.path.basename(f) == "settings.json":
-                if os.path.isfile(f):
-                    os.remove(f)
-
-        # Clean up any directories
-        for f in run_files:
-            if os.path.isdir(f):
-                os.rmdir(f)
-
+            for dp, dn, fn in os.walk(self.staging_dir):
+                for filename in fn:
+                    z.write(
+                        os.path.join(dp, filename),
+                        os.path.relpath(os.path.join(dp, filename), self.staging_dir),
+                    )
+        shutil.rmtree(self.staging_dir)
+        logger.info(f"Successfully zipped project to {zip_fn}")
         return zip_fn
 
     def __call__(self):
