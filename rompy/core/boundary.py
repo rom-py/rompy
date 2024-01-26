@@ -165,9 +165,18 @@ class DataBoundary(DataGrid):
         else:
             return self.spacing
 
+    def _boundary_points(self, grid) -> tuple:
+        """Returns the x and y arrays representing the boundary points to select.
+
+        This method can be overriden to define custom boundary points.
+
+        """
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing())
+        return xbnd, ybnd
+
     def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing())
+        xbnd, ybnd = self._boundary_points(grid=grid)
         coords = {
             self.coords.x: xr.DataArray(xbnd, dims=("site",)),
             self.coords.y: xr.DataArray(ybnd, dims=("site",)),
@@ -282,9 +291,18 @@ class BoundaryWaveStation(DataBoundary):
         else:
             return self.spacing
 
+    def _boundary_points(self, grid) -> tuple:
+        """Returns the x and y arrays representing the boundary points to select.
+
+        Override the default method to use grid when setting the default spacing.
+
+        """
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing(grid))
+        return xbnd, ybnd
+
     def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing(grid))
+        xbnd, ybnd = self._boundary_points(grid=grid)
         ds = self.ds.spec.sel(
             lons=xbnd,
             lats=ybnd,
