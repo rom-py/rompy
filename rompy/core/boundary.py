@@ -6,7 +6,7 @@ from typing import Literal, Optional, Union
 import numpy as np
 import wavespectra
 import xarray as xr
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, field_validator
 
 from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
                              SourceDataset, SourceFile, SourceIntake)
@@ -126,7 +126,6 @@ class DataBoundary(DataGrid):
             "passed to the `get` method. If 'parent', the resolution of the parent "
             "dataset is used to define the spacing."
         ),
-        gt=0.0,
     )
     sel_method: Literal["sel", "interp"] = Field(
         default="sel",
@@ -141,6 +140,13 @@ class DataBoundary(DataGrid):
         default=True,
         description="Update crop filter from Time object if passed to get method",
     )
+
+    @field_validator("spacing")
+    @classmethod
+    def spacing_gt_zero(cls, v):
+        if v not in (None, "parent") and v <= 0.0:
+            raise ValueError("Spacing must be greater than zero")
+        return v
 
     def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
