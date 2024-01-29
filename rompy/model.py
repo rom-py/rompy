@@ -124,7 +124,7 @@ class ModelRun(RompyBaseModel):
         # Always remove previous zips
         zip_fn = Path(str(self.staging_dir) + ".zip")
         if zip_fn.exists():
-            zip_fn.remove(zip_fn)
+            zip_fn.unlink()
 
         with zf.ZipFile(zip_fn, mode="w", compression=zf.ZIP_DEFLATED) as z:
             for dp, dn, fn in os.walk(self.staging_dir):
