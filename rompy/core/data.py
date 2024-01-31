@@ -248,7 +248,7 @@ class DataBlob(RompyBaseModel):
     )
     _copied: str = PrivateAttr(default=None)
 
-    def get(self, destdir: str | Path) -> Path:
+    def get(self, destdir: str | Path, name: str = None) -> Path:
         """Copy the data source to a new directory.
 
         Parameters
@@ -266,7 +266,10 @@ class DataBlob(RompyBaseModel):
             # copy directory
             outfile = copytree(self.source, destdir)
         else:
-            outfile = Path(destdir) / self.source.name
+            if name:
+                outfile = Path(destdir) / name
+            else:
+                outfile = Path(destdir) / self.source.name
             if outfile.resolve() != self.source.resolve():
                 outfile.write_bytes(self.source.read_bytes())
         self._copied = outfile
