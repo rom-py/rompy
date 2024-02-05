@@ -1,6 +1,7 @@
 """Rompy core data objects."""
 import logging
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from pathlib import Path
 from shutil import copytree
 from typing import Literal, Optional, Union
@@ -9,6 +10,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import intake
 import matplotlib.pyplot as plt
+import numpy as np
 import xarray as xr
 from cloudpathlib import AnyPath
 from intake.catalog import Catalog
@@ -329,6 +331,10 @@ class DataGrid(DataBlob):
         default=0.0,
         description="Space to buffer the grid bounding box if `filter_grid` is True",
     )
+    time_buffer: list[int] = Field(
+        default=[0, 0],
+        description="Number of source data timesteps to buffer the time range if `filter_time` is True",
+    )
 
     def _filter_grid(self, grid: GRID_TYPES):
         """Define the filters to use to extract data to this grid"""
@@ -340,9 +346,21 @@ class DataGrid(DataBlob):
             }
         )
 
-    def _filter_time(self, time: TimeRange):
+    def _filter_time(self, time: TimeRange, end_buffer=1):
         """Define the filters to use to extract data to this grid"""
-        self.filter.crop.update({self.coords.t: Slice(start=time.start, stop=time.end)})
+
+        dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
+        # Convert to regular timedelta64
+        regular_timedelta = dt.astype("timedelta64[s]")
+        python_timedelta = timedelta(seconds=regular_timedelta / np.timedelta64(1, "s"))
+        start = time.start
+        end = time.end
+        if self.time_buffer[0]:
+            # Convert to datetime.timedelta
+            start -= python_timedelta * self.time_buffer[0]
+        if self.time_buffer[1]:
+            end += python_timedelta * self.time_buffer[1]
+        self.filter.crop.update({self.coords.t: Slice(start=start, stop=end)})
 
     @property
     def ds(self):
