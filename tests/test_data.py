@@ -1,6 +1,7 @@
 import os
+import intake
 from pathlib import Path
-
+from pydantic import ValidationError
 import numpy as np
 import pandas as pd
 import pytest
@@ -125,21 +126,43 @@ def test_time_filter(nc_data_source):
 
 def test_source_dataset():
     dset = xr.open_dataset(HERE / "data" / "aus-20230101.nc")
-    dataset = SourceDataset(obj=dset)
-    assert isinstance(dataset.open(), xr.Dataset)
+    source = SourceDataset(obj=dset)
+    assert isinstance(source.open(), xr.Dataset)
 
 
-def test_source_open_dataset():
-    dataset = SourceFile(uri=HERE / "data" / "aus-20230101.nc")
-    assert isinstance(dataset.open(), xr.Dataset)
+def test_source_file():
+    source = SourceFile(uri=HERE / "data" / "aus-20230101.nc")
+    assert isinstance(source.open(), xr.Dataset)
 
 
-def test_dataset_intake():
-    dataset = SourceIntake(
+def test_source_intake_uri():
+    source = SourceIntake(
         dataset_id="ausspec",
         catalog_uri=HERE / "data" / "catalog.yaml",
     )
-    assert isinstance(dataset.open(), xr.Dataset)
+    assert isinstance(source.open(), xr.Dataset)
+
+
+def test_source_intake_yaml():
+    dataset = intake.open_netcdf(str(HERE / "data/era5-20230101.nc"))
+    dataset.name = "era5"
+    source = SourceIntake(
+        dataset_id="era5",
+        catalog_yaml=dataset.yaml(),
+    )
+    assert isinstance(source.open(), xr.Dataset)
+
+
+def test_source_intake_uri_or_yaml():
+    dataset = intake.open_netcdf(str(HERE / "data/era5-20230101.nc"))
+    dataset.name = "era5"
+    with pytest.raises(ValidationError):
+        SourceIntake(dataset_id="era5")
+        SourceIntake(
+            dataset_id="era5",
+            catalog_uri=HERE / "data" / "catalog.yaml",
+            catalog_yaml=dataset.yaml(),
+        )
 
 
 def test_intake_grid_plot(grid_data_source):
@@ -149,7 +172,7 @@ def test_intake_grid_plot(grid_data_source):
 
 @pytest.mark.skip(reason="This won't work with pydantic<2, fix once migrated")
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
-def test_dataset_datamesh():
+def test_source_datamesh():
     dataset = SourceDatamesh(datasource="era5_wind10m", token=DATAMESH_TOKEN)
     filters = Filter()
     filters.crop.update(dict(time=slice("2000-01-01T00:00:00", "2000-01-01T03:00:00")))
