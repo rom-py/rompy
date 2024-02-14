@@ -148,7 +148,6 @@ class SourceIntake(SourceBase):
         else:
             fs = fsspec.filesystem("memory")
             fs_map = fs.get_mapper()
-            # fs_map[f"/temp.yaml"] = yaml.dump(self.catalog_yaml).encode("utf-8")
             fs_map[f"/temp.yaml"] = self.catalog_yaml.encode('utf-8')
             return YAMLFileCatalog("temp.yaml", fs=fs)
 
