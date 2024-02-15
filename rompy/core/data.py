@@ -4,16 +4,18 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from shutil import copytree
 from typing import Literal, Optional, Union
+import fsspec
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import intake
+from intake.catalog.local import YAMLFileCatalog
 import matplotlib.pyplot as plt
 import xarray as xr
 from cloudpathlib import AnyPath
 from intake.catalog import Catalog
 from oceanum.datamesh import Connector
-from pydantic import ConfigDict, Field, PrivateAttr
+from pydantic import ConfigDict, Field, PrivateAttr, model_validator
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
@@ -99,18 +101,41 @@ class SourceFile(SourceBase):
 
 
 class SourceIntake(SourceBase):
-    """Source dataset from intake catalog."""
+    """Source dataset from intake catalog.
+
+    note
+    ----
+    The intake catalog can be prescribed either by the URI of an existing catalog file
+    or by a YAML string defining the catalog. The YAML string can be obtained from
+    calling the `yaml()` method on an intake dataset instance.
+
+    """
 
     model_type: Literal["intake"] = Field(
         default="intake",
         description="Model type discriminator",
     )
     dataset_id: str = Field(description="The id of the dataset to read in the catalog")
-    catalog_uri: str | Path = Field(description="The URI of the catalog to read from")
+    catalog_uri: Optional[str | Path] = Field(
+        default=None,
+        description="The URI of the catalog to read from",
+    )
+    catalog_yaml: Optional[str] = Field(
+        default=None,
+        description="The YAML string of the catalog to read from",
+    )
     kwargs: dict = Field(
         default={},
         description="Keyword arguments to define intake dataset parameters",
     )
+
+    @model_validator(mode="after")
+    def check_catalog(self) -> "SourceIntake":
+        if self.catalog_uri is None and self.catalog_yaml is None:
+            raise ValueError("Either catalog_uri or catalog_yaml must be provided")
+        elif self.catalog_uri is not None and self.catalog_yaml is not None:
+            raise ValueError("Only one of catalog_uri or catalog_yaml can be provided")
+        return self
 
     def __str__(self) -> str:
         return f"SourceIntake(catalog_uri={self.catalog_uri}, dataset_id={self.dataset_id})"
@@ -118,7 +143,13 @@ class SourceIntake(SourceBase):
     @property
     def catalog(self) -> Catalog:
         """The intake catalog instance."""
-        return intake.open_catalog(self.catalog_uri)
+        if self.catalog_uri:
+            return intake.open_catalog(self.catalog_uri)
+        else:
+            fs = fsspec.filesystem("memory")
+            fs_map = fs.get_mapper()
+            fs_map[f"/temp.yaml"] = self.catalog_yaml.encode('utf-8')
+            return YAMLFileCatalog("temp.yaml", fs=fs)
 
     def _open(self) -> xr.Dataset:
         return self.catalog[self.dataset_id](**self.kwargs).to_dask()
