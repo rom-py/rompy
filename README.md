@@ -3,7 +3,7 @@ title: "Relocatable Ocean Modelling in PYthon (rompy)"
 ---
 
 [![PyPI version](https://badge.fury.io/py/rompy.svg)](https://badge.fury.io/py/rompy)
-[![Documentation Status](https://readthedocs.org/projects/rompy/badge/?version=latest)](https://rompy.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://github.com/rom-py/rompy/actions/workflows/sphinx_docs_to_gh_pages.yaml/badge.svg)](https://rom-py.github.io/rompy/)
 
 # Introduction
 

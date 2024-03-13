@@ -6,7 +6,7 @@ from wavespectra import read_swan
 from rompy.core.time import TimeRange
 from rompy.swan.grid import SwanGrid
 from rompy.core.boundary import SourceFile, SourceIntake, SourceWavespectra
-from rompy.swan.boundary import Boundnest1
+from rompy.swan.boundary import Boundnest1, BoundspecSide, BoundspecSegmentXY
 
 
 HERE = Path(__file__).parent
@@ -19,7 +19,7 @@ def time():
 
 @pytest.fixture(scope="module")
 def grid():
-    yield SwanGrid(x0=110, y0=-30, dx=0.5, dy=0.5, nx=10, ny=10, rot=77)
+    yield SwanGrid(x0=110, y0=-30, dx=0.5, dy=0.5, nx=10, ny=10, rot=20)
 
 
 def test_source_wavespectra(tmp_path):
@@ -57,7 +57,7 @@ def test_data_boundary_spacing_from_dataset(tmp_path, time, grid):
             kwargs=dict(engine="netcdf4"),
         ),
         sel_method="idw",
-        tolerance=2.0,
+        sel_method_kwargs={"tolerance": 2.0},
         rectangle="closed",
     )
     bnd._filter_time(time=time)
@@ -77,7 +77,7 @@ def test_data_boundary_custom_spacing(tmp_path, time, grid):
         ),
         spacing=1,
         sel_method="idw",
-        tolerance=2.0,
+        sel_method_kwargs={"tolerance": 2.0},
         rectangle="closed",
     )
     bnd._filter_time(time=time)
@@ -98,11 +98,57 @@ def test_data_boundary_spacing_lt_perimeter(tmp_path, time, grid):
             ),
             spacing=100,
             sel_method="idw",
-            tolerance=2.0,
+            sel_method_kwargs={"tolerance": 2.0},
             rectangle="closed",
         )
         bnd._filter_time(time=time)
         bnd.get(destdir=tmp_path, grid=grid)
+
+
+def test_boundspecside(tmp_path, time, grid):
+    bnd = BoundspecSide(
+        id="westaus",
+        source=SourceFile(
+            uri=HERE / "data/aus-20230101.nc",
+            kwargs=dict(engine="netcdf4"),
+        ),
+        sel_method="nearest",
+        sel_method_kwargs={"tolerance": 2.0},
+        location={"side": "west"},
+    )
+    bnd.get(destdir=tmp_path, grid=grid, time=time)
+
+
+def test_boundspecsegmentxy_from_side(tmp_path, time, grid):
+    bnd = BoundspecSegmentXY(
+        id="westaus",
+        source=SourceFile(
+            uri=HERE / "data/aus-20230101.nc",
+            kwargs=dict(engine="netcdf4"),
+        ),
+        sel_method="idw",
+        sel_method_kwargs={"tolerance": 3.0},
+        location={"model_type": "side", "side": "west"},
+    )
+    cmds = bnd.get(destdir=tmp_path, grid=grid, time=time)
+
+
+def test_boundspecsegmentxy_from_sides(tmp_path, time, grid):
+    bnd = BoundspecSegmentXY(
+        id="westaus",
+        source=SourceFile(
+            uri=HERE / "data/aus-20230101.nc",
+            kwargs=dict(engine="netcdf4"),
+        ),
+        sel_method="nearest",
+        sel_method_kwargs={"tolerance": 3.0},
+        location=
+            {
+                "model_type": "sides",
+                "sides": [{"side": "west"}, {"side": "south"}],
+            }
+    )
+    cmds = bnd.get(destdir=tmp_path, grid=grid, time=time)
 
 
 def test_source_wavespectra_ploting(tmp_path):
@@ -114,7 +160,7 @@ def test_source_wavespectra_ploting(tmp_path):
         ),
         spacing=1,
         sel_method="idw",
-        tolerance=2.0,
+        sel_method_kwargs={"tolerance": 2.0},
         rectangle="closed",
         coords={'x':'lon', 'y': 'lat'}
     ).plot()
