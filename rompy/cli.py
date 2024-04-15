@@ -34,13 +34,14 @@ except ImportError:
 @click.command()
 @click.argument("model", type=click.Choice(installed))
 @click.argument("config", type=click.File("r"))
+@click.option("zip", "--zip/--no-zip", default=False)
 @click.option(
     "--kwargs",
     "-k",
     multiple=True,
     help="additional key value pairs in the format key:value",
 )
-def main(model, config, kwargs):
+def main(model, config, zip, kwargs):
     """Run model
     Usage: rompy <model> config.yml
     Args:
@@ -57,6 +58,8 @@ def main(model, config, kwargs):
         setattr(instance, split[0], type(current)(split[1]))
     model = ModelRun(**args, **kw)
     model()
+    if zip:
+        model.zip()
 
 
 if __name__ == "__main__":
