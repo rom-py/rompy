@@ -25,7 +25,7 @@ def repository_has_cookiecutter_json(repo_directory):
     return repo_directory_exists and repo_config_exists
 
 
-def find_template(repo_dir):
+def find_template(repo_dir, env):
     """Determine which child directory of `repo_dir` is the project template.
 
     :param repo_dir: Local directory of newly cloned repo.
@@ -50,7 +50,7 @@ def find_template(repo_dir):
 
 
 cc_repository.repository_has_cookiecutter_json = repository_has_cookiecutter_json
-
+cc_generate.find_template = find_template
 
 
 def render(context, template, output_dir, checkout=None):
