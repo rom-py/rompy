@@ -50,7 +50,7 @@ def find_template(repo_dir):
 
 
 cc_repository.repository_has_cookiecutter_json = repository_has_cookiecutter_json
-cc_generate.find_template = find_template
+
 
 
 def render(context, template, output_dir, checkout=None):
