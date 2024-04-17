@@ -113,7 +113,7 @@ SPEC_BOUNDARY_SOURCE_TYPES = Union[
 
 
 class DataBoundary(DataGrid):
-    data_type: Literal["boundary"] = Field(
+    model_type: Literal["boundary"] = Field(
         default="data_boundary",
         description="Model type discriminator",
     )
