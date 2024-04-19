@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import cookiecutter.config as cc_config
 import cookiecutter.generate as cc_generate
@@ -33,20 +34,19 @@ def find_template(repo_dir, env):
     """
     logger.debug("Searching %s for the project template.", repo_dir)
 
-    repo_dir_contents = os.listdir(repo_dir)
-
-    project_template = None
-    for item in repo_dir_contents:
-        if "runtime" in item and "{{" in item and "}}" in item:
-            project_template = item
+    for str_path in os.listdir(repo_dir):
+        if (
+            "runtime" in str_path
+            and env.variable_start_string in str_path
+            and env.variable_end_string in str_path
+        ):
+            project_template = Path(repo_dir, str_path)
             break
-
-    if project_template:
-        project_template = os.path.join(repo_dir, project_template)
-        logger.debug("The project template appears to be %s", project_template)
-        return project_template
     else:
         raise NonTemplatedInputDirException
+
+    logger.debug("The project template appears to be %s", project_template)
+    return project_template
 
 
 cc_repository.repository_has_cookiecutter_json = repository_has_cookiecutter_json
