@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt install pandoc
           python -m pip install --upgrade pip
-          pip install .[docs,schism]
+          pip install ".[docs,schism,extra]"
       - name: Build the docs
         run: |
           cd docs
