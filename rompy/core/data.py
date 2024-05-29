@@ -281,7 +281,7 @@ class DataBlob(RompyBaseModel):
     )
     _copied: str = PrivateAttr(default=None)
 
-    def get(self, destdir: str | Path, name: str = None) -> Path:
+    def get(self, destdir: str | Path, name: str = None, *args, **kwargs) -> Path:
         """Copy the data source to a new directory.
 
         Parameters
@@ -307,6 +307,51 @@ class DataBlob(RompyBaseModel):
                 outfile.write_bytes(self.source.read_bytes())
         self._copied = outfile
         return outfile
+
+
+class DataLink(DataBlob):
+    """Data source for model ingestion that creates symbolic links instead of copying files.
+
+    This class inherits from DataBlob and overrides the get method to create a symbolic link.
+    """
+
+    model_type: Literal["data_link"] = Field(
+        default="data_link",
+        description="Model type discriminator for data links",
+    )
+
+    def get(self, destdir: str | Path, name: str = None, *args, **kwargs) -> Path:
+        """Create a symbolic link of the data source in a new directory.
+
+        Parameters
+        ----------
+        destdir : str | Path
+            The destination directory to create the symlink in.
+
+        Returns
+        -------
+        symlink_path: Path
+            The path to the created symlink.
+
+        """
+        destdir = Path(destdir)
+        if name:
+            symlink_path = destdir / name
+        else:
+            symlink_path = destdir / self.source.name
+
+        # Ensure the destination directory exists
+        destdir.mkdir(parents=True, exist_ok=True)
+
+        # Remove existing symlink/file if it exists
+        if symlink_path.exists():
+            symlink_path.unlink()
+
+        # Create symlink
+        os.symlink(self.source, symlink_path)
+        self._linked = str(symlink_path)
+
+        return symlink_path
 
 
 DATA_SOURCE_TYPES = Union[
@@ -341,6 +386,7 @@ class DataGrid(DataBlob):
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
+    
     filter: Optional[Filter] = Field(
         default_factory=Filter,
         description="Optional filter specification to apply to the dataset",
