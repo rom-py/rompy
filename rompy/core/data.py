@@ -425,18 +425,18 @@ class DataGrid(DataBlob):
 
     def _filter_time(self, time: TimeRange, end_buffer=1):
         """Define the filters to use to extract data to this grid"""
-
-        dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
-        # Convert to regular timedelta64
-        regular_timedelta = dt.astype("timedelta64[s]")
-        python_timedelta = timedelta(seconds=regular_timedelta / np.timedelta64(1, "s"))
         start = time.start
         end = time.end
-        if self.time_buffer[0]:
-            # Convert to datetime.timedelta
-            start -= python_timedelta * self.time_buffer[0]
-        if self.time_buffer[1]:
-            end += python_timedelta * self.time_buffer[1]
+        if self.coords.t in self.ds.dims:
+            dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
+            # Convert to regular timedelta64
+            regular_timedelta = dt.astype("timedelta64[s]")
+            python_timedelta = timedelta(seconds=regular_timedelta / np.timedelta64(1, "s"))
+            if self.time_buffer[0]:
+                # Convert to datetime.timedelta
+                start -= python_timedelta * self.time_buffer[0]
+            if self.time_buffer[1]:
+                end += python_timedelta * self.time_buffer[1]
         self.filter.crop.update({self.coords.t: Slice(start=start, stop=end)})
 
     @property

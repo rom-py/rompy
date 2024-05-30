@@ -33,7 +33,7 @@ dependencies = [
     "cartopy",
     "click",
     "cloudpathlib",
-    "cookiecutter",
+    "cookiecutter>=2.6",
     "dask",
     "fsspec",
     "geopandas",
@@ -88,7 +88,7 @@ docs = [
     "ipython",
     "nbsphinx",
     "pydata_sphinx_theme",
-    "sphinx",
+    "sphinx<7.3.6",
     "sphinx-collections",
 ]
 

@@ -6,7 +6,7 @@ from typing import Literal, Optional, Union
 import numpy as np
 import wavespectra
 import xarray as xr
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, field_validator
 
 from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
                              SourceDataset, SourceFile, SourceIntake)
@@ -113,7 +113,7 @@ SPEC_BOUNDARY_SOURCE_TYPES = Union[
 
 
 class DataBoundary(DataGrid):
-    data_type: Literal["boundary"] = Field(
+    model_type: Literal["boundary"] = Field(
         default="data_boundary",
         description="Model type discriminator",
     )
@@ -126,7 +126,6 @@ class DataBoundary(DataGrid):
             "passed to the `get` method. If 'parent', the resolution of the parent "
             "dataset is used to define the spacing."
         ),
-        gt=0.0,
     )
     sel_method: Literal["sel", "interp"] = Field(
         default="sel",
@@ -141,6 +140,13 @@ class DataBoundary(DataGrid):
         default=True,
         description="Update crop filter from Time object if passed to get method",
     )
+
+    @field_validator("spacing")
+    @classmethod
+    def spacing_gt_zero(cls, v):
+        if v not in (None, "parent") and v <= 0.0:
+            raise ValueError("Spacing must be greater than zero")
+        return v
 
     def _filter_grid(self, *args, **kwargs):
         """Overwrite DataGrid's which assumes a regular grid."""
@@ -165,9 +171,18 @@ class DataBoundary(DataGrid):
         else:
             return self.spacing
 
+    def _boundary_points(self, grid) -> tuple:
+        """Returns the x and y arrays representing the boundary points to select.
+
+        This method can be overriden to define custom boundary points.
+
+        """
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing())
+        return xbnd, ybnd
+
     def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing())
+        xbnd, ybnd = self._boundary_points(grid=grid)
         coords = {
             self.coords.x: xr.DataArray(xbnd, dims=("site",)),
             self.coords.y: xr.DataArray(ybnd, dims=("site",)),
@@ -282,9 +297,18 @@ class BoundaryWaveStation(DataBoundary):
         else:
             return self.spacing
 
+    def _boundary_points(self, grid) -> tuple:
+        """Returns the x and y arrays representing the boundary points to select.
+
+        Override the default method to use grid when setting the default spacing.
+
+        """
+        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing(grid))
+        return xbnd, ybnd
+
     def _sel_boundary(self, grid) -> xr.Dataset:
         """Select the boundary points from the dataset."""
-        xbnd, ybnd = grid.boundary_points(spacing=self._set_spacing(grid))
+        xbnd, ybnd = self._boundary_points(grid=grid)
         ds = self.ds.spec.sel(
             lons=xbnd,
             lats=ybnd,

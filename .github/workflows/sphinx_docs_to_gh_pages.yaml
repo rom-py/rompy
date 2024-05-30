@@ -1,10 +1,10 @@
-name: Build Sphinx Docs
+name: Docs
 
 on:
   push:
     branches:
-      - main
-      - oceanum
+      # - main
+      - docs
 
 jobs:
   build:
@@ -20,8 +20,7 @@ jobs:
         run: |
           sudo apt install pandoc
           python -m pip install --upgrade pip
-          pip install .
-          pip install -r docs/requirements.txt
+          pip install ".[docs,schism,extra]"
       - name: Build the docs
         run: |
           cd docs
