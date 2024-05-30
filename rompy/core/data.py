@@ -1,4 +1,5 @@
 """Rompy core data objects."""
+import os
 import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
@@ -321,7 +322,8 @@ class DataLink(DataBlob):
     )
 
     def get(self, destdir: str | Path, name: str = None, *args, **kwargs) -> Path:
-        """Create a symbolic link of the data source in a new directory.
+        """
+        Create a symbolic link of the data source in a new directory.
 
         Parameters
         ----------
@@ -332,9 +334,8 @@ class DataLink(DataBlob):
         -------
         symlink_path: Path
             The path to the created symlink.
-
         """
-        destdir = Path(destdir)
+        destdir = Path(destdir).resolve()
         if name:
             symlink_path = destdir / name
         else:
@@ -347,8 +348,11 @@ class DataLink(DataBlob):
         if symlink_path.exists():
             symlink_path.unlink()
 
+        # Compute the relative path from destdir to self.source
+        relative_source_path = os.path.relpath(self.source.resolve(), destdir)
+
         # Create symlink
-        os.symlink(self.source, symlink_path)
+        os.symlink(relative_source_path, symlink_path)
         self._linked = str(symlink_path)
 
         return symlink_path
