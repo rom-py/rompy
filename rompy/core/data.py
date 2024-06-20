@@ -353,7 +353,7 @@ class DataLink(DataBlob):
 
         # Create symlink
         os.symlink(relative_source_path, symlink_path)
-        self._linked = str(symlink_path)
+        self._copied = Path(symlink_path)
 
         return symlink_path
 
