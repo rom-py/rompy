@@ -1,21 +1,22 @@
 """Rompy core data objects."""
+
 import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from pathlib import Path
 from shutil import copytree
 from typing import Literal, Optional, Union
-import fsspec
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import fsspec
 import intake
-from intake.catalog.local import YAMLFileCatalog
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from cloudpathlib import AnyPath
 from intake.catalog import Catalog
+from intake.catalog.local import YAMLFileCatalog
 from oceanum.datamesh import Connector
 from pydantic import ConfigDict, Field, PrivateAttr, model_validator
 
@@ -150,7 +151,7 @@ class SourceIntake(SourceBase):
         else:
             fs = fsspec.filesystem("memory")
             fs_map = fs.get_mapper()
-            fs_map[f"/temp.yaml"] = self.catalog_yaml.encode('utf-8')
+            fs_map[f"/temp.yaml"] = self.catalog_yaml.encode("utf-8")
             return YAMLFileCatalog("temp.yaml", fs=fs)
 
     def _open(self) -> xr.Dataset:
@@ -310,7 +311,7 @@ class DataBlob(RompyBaseModel):
 
 
 DATA_SOURCE_TYPES = Union[
-    SourceDataset,
+    # SourceDataset,
     SourceFile,
     SourceIntake,
     SourceDatamesh,
@@ -385,7 +386,9 @@ class DataGrid(DataBlob):
             dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
             # Convert to regular timedelta64
             regular_timedelta = dt.astype("timedelta64[s]")
-            python_timedelta = timedelta(seconds=regular_timedelta / np.timedelta64(1, "s"))
+            python_timedelta = timedelta(
+                seconds=regular_timedelta / np.timedelta64(1, "s")
+            )
             if self.time_buffer[0]:
                 # Convert to datetime.timedelta
                 start -= python_timedelta * self.time_buffer[0]
