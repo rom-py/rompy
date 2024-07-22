@@ -270,12 +270,12 @@ class BoundaryWaveStation(DataBoundary):
         ),
     )
 
-    @model_validator(mode="after")
-    def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
-        dset = self.source.open()
-        if not hasattr(dset, "spec"):
-            raise ValueError(f"Wavespectra compatible source is required")
-        return self
+    # @model_validator(mode="after")
+    # def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
+    #     dset = self.source.open()
+    #     if not hasattr(dset, "spec"):
+    #         raise ValueError(f"Wavespectra compatible source is required")
+    #     return self
 
     def _source_grid_spacing(self, grid) -> float:
         """Return the lowest spacing between points in the source dataset."""
