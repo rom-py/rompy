@@ -13,6 +13,27 @@ from pathlib import Path
 
 logger = logging.getLogger("rompy")
 
+installed = []
+try:
+    from rompy.core import BaseConfig
+
+    installed.append("base")
+except ImportError:
+    pass
+try:
+    from rompy.swan import SwanConfig
+
+    installed.append("swan")
+except ImportError:
+    pass
+
+try:
+    from rompy.schism import SchismCSIROConfig
+
+    installed.append("schism")
+except ImportError:
+    pass
+
 # __version__ = _version.get_versions()["version"]
 __version__ = "0.1.0"
 
