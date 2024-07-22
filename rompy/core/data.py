@@ -198,39 +198,22 @@ class SourceDatamesh(SourceBase):
             )
             return None
 
-        coords = [
-            [xslice.start, yslice.start],
-            [xslice.stop, yslice.start],
-            [xslice.stop, yslice.stop],
-            [xslice.start, yslice.stop],
-            [xslice.start, yslice.start],
-        ]
-        geofilter = dict(
-            type="feature",
-            geom=dict(
-                type="Feature",
-                geometry=dict(
-                    type="Polygon",
-                    coordinates=[coords],
-                ),
-            ),
-        )
-        return geofilter
+        x0 = min(xslice.start, xslice.stop)
+        x1 = max(xslice.start, xslice.stop)
+        y0 = min(yslice.start, yslice.stop)
+        y1 = max(yslice.start, yslice.stop)
+        return dict(type="bbox", geom=[x0, y0, x1, y1])
 
     def _timefilter(self, filters: Filter, coords: DatasetCoords) -> dict:
         """The Datamesh timefilter."""
         tslice = filters.crop.get(coords.t)
         if tslice is None:
-            logger.warning(
+            logger.info(
                 f"No time slice found in the crop filter {filters.crop}, "
                 "cannot define a timefilter for querying datamesh"
             )
             return None
-        timefilter = dict(
-            type="range",
-            times=[tslice.start, tslice.stop],
-        )
-        return timefilter
+        return dict(type="range", times=[tslice.start, tslice.stop])
 
     def _open(self, variables: list, geofilter: dict, timefilter: dict) -> xr.Dataset:
         query = dict(
@@ -255,8 +238,6 @@ class SourceDatamesh(SourceBase):
             geofilter=self._geofilter(filters, coords),
             timefilter=self._timefilter(filters, coords),
         )
-        if filters:
-            ds = filters(ds)
         return ds
 
 
@@ -362,9 +343,9 @@ class DataGrid(DataBlob):
         default=0.0,
         description="Space to buffer the grid bounding box if `filter_grid` is True",
     )
-    time_buffer: list[int] = Field(
-        default=[0, 0],
-        description="Number of source data timesteps to buffer the time range if `filter_time` is True",
+    time_buffer: list[float] = Field(
+        default=[0.0, 0.0],
+        description="Number of seconds to buffer the time range if `filter_time` is True",
     )
 
     def _filter_grid(self, grid: GRID_TYPES):
@@ -379,18 +360,8 @@ class DataGrid(DataBlob):
 
     def _filter_time(self, time: TimeRange, end_buffer=1):
         """Define the filters to use to extract data to this grid"""
-        start = time.start
-        end = time.end
-        if self.coords.t in self.ds.dims:
-            dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
-            # Convert to regular timedelta64
-            regular_timedelta = dt.astype("timedelta64[s]")
-            python_timedelta = timedelta(seconds=regular_timedelta / np.timedelta64(1, "s"))
-            if self.time_buffer[0]:
-                # Convert to datetime.timedelta
-                start -= python_timedelta * self.time_buffer[0]
-            if self.time_buffer[1]:
-                end += python_timedelta * self.time_buffer[1]
+        start = time.start - timedelta(seconds=self.time_buffer[0])
+        end = time.end + timedelta(seconds=self.time_buffer[1])
         self.filter.crop.update({self.coords.t: Slice(start=start, stop=end)})
 
     @property
@@ -399,6 +370,9 @@ class DataGrid(DataBlob):
         ds = self.source.open(
             variables=self.variables, filters=self.filter, coords=self.coords
         )
+        # Sort the dataset by all coordinates to avoid cropping issues
+        for dim in ds.dims:
+            ds = ds.sortby(dim)
         return ds
 
     def _figsize(self, x0, x1, y0, y1, fscale):
