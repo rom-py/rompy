@@ -9,8 +9,7 @@ Grids
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.grid.SCHISMGrid2D
-   rompy.schism.grid.SCHISMGrid3D
+   rompy.schism.grid.SCHISMGrid
 
 Data
 -----
@@ -57,7 +56,7 @@ Full Namelist Implementation
 
 This object implements a set of models for each namelist and assembles a config object using this group of models.  This is curently only partly implemented.  
 
-Param
+PARAM
 ~~~~~~
 
 .. autosummary::
@@ -66,7 +65,7 @@ Param
 
    rompy.schism.namelists.param.PARAM
 
-Ice
+ICE
 ~~~~~~
 
 .. autosummary::
@@ -74,6 +73,15 @@ Ice
    :toctree: _generated/
 
    rompy.schism.namelists.ice.ICE
+
+MICE
+~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.mice.MICE
 
 ICM
 ~~~~~~
@@ -103,9 +111,44 @@ COSINE
 
    rompy.schism.namelists.cosine.COSINE
 
+WWMINPUT_spectra
+~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.wwminput_spectra.WWMINPUT
+
+WWMINPUT_ww3
+~~~~~~~~~~~~
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.wwminput_WW3.WWMINPUT
+
+
+NML
+~~~~~
+
+This is the full namelist object that is the container for all the other namelist objects.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated/
+
+   rompy.schism.namelists.NML
+
+
+
+
+
 
 Config Object
 ~~~~~~~~~~~~~~
+
 
 .. autosummary::
    :nosignatures:
