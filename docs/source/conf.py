@@ -98,11 +98,11 @@ html_theme_options = {
             "icon": "fab fa-github",
             "type": "fontawesome",
         }
-   ]
+    ],
 }
 
 html_sidebars = {
-  "**": ["globaltoc.html"],
+    "**": ["globaltoc.html"],
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -137,4 +137,5 @@ autoclass_content = "class"
 
 autodoc_pydantic_model_show_json = False
 autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_settings_show_validator_summary = True
 man_pages = [(master_doc, "rompy", "Rompy Documentation", [author], 1)]
