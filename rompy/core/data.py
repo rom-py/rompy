@@ -1,5 +1,6 @@
 """Rompy core data objects."""
 import logging
+from functools import cached_property
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from pathlib import Path
@@ -38,6 +39,11 @@ class SourceBase(RompyBaseModel, ABC):
     def _open(self) -> xr.Dataset:
         """This abstract private method should return a xarray dataset object."""
         pass
+
+    @cached_property
+    def coordinates(self) -> xr.Dataset:
+        """Return the coordinates of the datasource."""
+        return self.open().coords
 
     def open(self, variables: list = [], filters: Filter = {}, **kwargs) -> xr.Dataset:
         """Return the filtered dataset object.
@@ -182,10 +188,15 @@ class SourceDatamesh(SourceBase):
     def __str__(self) -> str:
         return f"SourceDatamesh(datasource={self.datasource})"
 
-    @property
+    @cached_property
     def connector(self) -> Connector:
         """The Datamesh connector instance."""
         return Connector(token=self.token, **self.kwargs)
+
+    @cached_property
+    def coordinates(self) -> xr.Dataset:
+        """Return the coordinates of the datasource."""
+        return self._open(variables=[], geofilter=None, timefilter=None).coords
 
     def _geofilter(self, filters: Filter, coords: DatasetCoords) -> dict:
         """The Datamesh geofilter."""
