@@ -10,7 +10,6 @@ from typing import Union
 
 from pydantic import Field
 
-from rompy.schism.config import SchismCSIROConfig
 from rompy.swan import SwanConfig
 from rompy.swan.config import SwanConfigComponents
 
@@ -20,7 +19,15 @@ from .core.render import render
 logger = logging.getLogger(__name__)
 
 
-CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents, SchismCSIROConfig]
+CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
+from rompy import installed
+
+if "schism" in installed:
+    from rompy.schism import SchismCSIROConfig
+
+    CONFIG_TYPES = Union[
+        BaseConfig, SwanConfig, SwanConfigComponents, SchismCSIROConfig
+    ]
 
 
 class ModelRun(RompyBaseModel):

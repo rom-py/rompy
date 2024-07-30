@@ -5,30 +5,11 @@ import logging
 import click
 import yaml
 
+from rompy import installed
+
 from .model import ModelRun
 
 logging.basicConfig(level=logging.INFO)
-
-installed = []
-try:
-    from rompy.core import BaseConfig
-
-    installed.append("base")
-except ImportError:
-    pass
-try:
-    from rompy.swan import SwanConfig
-
-    installed.append("swan")
-except ImportError:
-    pass
-
-try:
-    from rompy.schism import SchismCSIROConfig
-
-    installed.append("schism")
-except ImportError:
-    pass
 
 
 @click.command()
