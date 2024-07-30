@@ -148,10 +148,6 @@ class DataBoundary(DataGrid):
             raise ValueError("Spacing must be greater than zero")
         return v
 
-    def _filter_grid(self, *args, **kwargs):
-        """Overwrite DataGrid's which assumes a regular grid."""
-        pass
-
     def _source_grid_spacing(self) -> float:
         """Return the lowest grid spacing in the source dataset.
 
@@ -269,13 +265,20 @@ class BoundaryWaveStation(DataBoundary):
             "Wavespectra method to use for selecting boundary points from the dataset"
         ),
     )
+    buffer: float = Field(
+        default=2.0,
+        description="Space to buffer the grid bounding box if `filter_grid` is True",
+    )
 
-    @model_validator(mode="after")
-    def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
-        dset = self.source.open()
-        if not hasattr(dset, "spec"):
-            raise ValueError(f"Wavespectra compatible source is required")
-        return self
+    def model_post_init(self, __context):
+        self.variables = ["efth", "lon", "lat"]
+
+    # @model_validator(mode="after")
+    # def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
+    #     dset = self.source.open()
+    #     if not hasattr(dset, "spec"):
+    #         raise ValueError(f"Wavespectra compatible source is required")
+    #     return self
 
     def _source_grid_spacing(self, grid) -> float:
         """Return the lowest spacing between points in the source dataset."""
@@ -345,8 +348,11 @@ class BoundaryWaveStation(DataBoundary):
             Path to the netcdf file.
 
         """
-        if self.crop_data and time is not None:
-            self._filter_time(time)
+        if self.crop_data:
+            if time is not None:
+                self._filter_time(time)
+            if grid is not None:
+                self._filter_grid(grid)
         ds = self._sel_boundary(grid)
         outfile = Path(destdir) / f"{self.id}.nc"
         ds.spec.to_netcdf(outfile)

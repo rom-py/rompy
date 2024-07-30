@@ -124,7 +124,7 @@ def crop_filter(ds, **data_slice) -> xr.Dataset:
         this_crop = {
             k: data_slice[k].to_slice()
             for k in data_slice.keys()
-            if k in ds.dims.keys()
+            if k in ds.sizes.keys()
         }
         ds = ds.sel(this_crop)
         for k in data_slice.keys():
