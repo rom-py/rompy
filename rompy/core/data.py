@@ -354,9 +354,12 @@ class DataGrid(DataBlob):
         default=0.0,
         description="Space to buffer the grid bounding box if `filter_grid` is True",
     )
-    time_buffer: list[float] = Field(
-        default=[0.0, 0.0],
-        description="Number of seconds to buffer the time range if `filter_time` is True",
+    time_buffer: list[int] = Field(
+        default=[0, 0],
+        description=(
+            "Number of source data timesteps to buffer the time range "
+            "if `filter_time` is True"
+        ),
     )
 
     def _filter_grid(self, grid: GRID_TYPES):
@@ -371,9 +374,17 @@ class DataGrid(DataBlob):
 
     def _filter_time(self, time: TimeRange, end_buffer=1):
         """Define the filters to use to extract data to this grid"""
-        start = time.start - timedelta(seconds=self.time_buffer[0])
-        end = time.end + timedelta(seconds=self.time_buffer[1])
-        self.filter.crop.update({self.coords.t: Slice(start=start, stop=end)})
+        start = time.start
+        end = time.end
+        t = self.coords.t
+        if t in self.source.coordinates and self.source.coordinates[t].size > 1:
+            times = self.source.coordinates[t].to_index().to_pydatetime()
+            dt = times[1] - times[0]
+            if self.time_buffer[0]:
+                start -= dt * self.time_buffer[0]
+            if self.time_buffer[1]:
+                end += dt * self.time_buffer[1]
+        self.filter.crop.update({t: Slice(start=start, stop=end)})
 
     @property
     def ds(self):
