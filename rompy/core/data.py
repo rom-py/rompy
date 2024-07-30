@@ -339,7 +339,7 @@ class DataBlob(RompyBaseModel):
 
 
 DATA_SOURCE_TYPES = Union[
-    # SourceDataset,
+    SourceDataset,
     SourceFile,
     SourceIntake,
     SourceDatamesh,
