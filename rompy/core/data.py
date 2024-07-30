@@ -1,4 +1,5 @@
 """Rompy core data objects."""
+import os
 import logging
 from abc import ABC, abstractmethod
 from datetime import timedelta
@@ -263,11 +264,11 @@ class SourceDatamesh(SourceBase):
 class DataBlob(RompyBaseModel):
     """Data source for model ingestion.
 
-    Generic data source for files that simply need to be copied to the model directory.
-
+    Generic data source for files that either need to be copied to the model directory
+    or linked if `link` is set to True.
     """
 
-    model_type: Literal["data_blob"] = Field(
+    model_type: Literal["data_blob", "data_link"] = Field(
         default="data_blob",
         description="Model type discriminator",
     )
@@ -275,38 +276,64 @@ class DataBlob(RompyBaseModel):
         default="data", description="Unique identifier for this data source"
     )
     source: AnyPath = Field(
-        description=(
-            "URI of the data source, either a local file path or a remote uri"
-        ),
+        description="URI of the data source, either a local file path or a remote uri",
+    )
+    link: bool = Field(
+        default=False, description="Whether to create a symbolic link instead of copying the file"
     )
     _copied: str = PrivateAttr(default=None)
 
-    def get(self, destdir: str | Path, name: str = None) -> Path:
-        """Copy the data source to a new directory.
+    def get(self, destdir: Union[str, Path], name: str = None, *args, **kwargs) -> Path:
+        """Copy or link the data source to a new directory.
 
         Parameters
         ----------
         destdir : str | Path
-            The destination directory to copy the data source to.
+            The destination directory to copy or link the data source to.
 
         Returns
         -------
-        outfile: Path
-            The path to the copied file.
-
+        Path
+            The path to the copied file or created symlink.
         """
-        if self.source.is_dir():
-            # copy directory
-            outfile = copytree(self.source, destdir)
-        else:
+        destdir = Path(destdir).resolve()
+        
+        if self.link:
+            # Create a symbolic link
             if name:
-                outfile = Path(destdir) / name
+                symlink_path = destdir / name
             else:
-                outfile = Path(destdir) / self.source.name
-            if outfile.resolve() != self.source.resolve():
-                outfile.write_bytes(self.source.read_bytes())
-        self._copied = outfile
-        return outfile
+                symlink_path = destdir / self.source.name
+
+            # Ensure the destination directory exists
+            destdir.mkdir(parents=True, exist_ok=True)
+
+            # Remove existing symlink/file if it exists
+            if symlink_path.exists():
+                symlink_path.unlink()
+
+            # Compute the relative path from destdir to self.source
+            relative_source_path = os.path.relpath(self.source.resolve(), destdir)
+
+            # Create symlink
+            os.symlink(relative_source_path, symlink_path)
+            self._copied = symlink_path
+
+            return symlink_path
+        else:
+            # Copy the data source
+            if self.source.is_dir():
+                # Copy directory
+                outfile = copytree(self.source, destdir)
+            else:
+                if name:
+                    outfile = destdir / name
+                else:
+                    outfile = destdir / self.source.name
+                if outfile.resolve() != self.source.resolve():
+                    outfile.write_bytes(self.source.read_bytes())
+            self._copied = outfile
+            return outfile
 
 
 DATA_SOURCE_TYPES = Union[
@@ -341,6 +368,7 @@ class DataGrid(DataBlob):
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
+    
     filter: Optional[Filter] = Field(
         default_factory=Filter,
         description="Optional filter specification to apply to the dataset",
