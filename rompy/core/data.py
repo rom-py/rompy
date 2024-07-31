@@ -1,23 +1,24 @@
 """Rompy core data objects."""
-import os
+
 import logging
-from functools import cached_property
+import os
 from abc import ABC, abstractmethod
 from datetime import timedelta
+from functools import cached_property
 from pathlib import Path
 from shutil import copytree
 from typing import Literal, Optional, Union
-import fsspec
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import fsspec
 import intake
-from intake.catalog.local import YAMLFileCatalog
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from cloudpathlib import AnyPath
 from intake.catalog import Catalog
+from intake.catalog.local import YAMLFileCatalog
 from oceanum.datamesh import Connector
 from pydantic import ConfigDict, Field, PrivateAttr, model_validator
 
@@ -25,6 +26,8 @@ from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
 from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
+from rompy.settings import DATA_SOURCE_TYPES
+from rompy.utils import process_setting
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +160,7 @@ class SourceIntake(SourceBase):
         else:
             fs = fsspec.filesystem("memory")
             fs_map = fs.get_mapper()
-            fs_map[f"/temp.yaml"] = self.catalog_yaml.encode('utf-8')
+            fs_map[f"/temp.yaml"] = self.catalog_yaml.encode("utf-8")
             return YAMLFileCatalog("temp.yaml", fs=fs)
 
     def _open(self) -> xr.Dataset:
@@ -271,7 +274,8 @@ class DataBlob(RompyBaseModel):
         description="URI of the data source, either a local file path or a remote uri",
     )
     link: bool = Field(
-        default=False, description="Whether to create a symbolic link instead of copying the file"
+        default=False,
+        description="Whether to create a symbolic link instead of copying the file",
     )
     _copied: str = PrivateAttr(default=None)
 
@@ -289,7 +293,7 @@ class DataBlob(RompyBaseModel):
             The path to the copied file or created symlink.
         """
         destdir = Path(destdir).resolve()
-        
+
         if self.link:
             # Create a symbolic link
             if name:
@@ -328,13 +332,8 @@ class DataBlob(RompyBaseModel):
             return outfile
 
 
-DATA_SOURCE_TYPES = Union[
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-]
 GRID_TYPES = Union[BaseGrid, RegularGrid]
+DATA_SOURCE_MODELS = process_setting(DATA_SOURCE_TYPES)
 
 
 class DataGrid(DataBlob):
@@ -356,11 +355,11 @@ class DataGrid(DataBlob):
         default="data_grid",
         description="Model type discriminator",
     )
-    source: DATA_SOURCE_TYPES = Field(
+    source: DATA_SOURCE_MODELS = Field(
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
-    
+
     filter: Optional[Filter] = Field(
         default_factory=Filter,
         description="Optional filter specification to apply to the dataset",
