@@ -287,7 +287,8 @@ def process_setting(settings_str: str):
     # Get the actual model classes
     data_source_types = []
     for data_source_type_name in data_source_type_names:
-        class_name, module_name = data_source_type_name.split(":")
+        split = data_source_type_name.split(".")
+        module_name, class_name = ".".join(split[:-1]), split[-1]
         data_source_types.append(get_class_from_module(module_name, class_name))
 
     # Filter out any None values (in case of invalid model names)
