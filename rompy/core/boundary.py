@@ -1,4 +1,5 @@
 """Boundary classes."""
+
 import logging
 from pathlib import Path
 from typing import Literal, Optional, Union
@@ -6,12 +7,20 @@ from typing import Literal, Optional, Union
 import numpy as np
 import wavespectra
 import xarray as xr
-from pydantic import Field, model_validator, field_validator
+from pydantic import Field, field_validator, model_validator
 
-from rompy.core.data import (DataGrid, SourceBase, SourceDatamesh,
-                             SourceDataset, SourceFile, SourceIntake)
+from rompy.core.data import (
+    DataGrid,
+    SourceBase,
+    SourceDatamesh,
+    SourceDataset,
+    SourceFile,
+    SourceIntake,
+)
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
+from rompy.settings import BOUNDARY_SOURCE_TYPES, SPEC_BOUNDARY_SOURCE_TYPES
+from rompy.utils import process_setting
 
 logger = logging.getLogger(__name__)
 
@@ -97,19 +106,8 @@ class SourceWavespectra(SourceBase):
         return getattr(wavespectra, self.reader)(self.uri, **self.kwargs)
 
 
-BOUNDARY_SOURCE_TYPES = Union[
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-]
-SPEC_BOUNDARY_SOURCE_TYPES = Union[
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-    SourceWavespectra,
-]
+BOUNDARY_SOURCE_MODELS = process_setting(BOUNDARY_SOURCE_TYPES)
+SPEC_BOUNDARY_SOURCE_MODELS = process_setting(SPEC_BOUNDARY_SOURCE_TYPES)
 
 
 class DataBoundary(DataGrid):
@@ -252,7 +250,7 @@ class BoundaryWaveStation(DataBoundary):
         default="boundary_wave_station",
         description="Model type discriminator",
     )
-    source: SPEC_BOUNDARY_SOURCE_TYPES = Field(
+    source: SPEC_BOUNDARY_SOURCE_MODELS = Field(
         description=(
             "Dataset source reader, must return a wavespectra-enabled "
             "xarray dataset in the open method"

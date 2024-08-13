@@ -25,6 +25,8 @@ from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
 from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
+from rompy.settings import DATA_SOURCE_TYPES
+from rompy.utils import process_setting
 
 logger = logging.getLogger(__name__)
 
@@ -329,13 +331,8 @@ class DataBlob(RompyBaseModel):
             return outfile
 
 
-DATA_SOURCE_TYPES = Union[
-    SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-]
 GRID_TYPES = Union[BaseGrid, RegularGrid]
+DATA_SOURCE_MODELS = process_setting(DATA_SOURCE_TYPES)
 
 
 class DataGrid(DataBlob):
@@ -357,7 +354,7 @@ class DataGrid(DataBlob):
         default="data_grid",
         description="Model type discriminator",
     )
-    source: DATA_SOURCE_TYPES = Field(
+    source: DATA_SOURCE_MODELS = Field(
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
