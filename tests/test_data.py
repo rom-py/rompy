@@ -173,7 +173,6 @@ def test_intake_grid_plot(grid_data_source):
     data.plot(param="u10", isel={"time": 0})
 
 
-@pytest.mark.skip(reason="This won't work with pydantic<2, fix once migrated")
 @pytest.mark.skipif(DATAMESH_TOKEN is None, reason="Datamesh token required")
 def test_source_datamesh():
     dataset = SourceDatamesh(datasource="era5_wind10m", token=DATAMESH_TOKEN)
