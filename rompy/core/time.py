@@ -142,7 +142,7 @@ class TimeRange(BaseModel):
             else timedelta(**{time_units[self.interval[-1]]: int(self.interval[:-1])})
         )
         date_range = []
-        while start <= end:
+        while start < end:
             date_range.append(start)
             start += step_size
         if self.include_end and date_range and date_range[-1] != end:
