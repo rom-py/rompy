@@ -137,4 +137,5 @@ autoclass_content = "class"
 
 autodoc_pydantic_model_show_json = True
 autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_settings_show_validator_summary = True
 man_pages = [(master_doc, "rompy", "Rompy Documentation", [author], 1)]

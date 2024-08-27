@@ -9,10 +9,18 @@ import wavespectra
 import xarray as xr
 from pydantic import Field, field_validator, model_validator
 
-from rompy.core.data import SourceBase  # SourceDataset,
-from rompy.core.data import DataGrid, SourceDatamesh, SourceFile, SourceIntake
+from rompy.core.data import (
+    DataGrid,
+    SourceBase,
+    SourceDatamesh,
+    SourceDataset,
+    SourceFile,
+    SourceIntake,
+)
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
+from rompy.settings import BOUNDARY_SOURCE_TYPES, SPEC_BOUNDARY_SOURCE_TYPES
+from rompy.utils import process_setting
 
 logger = logging.getLogger(__name__)
 
@@ -98,19 +106,8 @@ class SourceWavespectra(SourceBase):
         return getattr(wavespectra, self.reader)(self.uri, **self.kwargs)
 
 
-BOUNDARY_SOURCE_TYPES = Union[
-    # SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-]
-SPEC_BOUNDARY_SOURCE_TYPES = Union[
-    # SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-    SourceWavespectra,
-]
+BOUNDARY_SOURCE_MODELS = process_setting(BOUNDARY_SOURCE_TYPES)
+SPEC_BOUNDARY_SOURCE_MODELS = process_setting(SPEC_BOUNDARY_SOURCE_TYPES)
 
 
 class DataBoundary(DataGrid):
@@ -148,10 +145,6 @@ class DataBoundary(DataGrid):
         if v not in (None, "parent") and v <= 0.0:
             raise ValueError("Spacing must be greater than zero")
         return v
-
-    def _filter_grid(self, *args, **kwargs):
-        """Overwrite DataGrid's which assumes a regular grid."""
-        pass
 
     def _source_grid_spacing(self) -> float:
         """Return the lowest grid spacing in the source dataset.
@@ -257,7 +250,7 @@ class BoundaryWaveStation(DataBoundary):
         default="boundary_wave_station",
         description="Model type discriminator",
     )
-    source: SPEC_BOUNDARY_SOURCE_TYPES = Field(
+    source: SPEC_BOUNDARY_SOURCE_MODELS = Field(
         description=(
             "Dataset source reader, must return a wavespectra-enabled "
             "xarray dataset in the open method"
@@ -270,13 +263,20 @@ class BoundaryWaveStation(DataBoundary):
             "Wavespectra method to use for selecting boundary points from the dataset"
         ),
     )
+    buffer: float = Field(
+        default=2.0,
+        description="Space to buffer the grid bounding box if `filter_grid` is True",
+    )
 
-    @model_validator(mode="after")
-    def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
-        dset = self.source.open()
-        if not hasattr(dset, "spec"):
-            raise ValueError(f"Wavespectra compatible source is required")
-        return self
+    def model_post_init(self, __context):
+        self.variables = ["efth", "lon", "lat"]
+
+    # @model_validator(mode="after")
+    # def assert_has_wavespectra_accessor(self) -> "BoundaryWaveStation":
+    #     dset = self.source.open()
+    #     if not hasattr(dset, "spec"):
+    #         raise ValueError(f"Wavespectra compatible source is required")
+    #     return self
 
     def _source_grid_spacing(self, grid) -> float:
         """Return the lowest spacing between points in the source dataset."""
@@ -346,8 +346,11 @@ class BoundaryWaveStation(DataBoundary):
             Path to the netcdf file.
 
         """
-        if self.crop_data and time is not None:
-            self._filter_time(time)
+        if self.crop_data:
+            if time is not None:
+                self._filter_time(time)
+            if grid is not None:
+                self._filter_grid(grid)
         ds = self._sel_boundary(grid)
         outfile = Path(destdir) / f"{self.id}.nc"
         ds.spec.to_netcdf(outfile)

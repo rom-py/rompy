@@ -6,8 +6,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
+import importlib
 import logging
-from datetime import datetime
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -273,3 +274,48 @@ def total_seconds(timedelta):
         # use nanoseconds to get highest possible precision in output
         seconds = timedelta / one_second
     return seconds
+
+
+def process_setting(settings_str: str):
+    # Read the environment variable
+    data_source_type_names = settings_str.split(",")
+
+    # Filter out any empty names (in case of leading/trailing commas)
+    data_source_type_names = [
+        name.strip() for name in data_source_type_names if name.strip()
+    ]
+    # Get the actual model classes
+    data_source_types = []
+    for data_source_type_name in data_source_type_names:
+        split = data_source_type_name.split(".")
+        module_name, class_name = ".".join(split[:-1]), split[-1]
+        data_source_types.append(get_class_from_module(module_name, class_name))
+
+    # Filter out any None values (in case of invalid model names)
+    data_source_types = [model for model in data_source_types if model]
+
+    # Define the union type dynamically
+    if data_source_types:
+        if len(data_source_types) == 1:
+            return data_source_types[0]
+        else:
+            return Union[tuple(data_source_types)]
+    else:
+        raise ValueError("No valid dataset types specified")
+
+
+def get_class_from_module(module_name, class_name):
+    """Dynamically import classes from a given module"""
+    try:
+        # Dynamically import the module
+        module = importlib.import_module(module_name)
+
+        # Check for attribute presence and if it's a class
+        if hasattr(module, class_name):
+            attr = getattr(module, class_name)
+            if isinstance(attr, type):  # Make sure it's a class
+                return attr
+        return None
+    except ImportError:
+        print(f"Error importing module {module_name}")
+        return None

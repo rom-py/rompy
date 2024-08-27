@@ -1,8 +1,9 @@
 """Rompy core data objects."""
 
 import logging
+import os
 from abc import ABC, abstractmethod
-from datetime import timedelta
+from functools import cached_property
 from pathlib import Path
 from shutil import copytree
 from typing import Literal, Optional, Union
@@ -24,6 +25,8 @@ from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
 from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
+from rompy.settings import DATA_SOURCE_TYPES
+from rompy.utils import process_setting
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,11 @@ class SourceBase(RompyBaseModel, ABC):
     def _open(self) -> xr.Dataset:
         """This abstract private method should return a xarray dataset object."""
         pass
+
+    @cached_property
+    def coordinates(self) -> xr.Dataset:
+        """Return the coordinates of the datasource."""
+        return self.open().coords
 
     def open(self, variables: list = [], filters: Filter = {}, **kwargs) -> xr.Dataset:
         """Return the filtered dataset object.
@@ -183,10 +191,15 @@ class SourceDatamesh(SourceBase):
     def __str__(self) -> str:
         return f"SourceDatamesh(datasource={self.datasource})"
 
-    @property
+    @cached_property
     def connector(self) -> Connector:
         """The Datamesh connector instance."""
         return Connector(token=self.token, **self.kwargs)
+
+    @cached_property
+    def coordinates(self) -> xr.Dataset:
+        """Return the coordinates of the datasource."""
+        return self._open(variables=[], geofilter=None, timefilter=None).coords
 
     def _geofilter(self, filters: Filter, coords: DatasetCoords) -> dict:
         """The Datamesh geofilter."""
@@ -199,39 +212,22 @@ class SourceDatamesh(SourceBase):
             )
             return None
 
-        coords = [
-            [xslice.start, yslice.start],
-            [xslice.stop, yslice.start],
-            [xslice.stop, yslice.stop],
-            [xslice.start, yslice.stop],
-            [xslice.start, yslice.start],
-        ]
-        geofilter = dict(
-            type="feature",
-            geom=dict(
-                type="Feature",
-                geometry=dict(
-                    type="Polygon",
-                    coordinates=[coords],
-                ),
-            ),
-        )
-        return geofilter
+        x0 = min(xslice.start, xslice.stop)
+        x1 = max(xslice.start, xslice.stop)
+        y0 = min(yslice.start, yslice.stop)
+        y1 = max(yslice.start, yslice.stop)
+        return dict(type="bbox", geom=[x0, y0, x1, y1])
 
     def _timefilter(self, filters: Filter, coords: DatasetCoords) -> dict:
         """The Datamesh timefilter."""
         tslice = filters.crop.get(coords.t)
         if tslice is None:
-            logger.warning(
+            logger.info(
                 f"No time slice found in the crop filter {filters.crop}, "
                 "cannot define a timefilter for querying datamesh"
             )
             return None
-        timefilter = dict(
-            type="range",
-            times=[tslice.start, tslice.stop],
-        )
-        return timefilter
+        return dict(type="range", times=[tslice.start, tslice.stop])
 
     def _open(self, variables: list, geofilter: dict, timefilter: dict) -> xr.Dataset:
         query = dict(
@@ -256,19 +252,17 @@ class SourceDatamesh(SourceBase):
             geofilter=self._geofilter(filters, coords),
             timefilter=self._timefilter(filters, coords),
         )
-        if filters:
-            ds = filters(ds)
         return ds
 
 
 class DataBlob(RompyBaseModel):
     """Data source for model ingestion.
 
-    Generic data source for files that simply need to be copied to the model directory.
-
+    Generic data source for files that either need to be copied to the model directory
+    or linked if `link` is set to True.
     """
 
-    model_type: Literal["data_blob"] = Field(
+    model_type: Literal["data_blob", "data_link"] = Field(
         default="data_blob",
         description="Model type discriminator",
     )
@@ -276,47 +270,69 @@ class DataBlob(RompyBaseModel):
         default="data", description="Unique identifier for this data source"
     )
     source: AnyPath = Field(
-        description=(
-            "URI of the data source, either a local file path or a remote uri"
-        ),
+        description="URI of the data source, either a local file path or a remote uri",
+    )
+    link: bool = Field(
+        default=False,
+        description="Whether to create a symbolic link instead of copying the file",
     )
     _copied: str = PrivateAttr(default=None)
 
-    def get(self, destdir: str | Path, name: str = None) -> Path:
-        """Copy the data source to a new directory.
+    def get(self, destdir: Union[str, Path], name: str = None, *args, **kwargs) -> Path:
+        """Copy or link the data source to a new directory.
 
         Parameters
         ----------
         destdir : str | Path
-            The destination directory to copy the data source to.
+            The destination directory to copy or link the data source to.
 
         Returns
         -------
-        outfile: Path
-            The path to the copied file.
-
+        Path
+            The path to the copied file or created symlink.
         """
-        if self.source.is_dir():
-            # copy directory
-            outfile = copytree(self.source, destdir)
-        else:
+        destdir = Path(destdir).resolve()
+
+        if self.link:
+            # Create a symbolic link
             if name:
-                outfile = Path(destdir) / name
+                symlink_path = destdir / name
             else:
-                outfile = Path(destdir) / self.source.name
-            if outfile.resolve() != self.source.resolve():
-                outfile.write_bytes(self.source.read_bytes())
-        self._copied = outfile
-        return outfile
+                symlink_path = destdir / self.source.name
+
+            # Ensure the destination directory exists
+            destdir.mkdir(parents=True, exist_ok=True)
+
+            # Remove existing symlink/file if it exists
+            if symlink_path.exists():
+                symlink_path.unlink()
+
+            # Compute the relative path from destdir to self.source
+            relative_source_path = os.path.relpath(self.source.resolve(), destdir)
+
+            # Create symlink
+            os.symlink(relative_source_path, symlink_path)
+            self._copied = symlink_path
+
+            return symlink_path
+        else:
+            # Copy the data source
+            if self.source.is_dir():
+                # Copy directory
+                outfile = copytree(self.source, destdir)
+            else:
+                if name:
+                    outfile = destdir / name
+                else:
+                    outfile = destdir / self.source.name
+                if outfile.resolve() != self.source.resolve():
+                    outfile.write_bytes(self.source.read_bytes())
+            self._copied = outfile
+            return outfile
 
 
-DATA_SOURCE_TYPES = Union[
-    # SourceDataset,
-    SourceFile,
-    SourceIntake,
-    SourceDatamesh,
-]
 GRID_TYPES = Union[BaseGrid, RegularGrid]
+DATA_SOURCE_MODELS = process_setting(DATA_SOURCE_TYPES)
 
 
 class DataGrid(DataBlob):
@@ -338,10 +354,11 @@ class DataGrid(DataBlob):
         default="data_grid",
         description="Model type discriminator",
     )
-    source: DATA_SOURCE_TYPES = Field(
+    source: DATA_SOURCE_MODELS = Field(
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
+
     filter: Optional[Filter] = Field(
         default_factory=Filter,
         description="Optional filter specification to apply to the dataset",
@@ -365,7 +382,10 @@ class DataGrid(DataBlob):
     )
     time_buffer: list[int] = Field(
         default=[0, 0],
-        description="Number of source data timesteps to buffer the time range if `filter_time` is True",
+        description=(
+            "Number of source data timesteps to buffer the time range "
+            "if `filter_time` is True"
+        ),
     )
 
     def _filter_grid(self, grid: GRID_TYPES):
@@ -382,6 +402,7 @@ class DataGrid(DataBlob):
         """Define the filters to use to extract data to this grid"""
         start = time.start
         end = time.end
+<<<<<<< HEAD
         if self.coords.t in self.ds.dims:
             dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
             # Convert to regular timedelta64
@@ -389,12 +410,17 @@ class DataGrid(DataBlob):
             python_timedelta = timedelta(
                 seconds=regular_timedelta / np.timedelta64(1, "s")
             )
+=======
+        t = self.coords.t
+        if t in self.source.coordinates and self.source.coordinates[t].size > 1:
+            times = self.source.coordinates[t].to_index().to_pydatetime()
+            dt = times[1] - times[0]
+>>>>>>> main
             if self.time_buffer[0]:
-                # Convert to datetime.timedelta
-                start -= python_timedelta * self.time_buffer[0]
+                start -= dt * self.time_buffer[0]
             if self.time_buffer[1]:
-                end += python_timedelta * self.time_buffer[1]
-        self.filter.crop.update({self.coords.t: Slice(start=start, stop=end)})
+                end += dt * self.time_buffer[1]
+        self.filter.crop.update({t: Slice(start=start, stop=end)})
 
     @property
     def ds(self):
@@ -402,6 +428,9 @@ class DataGrid(DataBlob):
         ds = self.source.open(
             variables=self.variables, filters=self.filter, coords=self.coords
         )
+        # Sort the dataset by all coordinates to avoid cropping issues
+        for dim in ds.dims:
+            ds = ds.sortby(dim)
         return ds
 
     def _figsize(self, x0, x1, y0, y1, fscale):
