@@ -72,23 +72,23 @@ class SourceBase(RompyBaseModel, ABC):
         return ds
 
 
-# class SourceDataset(SourceBase):
-#     """Source dataset from an existing xarray Dataset object."""
-#
-#     model_type: Literal["dataset"] = Field(
-#         default="dataset",
-#         description="Model type discriminator",
-#     )
-#     obj: xr.Dataset = Field(
-#         description="xarray Dataset object",
-#     )
-#     model_config = ConfigDict(arbitrary_types_allowed=True)
-#
-#     def __str__(self) -> str:
-#         return f"SourceDataset(obj={self.obj})"
-#
-#     def _open(self) -> xr.Dataset:
-#         return self.obj
+class SourceDataset(SourceBase):
+    """Source dataset from an existing xarray Dataset object."""
+
+    model_type: Literal["dataset"] = Field(
+        default="dataset",
+        description="Model type discriminator",
+    )
+    obj: xr.Dataset = Field(
+        description="xarray Dataset object",
+    )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def __str__(self) -> str:
+        return f"SourceDataset(obj={self.obj})"
+
+    def _open(self) -> xr.Dataset:
+        return self.obj
 
 
 class SourceFile(SourceBase):
@@ -402,20 +402,10 @@ class DataGrid(DataBlob):
         """Define the filters to use to extract data to this grid"""
         start = time.start
         end = time.end
-<<<<<<< HEAD
-        if self.coords.t in self.ds.dims:
-            dt = self.ds[self.coords.t][1].values - self.ds[self.coords.t][0].values
-            # Convert to regular timedelta64
-            regular_timedelta = dt.astype("timedelta64[s]")
-            python_timedelta = timedelta(
-                seconds=regular_timedelta / np.timedelta64(1, "s")
-            )
-=======
         t = self.coords.t
         if t in self.source.coordinates and self.source.coordinates[t].size > 1:
             times = self.source.coordinates[t].to_index().to_pydatetime()
             dt = times[1] - times[0]
->>>>>>> main
             if self.time_buffer[0]:
                 start -= dt * self.time_buffer[0]
             if self.time_buffer[1]:
