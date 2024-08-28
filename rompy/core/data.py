@@ -104,7 +104,7 @@ GRID_TYPES = Union[BaseGrid, RegularGrid]
 # DATA_SOURCE_TYPES = process_setting(DATA_SOURCE_TYPES)
 
 # Plugin for the source types
-DATA_SOURCE_TYPES = tuple([eps.load() for eps in entry_points(group="rompy.source")])
+SOURCE_TYPES = tuple([eps.load() for eps in entry_points(group="rompy.source")])
 # We could move these out of the module and specify them also with the entry-point
 # DATA_SOURCE_TYPES = (SourceDataset, SourceFile, SourceIntake, SourceDatamesh)
 # Append any additional data source types from entry points
@@ -130,7 +130,7 @@ class DataGrid(DataBlob):
         default="data_grid",
         description="Model type discriminator",
     )
-    source: Union[DATA_SOURCE_TYPES] = Field(
+    source: Union[SOURCE_TYPES] = Field(
         description="Source reader, must return an xarray dataset in the open method",
         discriminator="model_type",
     )
