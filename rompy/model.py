@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Accepted config types defined by the BaseConfig and any other config types
 # defined in the entry points of the rompy.config group
 config_eps = entry_points(group="rompy.config")
-CONFIG_TYPES = Union[(BaseConfig,) + tuple(eps.load() for eps in config_eps)]
+CONFIG_TYPES = (BaseConfig,) + tuple(eps.load() for eps in config_eps)
 
 
 class ModelRun(RompyBaseModel):
@@ -43,7 +43,7 @@ class ModelRun(RompyBaseModel):
         description="The time period to run the model",
     )
     output_dir: Path = Field("./simulations", description="The output directory")
-    config: CONFIG_TYPES = Field(
+    config: Union[CONFIG_TYPES] = Field(
         default_factory=BaseConfig,
         description="The configuration object",
         discriminator="model_type",
