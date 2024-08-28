@@ -336,7 +336,7 @@ GRID_TYPES = Union[BaseGrid, RegularGrid]
 
 # DATA_SOURCE_TYPES = process_setting(DATA_SOURCE_TYPES)
 
-# Plugin for the config types
+# Plugin for the source types
 data_source_eps = entry_points(group="rompy.data_source")
 # We could move these out of the module and specify them also with the entry-point
 DATA_SOURCE_TYPES = (SourceDataset, SourceFile, SourceIntake, SourceDatamesh)
