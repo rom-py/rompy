@@ -2,24 +2,15 @@
 
 import logging
 import os
-from functools import cached_property
-from abc import ABC, abstractmethod
 from pathlib import Path
 from shutil import copytree
 from typing import Literal, Optional, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import fsspec
-import intake
 import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
 from cloudpathlib import AnyPath
-from intake.catalog import Catalog
-from intake.catalog.local import YAMLFileCatalog
-from oceanum.datamesh import Connector
-from pydantic import ConfigDict, Field, PrivateAttr, model_validator
+from pydantic import Field, PrivateAttr
 from importlib.metadata import entry_points
 
 from rompy.core.filters import Filter
@@ -30,230 +21,6 @@ from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
 # from rompy.utils import process_setting
 
 logger = logging.getLogger(__name__)
-
-
-class SourceBase(RompyBaseModel, ABC):
-    """Abstract base class for a source dataset."""
-
-    model_type: Literal["base_source"] = Field(
-        description="Model type discriminator, must be overriden by a subclass",
-    )
-
-    @abstractmethod
-    def _open(self) -> xr.Dataset:
-        """This abstract private method should return a xarray dataset object."""
-        pass
-
-    @cached_property
-    def coordinates(self) -> xr.Dataset:
-        """Return the coordinates of the datasource."""
-        return self.open().coords
-
-    def open(self, variables: list = [], filters: Filter = {}, **kwargs) -> xr.Dataset:
-        """Return the filtered dataset object.
-
-        Parameters
-        ----------
-        variables : list, optional
-            List of variables to select from the dataset.
-        filters : Filter, optional
-            Filters to apply to the dataset.
-
-        Notes
-        -----
-        The kwargs are only a placeholder in case a subclass needs to pass additional
-        arguments to the open method.
-
-        """
-        ds = self._open()
-        if variables:
-            ds = ds[variables]
-        if filters:
-            ds = filters(ds)
-        return ds
-
-
-class SourceDataset(SourceBase):
-    """Source dataset from an existing xarray Dataset object."""
-
-    model_type: Literal["dataset"] = Field(
-        default="dataset",
-        description="Model type discriminator",
-    )
-    obj: xr.Dataset = Field(
-        description="xarray Dataset object",
-    )
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    def __str__(self) -> str:
-        return f"SourceDataset(obj={self.obj})"
-
-    def _open(self) -> xr.Dataset:
-        return self.obj
-
-
-class SourceFile(SourceBase):
-    """Source dataset from file to open with xarray.open_dataset."""
-
-    model_type: Literal["open_dataset"] = Field(
-        default="open_dataset",
-        description="Model type discriminator",
-    )
-    uri: str | Path = Field(description="Path to the dataset")
-    kwargs: dict = Field(
-        default={},
-        description="Keyword arguments to pass to xarray.open_dataset",
-    )
-
-    def __str__(self) -> str:
-        return f"SourceFile(uri={self.uri})"
-
-    def _open(self) -> xr.Dataset:
-        return xr.open_dataset(self.uri, **self.kwargs)
-
-
-class SourceIntake(SourceBase):
-    """Source dataset from intake catalog.
-
-    note
-    ----
-    The intake catalog can be prescribed either by the URI of an existing catalog file
-    or by a YAML string defining the catalog. The YAML string can be obtained from
-    calling the `yaml()` method on an intake dataset instance.
-
-    """
-
-    model_type: Literal["intake"] = Field(
-        default="intake",
-        description="Model type discriminator",
-    )
-    dataset_id: str = Field(description="The id of the dataset to read in the catalog")
-    catalog_uri: Optional[str | Path] = Field(
-        default=None,
-        description="The URI of the catalog to read from",
-    )
-    catalog_yaml: Optional[str] = Field(
-        default=None,
-        description="The YAML string of the catalog to read from",
-    )
-    kwargs: dict = Field(
-        default={},
-        description="Keyword arguments to define intake dataset parameters",
-    )
-
-    @model_validator(mode="after")
-    def check_catalog(self) -> "SourceIntake":
-        if self.catalog_uri is None and self.catalog_yaml is None:
-            raise ValueError("Either catalog_uri or catalog_yaml must be provided")
-        elif self.catalog_uri is not None and self.catalog_yaml is not None:
-            raise ValueError("Only one of catalog_uri or catalog_yaml can be provided")
-        return self
-
-    def __str__(self) -> str:
-        return f"SourceIntake(catalog_uri={self.catalog_uri}, dataset_id={self.dataset_id})"
-
-    @property
-    def catalog(self) -> Catalog:
-        """The intake catalog instance."""
-        if self.catalog_uri:
-            return intake.open_catalog(self.catalog_uri)
-        else:
-            fs = fsspec.filesystem("memory")
-            fs_map = fs.get_mapper()
-            fs_map[f"/temp.yaml"] = self.catalog_yaml.encode("utf-8")
-            return YAMLFileCatalog("temp.yaml", fs=fs)
-
-    def _open(self) -> xr.Dataset:
-        return self.catalog[self.dataset_id](**self.kwargs).to_dask()
-
-
-class SourceDatamesh(SourceBase):
-    """Source dataset from Datamesh.
-
-    Datamesh documentation: https://docs.oceanum.io/datamesh/index.html
-
-    """
-
-    model_type: Literal["datamesh"] = Field(
-        default="datamesh",
-        description="Model type discriminator",
-    )
-    datasource: str = Field(
-        description="The id of the datasource on Datamesh",
-    )
-    token: Optional[str] = Field(
-        description="Datamesh API token, taken from the environment if not provided",
-    )
-    kwargs: dict = Field(
-        default={},
-        description="Keyword arguments to pass to `oceanum.datamesh.Connector`",
-    )
-
-    def __str__(self) -> str:
-        return f"SourceDatamesh(datasource={self.datasource})"
-
-    @cached_property
-    def connector(self) -> Connector:
-        """The Datamesh connector instance."""
-        return Connector(token=self.token, **self.kwargs)
-
-    @cached_property
-    def coordinates(self) -> xr.Dataset:
-        """Return the coordinates of the datasource."""
-        return self._open(variables=[], geofilter=None, timefilter=None).coords
-
-    def _geofilter(self, filters: Filter, coords: DatasetCoords) -> dict:
-        """The Datamesh geofilter."""
-        xslice = filters.crop.get(coords.x)
-        yslice = filters.crop.get(coords.y)
-        if xslice is None or yslice is None:
-            logger.warning(
-                f"No slices found for x={coords.x} and/or y={coords.y} in the crop "
-                f"filter {filters.crop}, cannot define a geofilter for querying"
-            )
-            return None
-
-        x0 = min(xslice.start, xslice.stop)
-        x1 = max(xslice.start, xslice.stop)
-        y0 = min(yslice.start, yslice.stop)
-        y1 = max(yslice.start, yslice.stop)
-        return dict(type="bbox", geom=[x0, y0, x1, y1])
-
-    def _timefilter(self, filters: Filter, coords: DatasetCoords) -> dict:
-        """The Datamesh timefilter."""
-        tslice = filters.crop.get(coords.t)
-        if tslice is None:
-            logger.info(
-                f"No time slice found in the crop filter {filters.crop}, "
-                "cannot define a timefilter for querying datamesh"
-            )
-            return None
-        return dict(type="range", times=[tslice.start, tslice.stop])
-
-    def _open(self, variables: list, geofilter: dict, timefilter: dict) -> xr.Dataset:
-        query = dict(
-            datasource=self.datasource,
-            variables=variables,
-            geofilter=geofilter,
-            timefilter=timefilter,
-        )
-        return self.connector.query(query)
-
-    def open(
-        self, filters: Filter, coords: DatasetCoords, variables: list = []
-    ) -> xr.Dataset:
-        """Returns the filtered dataset object.
-
-        This method is overriden from the base class because the crop filters need to
-        be converted to a geofilter and timefilter for querying Datamesh.
-
-        """
-        ds = self._open(
-            variables=variables,
-            geofilter=self._geofilter(filters, coords),
-            timefilter=self._timefilter(filters, coords),
-        )
-        return ds
 
 
 class DataBlob(RompyBaseModel):
@@ -337,11 +104,11 @@ GRID_TYPES = Union[BaseGrid, RegularGrid]
 # DATA_SOURCE_TYPES = process_setting(DATA_SOURCE_TYPES)
 
 # Plugin for the source types
-data_source_eps = entry_points(group="rompy.data_source")
+DATA_SOURCE_TYPES = tuple([eps.load() for eps in entry_points(group="rompy.source")])
 # We could move these out of the module and specify them also with the entry-point
-DATA_SOURCE_TYPES = (SourceDataset, SourceFile, SourceIntake, SourceDatamesh)
+# DATA_SOURCE_TYPES = (SourceDataset, SourceFile, SourceIntake, SourceDatamesh)
 # Append any additional data source types from entry points
-DATA_SOURCE_TYPES = DATA_SOURCE_TYPES + tuple(eps.load() for eps in data_source_eps)
+# DATA_SOURCE_TYPES = DATA_SOURCE_TYPES + tuple(eps.load() for eps in data_source_eps)
 
 
 class DataGrid(DataBlob):
