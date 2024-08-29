@@ -23,10 +23,10 @@ CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
 from rompy import installed
 
 if "schism" in installed:
-    from rompy.schism import SchismCSIROConfig
+    from rompy.schism import SCHISMConfig, SchismCSIROConfig
 
     CONFIG_TYPES = Union[
-        BaseConfig, SwanConfig, SwanConfigComponents, SchismCSIROConfig
+        BaseConfig, SwanConfig, SwanConfigComponents, SchismCSIROConfig, SCHISMConfig
     ]
 
 
