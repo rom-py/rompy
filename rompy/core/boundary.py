@@ -3,18 +3,15 @@
 import logging
 from pathlib import Path
 from typing import Literal, Optional, Union
-
 import numpy as np
-import wavespectra
 import xarray as xr
 from pydantic import Field, field_validator
+from importlib.metadata import entry_points
 
-from rompy.core.source import SourceBase
 from rompy.core.data import DataGrid
 from rompy.core.grid import RegularGrid
 from rompy.core.time import TimeRange
-from rompy.settings import BOUNDARY_SOURCE_TYPES, SPEC_BOUNDARY_SOURCE_TYPES
-from rompy.utils import process_setting
+
 
 logger = logging.getLogger(__name__)
 
@@ -75,33 +72,6 @@ def find_minimum_distance(points: list[tuple[float, float]]) -> float:
             j += 1
 
     return min(min_distance, strip_min)
-
-
-class SourceWavespectra(SourceBase):
-    """Wavespectra dataset from wavespectra reader."""
-
-    model_type: Literal["wavespectra"] = Field(
-        default="wavespectra",
-        description="Model type discriminator",
-    )
-    uri: str | Path = Field(description="Path to the dataset")
-    reader: str = Field(
-        description="Name of the wavespectra reader to use, e.g., read_swan",
-    )
-    kwargs: dict = Field(
-        default={},
-        description="Keyword arguments to pass to the wavespectra reader",
-    )
-
-    def __str__(self) -> str:
-        return f"SourceWavespectra(uri={self.uri}, reader={self.reader})"
-
-    def _open(self):
-        return getattr(wavespectra, self.reader)(self.uri, **self.kwargs)
-
-
-BOUNDARY_SOURCE_MODELS = process_setting(BOUNDARY_SOURCE_TYPES)
-SPEC_BOUNDARY_SOURCE_MODELS = process_setting(SPEC_BOUNDARY_SOURCE_TYPES)
 
 
 class DataBoundary(DataGrid):
@@ -222,6 +192,10 @@ class DataBoundary(DataGrid):
         )
 
 
+# Plugin for the source types
+SOURCE_TYPES = tuple([eps.load() for eps in entry_points(group="rompy.source")])
+
+
 class BoundaryWaveStation(DataBoundary):
     """Wave boundary data from station datasets.
 
@@ -244,7 +218,7 @@ class BoundaryWaveStation(DataBoundary):
         default="boundary_wave_station",
         description="Model type discriminator",
     )
-    source: SPEC_BOUNDARY_SOURCE_MODELS = Field(
+    source: Union[SOURCE_TYPES] = Field(
         description=(
             "Dataset source reader, must return a wavespectra-enabled "
             "xarray dataset in the open method"

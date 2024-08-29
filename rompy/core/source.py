@@ -9,6 +9,7 @@ from typing import Literal, Optional
 import fsspec
 import intake
 import xarray as xr
+import wavespectra
 from intake.catalog import Catalog
 from intake.catalog.local import YAMLFileCatalog
 from oceanum.datamesh import Connector
@@ -243,3 +244,26 @@ class SourceDatamesh(SourceBase):
             timefilter=self._timefilter(filters, coords),
         )
         return ds
+
+
+class SourceWavespectra(SourceBase):
+    """Wavespectra dataset from wavespectra reader."""
+
+    model_type: Literal["wavespectra"] = Field(
+        default="wavespectra",
+        description="Model type discriminator",
+    )
+    uri: str | Path = Field(description="Path to the dataset")
+    reader: str = Field(
+        description="Name of the wavespectra reader to use, e.g., read_swan",
+    )
+    kwargs: dict = Field(
+        default={},
+        description="Keyword arguments to pass to the wavespectra reader",
+    )
+
+    def __str__(self) -> str:
+        return f"SourceWavespectra(uri={self.uri}, reader={self.reader})"
+
+    def _open(self):
+        return getattr(wavespectra, self.reader)(self.uri, **self.kwargs)
