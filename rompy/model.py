@@ -16,10 +16,8 @@ from .core.render import render
 logger = logging.getLogger(__name__)
 
 
-# Accepted config types defined by the BaseConfig and any other config types
-# defined in the entry points of the rompy.config group
-config_eps = entry_points(group="rompy.config")
-CONFIG_TYPES = (BaseConfig,) + tuple(eps.load() for eps in config_eps)
+# Accepted config types are defined in the entry points of the rompy.config group
+CONFIG_TYPES = tuple(eps.load() for eps in entry_points(group="rompy.config"))
 
 
 class ModelRun(RompyBaseModel):
