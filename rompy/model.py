@@ -23,10 +23,15 @@ CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
 from rompy import installed
 
 if "schism" in installed:
-    from rompy.schism import SCHISMConfig, SchismCSIROConfig
+    from rompy.schism import SCHISMConfig, SchismCSIROConfig, SchismCSIROMigrationConfig
 
     CONFIG_TYPES = Union[
-        BaseConfig, SwanConfig, SwanConfigComponents, SchismCSIROConfig, SCHISMConfig
+        BaseConfig,
+        SwanConfig,
+        SwanConfigComponents,
+        SchismCSIROConfig,
+        SCHISMConfig,
+        SchismCSIROMigrationConfig,
     ]
 
 
@@ -67,7 +72,7 @@ class ModelRun(RompyBaseModel):
         staging_dir : str
         """
 
-        odir = self.output_dir / self.run_id
+        odir = Path(self.output_dir) / self.run_id
         odir.mkdir(parents=True, exist_ok=True)
         return odir
 
