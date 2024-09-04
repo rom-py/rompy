@@ -7,11 +7,8 @@ import zipfile as zf
 from datetime import datetime
 from pathlib import Path
 from typing import Union
-
 from pydantic import Field
-
-from rompy.swan import SwanConfig
-from rompy.swan.config import SwanConfigComponents
+from importlib.metadata import entry_points
 
 from .core import BaseConfig, RompyBaseModel, TimeRange
 from .core.render import render
@@ -19,20 +16,8 @@ from .core.render import render
 logger = logging.getLogger(__name__)
 
 
-CONFIG_TYPES = Union[BaseConfig, SwanConfig, SwanConfigComponents]
-from rompy import installed
-
-if "schism" in installed:
-    from rompy.schism import SCHISMConfig, SchismCSIROConfig, SchismCSIROMigrationConfig
-
-    CONFIG_TYPES = Union[
-        BaseConfig,
-        SwanConfig,
-        SwanConfigComponents,
-        SchismCSIROConfig,
-        SCHISMConfig,
-        SchismCSIROMigrationConfig,
-    ]
+# Accepted config types are defined in the entry points of the rompy.config group
+CONFIG_TYPES = tuple(eps.load() for eps in entry_points(group="rompy.config"))
 
 
 class ModelRun(RompyBaseModel):
@@ -56,7 +41,7 @@ class ModelRun(RompyBaseModel):
         description="The time period to run the model",
     )
     output_dir: Path = Field("./simulations", description="The output directory")
-    config: CONFIG_TYPES = Field(
+    config: Union[CONFIG_TYPES] = Field(
         default_factory=BaseConfig,
         description="The configuration object",
         discriminator="model_type",

@@ -9,8 +9,7 @@ import xarray as xr
 from pydantic import ValidationError
 
 from rompy.core import DataBlob, DataGrid, RegularGrid, TimeRange
-from rompy.core.data import (SourceDatamesh, SourceDataset, SourceFile,
-                             SourceIntake)
+from rompy.core.source import SourceDatamesh, SourceDataset, SourceFile, SourceIntake
 from rompy.core.filters import Filter
 from rompy.core.types import DatasetCoords
 
