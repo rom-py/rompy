@@ -13,7 +13,6 @@ concepts:
 
     rompy.model.ModelRun
     rompy.core.BaseConfig
-    rompy.core.dummy.DemoModel
 
 There is information about each of these in the documentation of each object, but at a
 high level, ModelRun is the high level framework that renders the config object and controls the
@@ -55,9 +54,9 @@ following base classes for data objects:
 
     rompy.core.data.DataBlob
     rompy.core.data.DataGrid
-    rompy.core.data.SourceBase
-    rompy.core.data.SourceFile
-    rompy.core.data.SourceIntake
+    rompy.core.source.SourceBase
+    rompy.core.source.SourceFile
+    rompy.core.source.SourceIntake
 
 
 Boundary
@@ -68,7 +67,7 @@ Boundary
     :toctree: _generated/
 
     rompy.core.boundary.BoundaryWaveStation
-    rompy.core.boundary.SourceWavespectra
+    rompy.core.source.SourceWavespectra
 
 
 Spectrum
