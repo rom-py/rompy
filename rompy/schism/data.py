@@ -13,8 +13,6 @@ from pyschism.forcing.bctides import Bctides
 from rompy.core import DataGrid, RompyBaseModel
 from rompy.core.boundary import BoundaryWaveStation, DataBoundary
 from rompy.core.data import DataBlob
-from rompy.core.boundary import BoundaryWaveStation, DataBoundary
-from rompy.core.data import DataBlob
 from rompy.core.time import TimeRange
 from rompy.schism.grid import SCHISMGrid
 from rompy.utils import total_seconds
@@ -69,8 +67,16 @@ class SfluxSource(DataGrid):
         ds = self.source.open(
             variables=self.variables, filters=self.filter, coords=self.coords
         )
-        # rename latitude and longitide to lat and lon
-        ds = ds.rename_dims({self.coords.y: "ny_grid", self.coords.x: "nx_grid"})
+        # Define a dictionary for potential renaming
+        rename_dict = {self.coords.y: "ny_grid", self.coords.x: "nx_grid"}
+
+        # Construct a valid renaming dictionary
+        valid_rename_dict = get_valid_rename_dict(ds, rename_dict)
+
+        # Perform renaming if necessary
+        if valid_rename_dict:
+            ds = ds.rename_dims(valid_rename_dict)
+
         lon, lat = np.meshgrid(ds[self.coords.x], ds[self.coords.y])
         ds["lon"] = (("ny_grid", "nx_grid"), lon)
         ds["lat"] = (("ny_grid", "nx_grid"), lat)
@@ -203,12 +209,24 @@ class SCHISMDataSflux(RompyBaseModel):
         default="sflux",
         description="Model type discriminator",
     )
-    air_1: Union[DataBlob, SfluxAir, None] = Field(None, description="sflux air source 1")
-    air_2: Union[DataBlob, SfluxAir, None] = Field(None, description="sflux air source 2")
-    rad_1: Union[DataBlob, SfluxRad, None] = Field(None, description="sflux rad source 1")
-    rad_2: Union[DataBlob, SfluxRad, None] = Field(None, description="sflux rad source 2")
-    prc_1: Union[DataBlob, SfluxPrc, None] = Field(None, description="sflux prc source 1")
-    prc_2: Union[DataBlob, SfluxPrc, None] = Field(None, description="sflux prc source 2")
+    air_1: Union[DataBlob, SfluxAir, None] = Field(
+        None, description="sflux air source 1"
+    )
+    air_2: Union[DataBlob, SfluxAir, None] = Field(
+        None, description="sflux air source 2"
+    )
+    rad_1: Union[DataBlob, SfluxRad, None] = Field(
+        None, description="sflux rad source 1"
+    )
+    rad_2: Union[DataBlob, SfluxRad, None] = Field(
+        None, description="sflux rad source 2"
+    )
+    prc_1: Union[DataBlob, SfluxPrc, None] = Field(
+        None, description="sflux prc source 1"
+    )
+    prc_2: Union[DataBlob, SfluxPrc, None] = Field(
+        None, description="sflux prc source 2"
+    )
 
     def get(
         self,
@@ -667,8 +685,12 @@ class SCHISMData(RompyBaseModel):
     )
     atmos: Optional[SCHISMDataSflux] = Field(None, description="atmospheric data")
     ocean: Optional[SCHISMDataOcean] = Field(None, description="ocean data")
-    wave: Optional[Union[DataBlob, SCHISMDataWave]] = Field(None, description="wave data")
-    tides: Optional[Union[DataBlob, SCHISMDataTides]] = Field(None, description="tidal data")
+    wave: Optional[Union[DataBlob, SCHISMDataWave]] = Field(
+        None, description="wave data"
+    )
+    tides: Optional[Union[DataBlob, SCHISMDataTides]] = Field(
+        None, description="tidal data"
+    )
 
     def get(
         self,
@@ -698,3 +720,12 @@ class SCHISMData(RompyBaseModel):
             #     "wave"
             # ] = "dummy"  # Just to make cookiecutter happy if excluding wave forcing
         return ret
+
+
+def get_valid_rename_dict(ds, rename_dict):
+    """Construct a valid renaming dictionary that only includes names which need renaming."""
+    valid_rename_dict = {}
+    for old_name, new_name in rename_dict.items():
+        if old_name in ds.dims and new_name not in ds.dims:
+            valid_rename_dict[old_name] = new_name
+    return valid_rename_dict
