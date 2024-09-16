@@ -63,7 +63,7 @@ PARAM
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.param.PARAM
+   rompy.schism.namelists.param.Param
 
 ICE
 ~~~~~~
@@ -72,7 +72,7 @@ ICE
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.ice.ICE
+   rompy.schism.namelists.ice.Ice
 
 MICE
 ~~~~~~
@@ -81,7 +81,7 @@ MICE
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.mice.MICE
+   rompy.schism.namelists.mice.Mice
 
 ICM
 ~~~~~~
@@ -90,7 +90,7 @@ ICM
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.icm.ICM
+   rompy.schism.namelists.icm.Icm
 
 SEDIMENT
 ~~~~~~~~~~
@@ -99,7 +99,7 @@ SEDIMENT
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.sediment.SEDIMENT
+   rompy.schism.namelists.sediment.Sediment
 
 
 COSINE
@@ -109,25 +109,17 @@ COSINE
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.cosine.COSINE
+   rompy.schism.namelists.cosine.Cosine
 
-WWMINPUT_spectra
-~~~~~~~~~~~~~~~~~~~
 
-.. autosummary::
-   :nosignatures:
-   :toctree: _generated/
-
-   rompy.schism.namelists.wwminput_spectra.WWMINPUT
-
-WWMINPUT_ww3
+WWMINPUT
 ~~~~~~~~~~~~
 
 .. autosummary::
    :nosignatures:
    :toctree: _generated/
 
-   rompy.schism.namelists.wwminput_WW3.WWMINPUT
+   rompy.schism.namelists.wwminput.Wwminput
 
 
 NML
