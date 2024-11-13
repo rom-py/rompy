@@ -12,7 +12,7 @@ from pydantic import (
 
 class RompyBaseModel(BaseModel):
     # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=(), extra="forbid")
 
 
 class Latitude(BaseModel):
