@@ -42,7 +42,6 @@ def test_custom_template(tmpdir):
     runtime = ModelRun(
         run_id="test_base",
         output_dir=str(tmpdir),
-        template="simple_templates/base",
         config=config,
     )
     runtime.generate()
