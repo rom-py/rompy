@@ -63,6 +63,10 @@ PARAM
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.param.Core
+   rompy.schism.namelists.param.Opt
+   rompy.schism.namelists.param.Schout
+   rompy.schism.namelists.param.Vertical
    rompy.schism.namelists.param.Param
 
 ICE
@@ -72,6 +76,7 @@ ICE
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.ice.Ice_in
    rompy.schism.namelists.ice.Ice
 
 MICE
@@ -81,6 +86,7 @@ MICE
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.ice.Mice_in
    rompy.schism.namelists.mice.Mice
 
 ICM
@@ -90,6 +96,18 @@ ICM
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.icm.Bag
+   rompy.schism.namelists.icm.Core
+   rompy.schism.namelists.icm.Ero
+   rompy.schism.namelists.icm.Marco
+   rompy.schism.namelists.icm.Ph_icm
+   rompy.schism.namelists.icm.Poc 
+   rompy.schism.namelists.icm.Sav 
+   rompy.schism.namelists.icm.Sfm 
+   rompy.schism.namelists.icm.Silica
+   rompy.schism.namelists.icm.Stem 
+   rompy.schism.namelists.icm.Veg 
+   rompy.schism.namelists.icm.Zb 
    rompy.schism.namelists.icm.Icm
 
 SEDIMENT
@@ -99,6 +117,8 @@ SEDIMENT
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.sediment.Sed_opt
+   rompy.schism.namelists.sediment.Sed_core
    rompy.schism.namelists.sediment.Sediment
 
 
@@ -109,6 +129,9 @@ COSINE
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.cosine.Core
+   rompy.schism.namelists.cosine.Marco
+   rompy.schism.namelists.cosine.Misc
    rompy.schism.namelists.cosine.Cosine
 
 
@@ -119,6 +142,17 @@ WWMINPUT
    :nosignatures:
    :toctree: _generated/
 
+   rompy.schism.namelists.wwminput.Coupl
+   rompy.schism.namelists.wwminput.Engs
+   rompy.schism.namelists.wwminput.Grid
+   rompy.schism.namelists.wwminput.History
+   rompy.schism.namelists.wwminput.Hotfile
+   rompy.schism.namelists.wwminput.Init
+   rompy.schism.namelists.wwminput.Nesting
+   rompy.schism.namelists.wwminput.Nums
+   rompy.schism.namelists.wwminput.Petscoptions
+   rompy.schism.namelists.wwminput.Proc
+   rompy.schism.namelists.wwminput.Station
    rompy.schism.namelists.wwminput.Wwminput
 
 
