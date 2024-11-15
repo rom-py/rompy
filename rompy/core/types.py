@@ -12,7 +12,7 @@ from pydantic import (
 
 class RompyBaseModel(BaseModel):
     # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(protected_namespaces=(), extra="forbid")
 
 
 class Latitude(BaseModel):
@@ -312,6 +312,7 @@ class DatasetCoords(RompyBaseModel):
     x: Optional[str] = Field("longitude", description="Name of the x coordinate")
     y: Optional[str] = Field("latitude", description="Name of the y coordinate")
     z: Optional[str] = Field("depth", description="Name of the z coordinate")
+    s: Optional[str] = Field("site", description="Name of the site coordinate")
 
 
 class Slice(BaseModel):
