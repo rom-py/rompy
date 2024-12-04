@@ -85,8 +85,8 @@ class SourceDataset(SourceBase):
 class SourceFile(SourceBase):
     """Source dataset from file to open with xarray.open_dataset."""
 
-    model_type: Literal["open_dataset"] = Field(
-        default="open_dataset",
+    model_type: Literal["file"] = Field(
+        default="file",
         description="Model type discriminator",
     )
     uri: str | Path = Field(description="Path to the dataset")
