@@ -26,7 +26,7 @@ def gitlab_template(tmpdir):
         output_dir=str(tmpdir),
         template=BaseConfig(
             template="git@gitlab.com:oceanum/models/test-rompy-template.git",
-        )
+        ),
     )
 
 

@@ -210,5 +210,3 @@ def _open_preprocess(url, chunks, filters, xarray_kwargs):
         ds = fn(ds, **params)
 
     return ds
-
-

@@ -1,4 +1,5 @@
 """Rompy types."""
+
 from typing import Any, Optional, Union
 from datetime import datetime
 from pydantic import (
@@ -327,8 +328,8 @@ class Slice(BaseModel):
 
     @classmethod
     def from_dict(cls, d: dict):
-        return cls(start=d['start'], stop=d['stop'])
-    
+        return cls(start=d["start"], stop=d["stop"])
+
     @classmethod
     def from_slice(cls, s: slice):
         return cls(start=s.start, stop=s.stop)
