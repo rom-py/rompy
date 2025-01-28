@@ -187,9 +187,6 @@ class DataGrid(DataBlob):
         ds = self.source.open(
             variables=self.variables, filters=self.filter, coords=self.coords
         )
-        # Sort the dataset by all coordinates to avoid cropping issues
-        for dim in ds.dims:
-            ds = ds.sortby(dim)
         return ds
 
     def _figsize(self, x0, x1, y0, y1, fscale):
