@@ -77,7 +77,8 @@ def derived_filter(ds, derived_variables):
     return ds
 
 
-def sort_filter(ds, coords=None):
+def sort_filter(ds, coords: list = []):
+    coords = list[coords] if isinstance(coords, str) else coords
     for c in coords:
         if c in ds:
             ds = ds.sortby(c)
