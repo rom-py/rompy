@@ -235,6 +235,10 @@ class DataGrid(DataTimeseries):
         default="grid",
         description="Model type discriminator",
     )
+    source: Union[SOURCE_TYPES] = Field(
+        description="Source reader, must return an xarray gridded dataset in the open method",
+        discriminator="model_type",
+    )
 
     def _filter_grid(self, grid: GRID_TYPES):
         """Define the filters to use to extract data to this grid"""
