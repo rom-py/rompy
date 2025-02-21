@@ -11,12 +11,12 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from cloudpathlib import AnyPath
 from pydantic import Field, PrivateAttr
-from importlib.metadata import entry_points
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
 from rompy.core.time import TimeRange
 from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
+from rompy.utils import load_entry_points
 
 
 logger = logging.getLogger(__name__)
@@ -101,12 +101,8 @@ class DataBlob(RompyBaseModel):
 GRID_TYPES = Union[BaseGrid, RegularGrid]
 
 # Plugin for the source types
-SOURCE_TYPES = tuple([eps.load() for eps in entry_points(group="rompy.source")])
-
-
-# Just here temporarily. We need to decide how to handle different types of sources
-# that are used with different types of data objects in the entry points.
-from rompy.core.source import SourceTimeseriesCSV, SourceTimeseriesDataFrame
+SOURCE_TYPES = load_entry_points("rompy.source")
+SOURCE_TYPES_TS = load_entry_points("rompy.source", etype="timeseries")
 
 
 class DataTimeseries(DataBlob):
@@ -121,7 +117,7 @@ class DataTimeseries(DataBlob):
         default="timeseries",
         description="Model type discriminator",
     )
-    source: Union[SourceTimeseriesCSV, SourceTimeseriesDataFrame] = Field(
+    source: Union[SOURCE_TYPES_TS] = Field(
         description="Source reader, must return an xarray timeseries dataset in the open method",
         discriminator="model_type",
     )

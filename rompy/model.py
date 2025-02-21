@@ -5,7 +5,6 @@ import platform
 import shutil
 import zipfile as zf
 from datetime import datetime
-from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Union
 
@@ -13,13 +12,13 @@ from pydantic import Field
 
 from .core import BaseConfig, RompyBaseModel, TimeRange
 from .core.render import render
+from rompy.utils import load_entry_points
 
 logger = logging.getLogger(__name__)
 
 
 # Accepted config types are defined in the entry points of the rompy.config group
-CONFIG_TYPES = tuple(eps.load() for eps in entry_points(group="rompy.config"))
-
+CONFIG_TYPES = load_entry_points("rompy.config")
 
 class ModelRun(RompyBaseModel):
     """A model run.
