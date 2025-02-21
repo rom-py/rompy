@@ -14,7 +14,7 @@ import wavespectra
 from intake.catalog import Catalog
 from intake.catalog.local import YAMLFileCatalog
 from oceanum.datamesh import Connector
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, model_validator, field_validator
 
 from rompy.core.filters import Filter
 from rompy.core.types import DatasetCoords, RompyBaseModel
@@ -325,6 +325,16 @@ class SourceTimeseriesDataFrame(SourceBase):
         description="pandas DataFrame object",
     )
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("obj")
+    @classmethod
+    def is_timeseries(cls, obj: pd.DataFrame) -> pd.DataFrame:
+        """Check if the DataFrame is a timeseries."""
+        if not pd.api.types.is_datetime64_any_dtype(obj.index):
+            raise ValueError("The DataFrame index must be datetime dtype")
+        if obj.index.name is None:
+            raise ValueError("The DataFrame index must have a name")
+        return obj
 
     def __str__(self) -> str:
         return f"SourceTimeseriesDataFrame(obj={self.obj})"
