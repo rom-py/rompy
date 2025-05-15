@@ -2,12 +2,13 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-from utils import compare_files
 
 from rompy import TEMPLATES_DIR
 from rompy.core.config import BaseConfig
 from rompy.core.time import TimeRange
 from rompy.model import ModelRun
+
+from .utils import compare_files
 
 here = Path(__file__).parent
 

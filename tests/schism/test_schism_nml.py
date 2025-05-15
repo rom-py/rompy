@@ -6,7 +6,7 @@ from shutil import rmtree
 import pytest
 
 # pytest.importorskip("rompy.schism")
-from utils import compare_files
+from tests.utils import compare_files
 
 from rompy.core.data import DataBlob
 from rompy.core.time import TimeRange
