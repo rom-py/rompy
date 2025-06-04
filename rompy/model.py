@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Union
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from rompy.utils import load_entry_points
 

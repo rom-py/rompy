@@ -32,18 +32,23 @@ class NML(NamelistBaseModel):
     wwminput: Optional[Wwminput] = Field(
         description="Wave model input parameters", default=None
     )
-    
+
     @model_serializer
     def serialize_model(self, **kwargs):
         """Custom serializer to handle proper serialization of namelist components."""
         result = {}
-        
+
         # Include only non-None fields in the serialized output
         for field_name in self.model_fields:
             value = getattr(self, field_name, None)
             if value is not None:
-                result[field_name] = value
-                
+                # Ensure we're returning the model object, not a dict
+                if hasattr(value, "model_dump"):
+                    # This ensures we maintain the model instance for proper serialization
+                    result[field_name] = value
+                else:
+                    result[field_name] = value
+
         return result
 
     def update_times(self, period=TimeRange):
@@ -113,7 +118,7 @@ class NML(NamelistBaseModel):
     def update_data_sources(self, datasources: dict):
         """Update the data sources in the namelist based on rompy data preparation."""
         update = {}
-        if datasources["wave"] is not None:
+        if ("wave" in datasources) and (datasources["wave"] is not None):
             if hasattr(
                 self, "wwminput"
             ):  # TODO change this check to the actual flag value
@@ -130,7 +135,7 @@ class NML(NamelistBaseModel):
                         }
                     }
                 )
-        if datasources["atmos"] is not None:
+        if ("atmos" in datasources) and (datasources["atmos"] is not None):
             if self.param.opt.nws is not 2:
                 logger.warn(
                     f"Overwriting param nws value of {self.param.opt.nws} to 2 to use rompy generated sflux data"

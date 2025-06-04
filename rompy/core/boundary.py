@@ -1,8 +1,10 @@
 """Boundary classes."""
 
 import logging
+from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Literal, Optional, Union
+
 import numpy as np
 import xarray as xr
 from pydantic import Field, field_validator
