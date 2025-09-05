@@ -20,14 +20,12 @@ authors = [
     { name = "CSIRO", email = "paul.branson@csiro.au" },
 ]
 maintainers = [
-    { name = "Paul Branson", email = "paul.branson@csiro.au" },
-    { name = "Tom Durrant", email = "t.durrant@oceanum.science" },
-    { name = "Rafael Guedes", email = "r.guedes@oceanum.science" },
+  {name = "Rompy Contributors", email = "developers@rompy.com"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
+    "License :: OSI Approved :: APACHE 2 License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
@@ -83,9 +81,6 @@ Changelog = "https://github.com/rom-py/rompy/blob/main/HISTORY.rst"
 [project.scripts]
 rompy = "rompy.cli:main"
 
-[project.entry-points."intake.drivers"]
-netcdf_fcstack = "rompy.intake:NetCDFFCStackSource"
-
 [project.entry-points."rompy.config"]
 base = "rompy.core.config:BaseConfig"
 
@@ -119,9 +114,12 @@ extra = [
     "gcsfs",
     "zarr",
 ]
-schism = [
-    "pylibs-ocean",
-    "pytmd",
+dev = [
+    "pytest",
+    "envyaml",
+    "coverage",
+    "ruff",
+    "black",
 ]
 docs = [
     "autodoc_pydantic",
