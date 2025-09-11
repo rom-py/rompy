@@ -468,8 +468,10 @@ class TestDockerBackendMocked:
         """Test _run_container with container error."""
         with patch("docker.from_env") as mock_docker:
             mock_client = mock_docker.return_value
+            from unittest.mock import Mock
+            mock_container = Mock()
             mock_client.containers.run.side_effect = docker.errors.ContainerError(
-                "container_id", 1, "echo test", "test:image", "Container failed"
+                mock_container, 1, "echo test", "test:image", "Container failed"
             )
 
             result = docker_backend._run_container(
