@@ -11,6 +11,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import docker
+from docker.errors import APIError
 
 from rompy.backends.config import DockerConfig
 from rompy.core.config import BaseConfig
@@ -22,11 +24,10 @@ from rompy.run.docker import DockerRunBackend
 def docker_available():
     """Check if Docker is available and running."""
     try:
-        result = subprocess.run(
-            ["docker", "info"], capture_output=True, text=True, timeout=10
-        )
-        return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+        client = docker.from_env()
+        client.ping()
+        return True
+    except (APIError, docker.errors.DockerException):
         return False
 
 
@@ -190,11 +191,10 @@ RUN echo "test dockerfile"
 """
         )
 
-        # Mock subprocess.run to avoid actually building
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 0
-            mock_run.return_value.stdout = "Successfully built image"
-            mock_run.return_value.stderr = ""
+        # Mock docker.from_env to avoid actually building
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.images.build.return_value = ("image_object", [{"stream": "Successfully built image"}])
 
             # Mock _image_exists to return False (image doesn't exist)
             with patch.object(docker_backend, "_image_exists", return_value=False):
@@ -204,7 +204,7 @@ RUN echo "test dockerfile"
 
                 # Should return a generated image name
                 assert result.startswith("rompy-")
-                mock_run.assert_called_once()
+                mock_client.images.build.assert_called_once()
 
     def test_prepare_image_with_dockerfile_build_failure(
         self, docker_backend, tmp_path
@@ -215,10 +215,11 @@ RUN echo "test dockerfile"
         dockerfile = context_dir / "Dockerfile"
         dockerfile.write_text("INVALID DOCKERFILE CONTENT")
 
-        # Mock subprocess.run to simulate build failure
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.CalledProcessError(
-                1, "docker build", stderr="Build failed"
+        # Mock docker.from_env to simulate build failure
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.images.build.side_effect = docker.errors.BuildError(
+                "Build failed", []
             )
 
             # Mock _image_exists to return False (image doesn't exist)
@@ -247,11 +248,10 @@ COPY test.txt /app/
         test_file = context_dir / "test.txt"
         test_file.write_text("test content")
 
-        # Mock subprocess.run to avoid actually building
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 0
-            mock_run.return_value.stdout = "Successfully built image"
-            mock_run.return_value.stderr = ""
+        # Mock docker.from_env to avoid actually building
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.images.build.return_value = ("image_object", [{"stream": "Successfully built image"}])
 
             # Mock _image_exists to return False (image doesn't exist)
             with patch.object(docker_backend, "_image_exists", return_value=False):
@@ -262,10 +262,10 @@ COPY test.txt /app/
                 # Should return a generated image name
                 assert result.startswith("rompy-")
 
-                # Check that docker build was called with correct context
-                mock_run.assert_called_once()
-                call_args = mock_run.call_args[0][0]
-                assert str(context_dir) in call_args  # Build context should be included
+                # Check that docker.images.build was called with correct context
+                mock_client.images.build.assert_called_once()
+                call_kwargs = mock_client.images.build.call_args[1]
+                assert call_kwargs["path"] == str(context_dir)
 
     def test_prepare_image_with_existing_image(self, docker_backend, tmp_path):
         """Test _prepare_image with an image that already exists."""
@@ -281,8 +281,8 @@ RUN echo "test dockerfile"
 
         # Mock _image_exists to return True (image already exists)
         with patch.object(docker_backend, "_image_exists", return_value=True):
-            # Mock subprocess.run to ensure it's NOT called
-            with patch("subprocess.run") as mock_run:
+            # Mock docker.from_env to ensure it's NOT called
+            with patch("docker.from_env") as mock_docker:
                 result = docker_backend._prepare_image(
                     None, "Dockerfile", str(context_dir)
                 )
@@ -290,7 +290,7 @@ RUN echo "test dockerfile"
                 # Should return the existing image name
                 assert result.startswith("rompy-")
                 # Build should not be called since image exists
-                mock_run.assert_not_called()
+                mock_docker.assert_not_called()
 
     def test_generate_image_name_deterministic(self, docker_backend, tmp_path):
         """Test that _generate_image_name produces deterministic results."""
@@ -371,31 +371,27 @@ RUN echo "test"
 
     def test_image_exists_true(self, docker_backend):
         """Test _image_exists when image exists."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 0
-            mock_run.return_value.stdout = "image exists"
-            mock_run.return_value.stderr = ""
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.images.get.return_value = "image_object"
 
             result = docker_backend._image_exists("test:image")
             assert result is True
 
-            # Check that docker image inspect was called
-            mock_run.assert_called_once()
-            call_args = mock_run.call_args[0][0]
-            assert "docker" in call_args
-            assert "image" in call_args
-            assert "inspect" in call_args
-            assert "test:image" in call_args
+            # Check that docker.images.get was called with correct image name
+            mock_client.images.get.assert_called_once_with("test:image")
 
     def test_image_exists_false(self, docker_backend):
         """Test _image_exists when image doesn't exist."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.CalledProcessError(
-                1, "docker image inspect", stderr="No such image"
-            )
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.images.get.side_effect = docker.errors.ImageNotFound("No such image")
 
             result = docker_backend._image_exists("nonexistent:image")
             assert result is False
+
+            # Check that docker.images.get was called with correct image name
+            mock_client.images.get.assert_called_once_with("nonexistent:image")
 
     def test_get_run_command_simple(self, docker_backend):
         """Test _get_run_command with simple parameters."""
@@ -447,10 +443,9 @@ class TestDockerBackendMocked:
 
     def test_run_container_success(self, docker_backend):
         """Test _run_container with successful execution."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 0
-            mock_run.return_value.stdout = "Container executed successfully"
-            mock_run.return_value.stderr = ""
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.containers.run.return_value = "container_output"
 
             result = docker_backend._run_container(
                 image_name="test:image",
@@ -460,21 +455,52 @@ class TestDockerBackendMocked:
             )
 
             assert result is True
-            mock_run.assert_called_once()
-
-            # Check that the docker command was constructed correctly
-            call_args = mock_run.call_args[0][0]
-            assert "docker" in call_args
-            assert "run" in call_args
-            assert "--rm" in call_args
-            assert "test:image" in call_args
+            mock_client.containers.run.assert_called_once()
+            
+            # Check that the container was run with correct parameters
+            call_kwargs = mock_client.containers.run.call_args[1]
+            assert call_kwargs["image"] == "test:image"
+            assert call_kwargs["command"] == ["bash", "-c", "echo test"]
+            assert call_kwargs["environment"] == {"TEST": "value"}
+            assert call_kwargs["remove"] is True
 
     def test_run_container_failure(self, docker_backend):
-        """Test _run_container with failed execution."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 1
-            mock_run.return_value.stdout = ""
-            mock_run.return_value.stderr = "Container failed"
+        """Test _run_container with container error."""
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.containers.run.side_effect = docker.errors.ContainerError(
+                "container_id", 1, "echo test", "test:image", "Container failed"
+            )
+
+            result = docker_backend._run_container(
+                image_name="test:image",
+                run_command="echo test",
+                volume_mounts=[],
+                env_vars={},
+            )
+
+            assert result is False
+
+    def test_run_container_image_not_found(self, docker_backend):
+        """Test _run_container with image not found."""
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.containers.run.side_effect = docker.errors.ImageNotFound("No such image")
+
+            result = docker_backend._run_container(
+                image_name="nonexistent:image",
+                run_command="echo test",
+                volume_mounts=[],
+                env_vars={},
+            )
+
+            assert result is False
+
+    def test_run_container_api_error(self, docker_backend):
+        """Test _run_container with Docker API error."""
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.containers.run.side_effect = docker.errors.APIError("API error")
 
             result = docker_backend._run_container(
                 image_name="test:image",
@@ -486,9 +512,10 @@ class TestDockerBackendMocked:
             assert result is False
 
     def test_run_container_exception(self, docker_backend):
-        """Test _run_container with subprocess exception."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = Exception("Docker not available")
+        """Test _run_container with generic exception."""
+        with patch("docker.from_env") as mock_docker:
+            mock_client = mock_docker.return_value
+            mock_client.containers.run.side_effect = Exception("Docker not available")
 
             result = docker_backend._run_container(
                 image_name="test:image",
