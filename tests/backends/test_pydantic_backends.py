@@ -406,6 +406,7 @@ class TestBackendIntegration:
     def test_docker_config_integration(self, mock_model_run):
         """Test DockerConfig integration with DockerRunBackend."""
         import tempfile
+        import docker
 
         config = DockerConfig(
             image="test:latest",
@@ -423,17 +424,16 @@ class TestBackendIntegration:
             # Update mock to return existing directory
             mock_model_run.generate.return_value = temp_dir
 
-            # Mock docker subprocess call
-            with patch("subprocess.run") as mock_run:
-                mock_run.return_value.returncode = 0
-                mock_run.return_value.stdout = "docker output"
-                mock_run.return_value.stderr = ""
+            # Mock docker-py calls
+            with patch("docker.from_env") as mock_docker:
+                mock_client = mock_docker.return_value
+                mock_client.containers.run.return_value = "container_output"
 
                 # Run with config
                 result = backend.run(mock_model_run, config=config)
 
                 assert result is True
-                mock_run.assert_called_once()
+                mock_client.containers.run.assert_called_once()
 
     def test_pydantic_config_integration(self, mock_model_run):
         """Test that backends work with Pydantic config objects only."""

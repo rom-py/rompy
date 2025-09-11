@@ -43,6 +43,7 @@ dependencies = [
     "cloudpathlib",
     "cookiecutter>=2.6",
     "dask",
+    "docker",
     "fsspec",
     "geopandas",
     "h5py",
