@@ -12,6 +12,9 @@ import subprocess
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+import docker
+from docker.errors import APIError, BuildError, ContainerError, ImageNotFound
+
 if TYPE_CHECKING:
     from rompy.backends import DockerConfig
 
@@ -138,39 +141,36 @@ class DockerRunBackend:
                 logger.info(f"Using existing Docker image: {image_name}")
                 return image_name
 
-            # Build arguments
-            build_args_list = []
-            if build_args:
-                for key, value in build_args.items():
-                    build_args_list.extend(["--build-arg", f"{key}={value}"])
-
-            # Build the Docker image
+            # Build the Docker image using docker-py
             logger.info(
                 f"Building Docker image {image_name} from {dockerfile} (context: {context_path})"
             )
-            build_cmd = [
-                "docker",
-                "build",
-                "-t",
-                image_name,
-                "-f",
-                str(dockerfile_path),  # Use full path for -f flag
-                *build_args_list,
-                str(context_path),
-            ]
-
+            
             try:
-                result = subprocess.run(
-                    build_cmd,
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
+                client = docker.from_env()
+                image_obj, build_logs = client.images.build(
+                    path=str(context_path),
+                    dockerfile=str(dockerfile_path.relative_to(context_path)),
+                    tag=image_name,
+                    buildargs=build_args or {},
+                    rm=True,
                 )
-                logger.debug(f"Docker build output: {result.stdout}")
+                
+                # Log build output
+                for line in build_logs:
+                    if 'stream' in line:
+                        logger.debug(line['stream'].strip())
+                
+                logger.info(f"Successfully built Docker image: {image_name}")
                 return image_name
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Docker build failed: {e.stderr}")
+            except BuildError as e:
+                logger.error(f"Docker build failed: {e.msg}")
+                for line in e.build_log:
+                    if 'error' in line:
+                        logger.error(f"Build error: {line['error']}")
+                return None
+            except APIError as e:
+                logger.error(f"Docker API error during build: {e}")
                 return None
 
         # If neither is provided, use a default image
@@ -253,62 +253,61 @@ class DockerRunBackend:
         Returns:
             True if execution was successful, False otherwise
         """
-        # Set up the Docker command
-        docker_cmd = [
-            "docker",
-            "run",
-            "--rm",  # Remove container after run
-            "--user",
-            "root",  # Run as root to avoid permission issues
-        ]
-
-        # Add environment variables
-        for key, value in env_vars.items():
-            docker_cmd.extend(["-e", f"{key}={value}"])
-
-        # Add volume mounts
-        for volume in volume_mounts:
-            docker_cmd.extend(["-v", volume])
-
-        # Add the image name and command
-        docker_cmd.append(image_name)
-
-        # Add bash and -c as separate arguments
-        docker_cmd.append("bash")
-        docker_cmd.append("-c")
-
-        # Add the run command as a separate argument
-        docker_cmd.append(run_command)
-
         try:
-            logger.info(f"Executing: {' '.join(docker_cmd)}")
-            # Don't use check=True, so we can see the output even if it fails
-            result = subprocess.run(
-                docker_cmd,
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
+            client = docker.from_env()
+            
+            # Convert volume mounts to docker-py format
+            volumes = {}
+            for volume in volume_mounts:
+                parts = volume.split(':')
+                if len(parts) >= 2:
+                    host_path, container_path = parts[0], parts[1]
+                    mode = 'rw'  # default mode
+                    if len(parts) > 2:
+                        mode = parts[2] if parts[2] in ['ro', 'rw', 'Z'] else 'rw'
+                    volumes[host_path] = {'bind': container_path, 'mode': mode}
 
-            # Always log the output regardless of success/failure
-            if result.stdout:
-                logger.info(f"Docker stdout: \n{result.stdout}")
-            if result.stderr:
-                logger.warning(f"Docker stderr: \n{result.stderr}")
+            # Prepare container configuration
+            container_config = {
+                'image': image_name,
+                'command': ['bash', '-c', run_command],
+                'environment': env_vars,
+                'volumes': volumes,
+                'user': 'root',
+                'remove': True,  # Remove container after run
+                'stdout': True,
+                'stderr': True,
+            }
 
-            # Check return code manually
-            if result.returncode == 0:
-                logger.info("Model run completed successfully with exit code 0")
+            logger.info(f"Running Docker container with image: {image_name}")
+            logger.debug(f"Command: {run_command}")
+            logger.debug(f"Volumes: {volumes}")
+            logger.debug(f"Environment: {env_vars}")
+
+            # Run the container
+            container = client.containers.run(**container_config)
+            
+            # Log output
+            if container:
+                logger.info("Model run completed successfully")
                 return True
             else:
-                logger.error(f"Model run failed with exit code {result.returncode}")
-                logger.error(f"Command: {' '.join(docker_cmd)}")
+                logger.error("Model run failed - no output from container")
                 return False
 
+        except ContainerError as e:
+            logger.error(f"Container error: {e}")
+            if e.stderr:
+                logger.error(f"Container stderr: {e.stderr}")
+            return False
+        except ImageNotFound:
+            logger.error(f"Docker image not found: {image_name}")
+            return False
+        except APIError as e:
+            logger.error(f"Docker API error: {e}")
+            return False
         except Exception as e:
             logger.error(f"Docker run error: {str(e)}")
-            logger.error(f"Command: {' '.join(docker_cmd)}")
             return False
 
     def _generate_image_name(
@@ -364,15 +363,13 @@ class DockerRunBackend:
             True if image exists, False otherwise
         """
         try:
-            subprocess.run(
-                ["docker", "image", "inspect", image_name],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
+            client = docker.from_env()
+            client.images.get(image_name)
             logger.debug(f"Image {image_name} already exists")
             return True
-        except subprocess.CalledProcessError:
+        except ImageNotFound:
             logger.debug(f"Image {image_name} does not exist")
+            return False
+        except APIError as e:
+            logger.error(f"Error checking for image {image_name}: {e}")
             return False
