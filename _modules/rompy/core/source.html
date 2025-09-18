@@ -764,6 +764,8 @@
             <span class="n">geofilter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_geofilter</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">coords</span><span class="p">),</span>
             <span class="n">timefilter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_timefilter</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">coords</span><span class="p">),</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">filters</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ds</span>
 
 
