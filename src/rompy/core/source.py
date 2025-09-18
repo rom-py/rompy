@@ -262,6 +262,8 @@ class SourceDatamesh(SourceBase):
             geofilter=self._geofilter(filters, coords),
             timefilter=self._timefilter(filters, coords),
         )
+        if filters:
+            ds = filters(ds)
         return ds
 
 
