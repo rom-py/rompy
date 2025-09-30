@@ -83,6 +83,7 @@ rompy = "rompy.cli:main"
 
 [project.entry-points."rompy.config"]
 base = "rompy.core.config:BaseConfig"
+slurm = "rompy.backends.config:SlurmConfig"
 
 [project.entry-points."rompy.source"]
 file = "rompy.core.source:SourceFile"
@@ -97,6 +98,7 @@ rompy_data = "rompy:cat"
 [project.entry-points."rompy.run"]
 local = "rompy.run:LocalRunBackend"
 docker = "rompy.run.docker:DockerRunBackend"
+slurm = "rompy.run.slurm:SlurmRunBackend"
 
 [project.entry-points."rompy.postprocess"]
 noop = "rompy.postprocess:NoopPostprocessor"
