@@ -83,7 +83,6 @@ rompy = "rompy.cli:main"
 
 [project.entry-points."rompy.config"]
 base = "rompy.core.config:BaseConfig"
-slurm = "rompy.backends.config:SlurmConfig"
 
 [project.entry-points."rompy.source"]
 file = "rompy.core.source:SourceFile"
