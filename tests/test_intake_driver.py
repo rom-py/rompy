@@ -1,7 +1,7 @@
 import os
-
-# Import test utilities
+from datetime import timezone
 from test_utils.logging import get_test_logger
+
 
 # Initialize logger
 logger = get_test_logger(__name__)
@@ -14,7 +14,7 @@ import rompy
 from rompy.core.data import DataGrid
 
 # round now to the nearest 6 hours
-cycle = datetime.utcnow().replace(
+cycle = datetime.now(timezone.utc).replace(
     hour=0, minute=0, second=0, microsecond=0
 ) - timedelta(days=2)
 

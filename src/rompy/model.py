@@ -9,7 +9,7 @@ import os
 import platform
 import shutil
 import zipfile as zf
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Literal, Optional, Union
 
@@ -131,7 +131,7 @@ class ModelRun(RompyBaseModel):
     @property
     def _generation_medatadata(self):
         return dict(
-            _generated_at=str(datetime.utcnow()),
+            _generated_at=str(datetime.now(timezone.utc)),
             _generated_by=os.environ.get("USER"),
             _generated_on=platform.node(),
         )
