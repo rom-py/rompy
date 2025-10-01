@@ -226,10 +226,6 @@ class ModelRun(RompyBaseModel):
             logger.debug(f"Configuration string formatting error: {str(e)}")
 
         logger.info("")
-
-        # Use the log_box utility function
-        from rompy.formatting import log_box
-
         log_box(
             title="STARTING MODEL GENERATION",
             logger=logger,
