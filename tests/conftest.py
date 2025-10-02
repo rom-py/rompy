@@ -3,7 +3,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 import zipfile
+
+# Suppress numpy binary incompatibility warning
+warnings.filterwarnings("ignore", message="numpy.ndarray size changed", category=RuntimeWarning)
 
 import pytest
 import requests
