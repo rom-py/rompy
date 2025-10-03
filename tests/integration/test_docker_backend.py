@@ -194,7 +194,10 @@ RUN echo "test dockerfile"
         # Mock docker.from_env to avoid actually building
         with patch("docker.from_env") as mock_docker:
             mock_client = mock_docker.return_value
-            mock_client.images.build.return_value = ("image_object", [{"stream": "Successfully built image"}])
+            mock_client.images.build.return_value = (
+                "image_object",
+                [{"stream": "Successfully built image"}],
+            )
 
             # Mock _image_exists to return False (image doesn't exist)
             with patch.object(docker_backend, "_image_exists", return_value=False):
@@ -251,7 +254,10 @@ COPY test.txt /app/
         # Mock docker.from_env to avoid actually building
         with patch("docker.from_env") as mock_docker:
             mock_client = mock_docker.return_value
-            mock_client.images.build.return_value = ("image_object", [{"stream": "Successfully built image"}])
+            mock_client.images.build.return_value = (
+                "image_object",
+                [{"stream": "Successfully built image"}],
+            )
 
             # Mock _image_exists to return False (image doesn't exist)
             with patch.object(docker_backend, "_image_exists", return_value=False):
@@ -385,7 +391,9 @@ RUN echo "test"
         """Test _image_exists when image doesn't exist."""
         with patch("docker.from_env") as mock_docker:
             mock_client = mock_docker.return_value
-            mock_client.images.get.side_effect = docker.errors.ImageNotFound("No such image")
+            mock_client.images.get.side_effect = docker.errors.ImageNotFound(
+                "No such image"
+            )
 
             result = docker_backend._image_exists("nonexistent:image")
             assert result is False
@@ -456,7 +464,7 @@ class TestDockerBackendMocked:
 
             assert result is True
             mock_client.containers.run.assert_called_once()
-            
+
             # Check that the container was run with correct parameters
             call_kwargs = mock_client.containers.run.call_args[1]
             assert call_kwargs["image"] == "test:image"
@@ -469,6 +477,7 @@ class TestDockerBackendMocked:
         with patch("docker.from_env") as mock_docker:
             mock_client = mock_docker.return_value
             from unittest.mock import Mock
+
             mock_container = Mock()
             mock_client.containers.run.side_effect = docker.errors.ContainerError(
                 mock_container, 1, "echo test", "test:image", "Container failed"
@@ -487,7 +496,9 @@ class TestDockerBackendMocked:
         """Test _run_container with image not found."""
         with patch("docker.from_env") as mock_docker:
             mock_client = mock_docker.return_value
-            mock_client.containers.run.side_effect = docker.errors.ImageNotFound("No such image")
+            mock_client.containers.run.side_effect = docker.errors.ImageNotFound(
+                "No such image"
+            )
 
             result = docker_backend._run_container(
                 image_name="nonexistent:image",
