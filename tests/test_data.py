@@ -191,9 +191,14 @@ def test_source_datamesh():
         datasource="era5_wind10m", token=DATAMESH_TOKEN
     )
     filters = Filter()
-    filters.crop.update(dict(time=Slice(start="2000-01-01T00:00:00", stop="2000-01-01T03:00:00")))
     filters.crop.update(
-        dict(longitude=Slice(start=115.5, stop=116.0), latitude=Slice(start=-33.0, stop=-32.5))
+        dict(time=Slice(start="2000-01-01T00:00:00", stop="2000-01-01T03:00:00"))
+    )
+    filters.crop.update(
+        dict(
+            longitude=Slice(start=115.5, stop=116.0),
+            latitude=Slice(start=-33.0, stop=-32.5),
+        )
     )
     dset = dataset.open(
         variables=["u10"],

@@ -101,7 +101,8 @@ class TestEnhancedLocalRunBackend:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         config = LocalConfig(
-            command="exit 1", working_dir=output_dir  # Command that will fail
+            command="exit 1",
+            working_dir=output_dir,  # Command that will fail
         )
 
         with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):

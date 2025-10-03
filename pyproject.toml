@@ -155,5 +155,14 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 [tool.black]
 line-length = 88
 
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.format]
+# Use Black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
 [tool.setuptools_scm]
 write_to = "src/rompy/_version.py"
