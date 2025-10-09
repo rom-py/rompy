@@ -184,7 +184,7 @@ def validate_yaml_file(file_path: Path) -> bool:
             if doc is None:
                 continue
 
-            doc_name = f"document {i+1}" if len(documents) > 1 else "document"
+            doc_name = f"document {i + 1}" if len(documents) > 1 else "document"
 
             # Determine configuration type and validate
             if "pipeline_backend" in doc:

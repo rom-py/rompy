@@ -205,7 +205,9 @@ class ModelRun(RompyBaseModel):
 
         # Log the bottom of the box
         log_box(
-            title=None, logger=logger, add_empty_line=True  # Just the bottom border
+            title=None,
+            logger=logger,
+            add_empty_line=True,  # Just the bottom border
         )
 
         # Display detailed configuration info using the new formatting framework

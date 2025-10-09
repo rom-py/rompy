@@ -145,7 +145,7 @@ class DockerRunBackend:
             logger.info(
                 f"Building Docker image {image_name} from {dockerfile} (context: {context_path})"
             )
-            
+
             try:
                 client = docker.from_env()
                 image_obj, build_logs = client.images.build(
@@ -155,18 +155,18 @@ class DockerRunBackend:
                     buildargs=build_args or {},
                     rm=True,
                 )
-                
+
                 # Log build output
                 for line in build_logs:
-                    if 'stream' in line:
-                        logger.debug(line['stream'].strip())
-                
+                    if "stream" in line:
+                        logger.debug(line["stream"].strip())
+
                 logger.info(f"Successfully built Docker image: {image_name}")
                 return image_name
             except BuildError as e:
                 logger.error(f"Docker build failed: {e.msg}")
                 for line in e.build_log:
-                    if 'error' in line:
+                    if "error" in line:
                         logger.error(f"Build error: {line['error']}")
                 return None
             except APIError as e:
@@ -255,28 +255,28 @@ class DockerRunBackend:
         """
         try:
             client = docker.from_env()
-            
+
             # Convert volume mounts to docker-py format
             volumes = {}
             for volume in volume_mounts:
-                parts = volume.split(':')
+                parts = volume.split(":")
                 if len(parts) >= 2:
                     host_path, container_path = parts[0], parts[1]
-                    mode = 'rw'  # default mode
+                    mode = "rw"  # default mode
                     if len(parts) > 2:
-                        mode = parts[2] if parts[2] in ['ro', 'rw', 'Z'] else 'rw'
-                    volumes[host_path] = {'bind': container_path, 'mode': mode}
+                        mode = parts[2] if parts[2] in ["ro", "rw", "Z"] else "rw"
+                    volumes[host_path] = {"bind": container_path, "mode": mode}
 
             # Prepare container configuration
             container_config = {
-                'image': image_name,
-                'command': ['bash', '-c', run_command],
-                'environment': env_vars,
-                'volumes': volumes,
-                'user': 'root',
-                'remove': True,  # Remove container after run
-                'stdout': True,
-                'stderr': True,
+                "image": image_name,
+                "command": ["bash", "-c", run_command],
+                "environment": env_vars,
+                "volumes": volumes,
+                "user": "root",
+                "remove": True,  # Remove container after run
+                "stdout": True,
+                "stderr": True,
             }
 
             logger.info(f"Running Docker container with image: {image_name}")
@@ -286,7 +286,7 @@ class DockerRunBackend:
 
             # Run the container
             container = client.containers.run(**container_config)
-            
+
             # Log output
             if container:
                 logger.info("Model run completed successfully")

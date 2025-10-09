@@ -3,7 +3,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 import zipfile
+
+# Suppress numpy binary incompatibility warning
+warnings.filterwarnings(
+    "ignore", message="numpy.ndarray size changed", category=RuntimeWarning
+)
 
 import pytest
 import requests
@@ -55,6 +61,11 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     """Configure pytest with plugins and settings, and ensure test data is present."""
     import logging
+
+    # Suppress numpy binary incompatibility warning
+    warnings.filterwarnings(
+        "ignore", message=".*numpy.ndarray size changed.*", category=RuntimeWarning
+    )
 
     # Get log level from command line or use default
     log_level_str = config.getoption("--rompy-log-level")
