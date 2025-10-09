@@ -115,6 +115,7 @@ test = [
 extra = [
     "gcsfs",
     "zarr",
+    "cloudpathlib[s3,gs,azure]",
 ]
 dev = [
     "pytest",
