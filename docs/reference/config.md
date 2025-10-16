@@ -1,0 +1,3 @@
+# Config
+
+::: rompy.core.config
