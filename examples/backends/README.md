@@ -18,6 +18,17 @@ Run the example:
 python 05_slurm_backend_run.py
 ```
 
+### basic_model_run.py
+Creates a basic ModelRun configuration that can be used to test different backend configurations. This provides a consistent model configuration that works across all backends.
+
+### test_backends_with_modelrun.py
+Demonstrates using the basic ModelRun with different backend configurations (Local, Docker, SLURM). This example shows how the same model run can be configured to work across different execution environments.
+
+Run the example:
+```bash
+python test_backends_with_modelrun.py
+```
+
 ## Configuration Files
 
 ### slurm_backend.yml

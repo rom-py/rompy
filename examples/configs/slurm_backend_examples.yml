@@ -1,9 +1,13 @@
 # SLURM Backend Configuration Examples
 # These examples show various ways to configure SLURM jobs for different scenarios
+# 
+# NOTE: This format (with named sections) is different from the single-document
+# backend config format used with the CLI command. For CLI usage, use the format
+# in slurm_backend.yml with 'type' field at the root level.
 
 # Basic SLURM configuration
 basic_slurm:
-  backend_type: "slurm"
+  type: "slurm"
   config:
     queue: "general"
     timeout: 3600
@@ -15,7 +19,7 @@ basic_slurm:
 
 # Advanced SLURM configuration for GPU jobs
 advanced_gpu_slurm:
-  backend_type: "slurm"
+  type: "slurm"
   config:
     queue: "gpu"
     timeout: 7200
@@ -43,7 +47,7 @@ advanced_gpu_slurm:
 
 # SLURM configuration for high-memory jobs
 high_memory_slurm:
-  backend_type: "slurm"
+  type: "slurm"
   config:
     queue: "memory"
     timeout: 14400
@@ -64,7 +68,7 @@ high_memory_slurm:
 
 # SLURM configuration with custom working directory
 custom_workdir_slurm:
-  backend_type: "slurm"
+  type: "slurm"
   config:
     queue: "compute"
     timeout: 7200

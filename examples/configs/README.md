@@ -9,6 +9,8 @@ This directory contains example configuration files for ROMPY backend systems. T
 - **`local_backend.yml`** - Single-document local backend configuration
 - **`docker_backend.yml`** - Single-document Docker backend configuration
 - **`slurm_backend.yml`** - Single-document SLURM backend configuration
+- **`basic_modelrun.yml`** - Basic model run configuration for CLI testing
+- **`basic_pipeline.yml`** - Basic pipeline configuration for CLI testing
 - **`local_backend_examples.yml`** - Multi-document local backend examples
 - **`docker_backend_examples.yml`** - Multi-document Docker backend examples
 - **`slurm_backend_examples.yml`** - Multi-document SLURM backend examples
@@ -162,6 +164,44 @@ config:
   env_vars:
     OMP_NUM_THREADS: "4"
     MODEL_CONFIG: "production"
+```
+
+### Basic ModelRun Configuration
+
+```yaml
+run_id: "cli_test_backend_run"
+period:
+  start: "2023-01-01T00:00:00"
+  end: "2023-01-02T00:00:00"
+  interval: "1H"
+output_dir: "./output/cli_test"
+delete_existing: true
+```
+
+### Basic Pipeline Configuration
+
+```yaml
+pipeline_backend: local
+
+model_run:
+  run_id: "cli_test_backend_run"
+  output_dir: "./output/cli_test"
+  delete_existing: true
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+
+run_backend:
+  backend_type: local
+  timeout: 3600
+  command: "echo 'Running basic model test'"
+  env_vars:
+    MODEL_TYPE: "test"
+    ENVIRONMENT: "cli"
+
+postprocessing:
+  processor: "noop"
 ```
 
 ### Pipeline Configuration
