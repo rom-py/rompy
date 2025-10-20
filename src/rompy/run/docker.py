@@ -268,6 +268,7 @@ class DockerRunBackend:
                     volumes[host_path] = {"bind": container_path, "mode": mode}
 
             # Prepare container configuration
+            # Note: We can't capture output when remove=True, so we'll handle that case
             container_config = {
                 "image": image_name,
                 "command": ["bash", "-c", run_command],
@@ -284,12 +285,10 @@ class DockerRunBackend:
             logger.debug(f"Volumes: {volumes}")
             logger.debug(f"Environment: {env_vars}")
 
-            # Run the container and capture output
-            container_output = client.containers.run(**container_config)
-
-            # Log the container output
-            if container_output:
-                logger.info(f"Container output:\n{container_output.decode('utf-8')}")
+            # Run the container
+            # Note: When remove=True, client.containers.run() returns None
+            # If you need to capture output, you'd need to set remove=False and manually remove
+            client.containers.run(**container_config)
             
             logger.info("Model run completed successfully")
             return True

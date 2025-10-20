@@ -164,6 +164,27 @@ class SlurmRunBackend:
             Job ID if submission successful, None otherwise
         """
         try:
+            # Check if sbatch command is available
+            result = subprocess.run(
+                ["which", "sbatch"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode != 0 or not result.stdout.strip():
+                logger.error("sbatch command not found. SLURM may not be installed or in PATH.")
+                return None
+
+            # Check if SLURM controller is responsive
+            result = subprocess.run(
+                ["squeue", "--help"],
+                capture_output=True,
+                text=True,
+                timeout=10  # Don't wait too long
+            )
+            if result.returncode != 0:
+                logger.error("SLURM controller is not responsive. squeue command failed.")
+                return None
+
             # Submit the job using sbatch
             result = subprocess.run(
                 ["sbatch", job_script],
@@ -182,6 +203,9 @@ class SlurmRunBackend:
                 logger.error(f"Unexpected sbatch output format: {output}")
                 return None
 
+        except subprocess.TimeoutExpired:
+            logger.error("SLURM controller check timed out. SLURM may not be properly configured.")
+            return None
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to submit SLURM job: {e.stderr}")
             return None

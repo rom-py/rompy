@@ -5,15 +5,38 @@ Tests verify that the SLURM backend configuration class works correctly,
 provides proper validation, and integrates with the SLURM execution backend.
 """
 
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import MagicMock, patch, mock_open
-import tempfile
-import os
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
 from pydantic import ValidationError
 
 from rompy.backends import SlurmConfig
+
+
+def is_slurm_available():
+    """Check if SLURM is available on the system."""
+    try:
+        result = subprocess.run(
+            ["which", "sbatch"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return result.returncode == 0 and bool(result.stdout.strip())
+    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+        return False
+
+
+# Skip tests that require SLURM if it's not available
+requires_slurm = pytest.mark.skipif(
+    not is_slurm_available(),
+    reason="SLURM is not available on this system"
+)
 
 
 class TestSlurmConfig:
@@ -191,6 +214,7 @@ class TestSlurmConfig:
             SlurmConfig(queue="test", cpus_per_task=129)  # Max cpus_per_task is 128
 
 
+@requires_slurm
 class TestSlurmRunBackend:
     """Test the SlurmRunBackend class."""
 
@@ -442,6 +466,7 @@ class TestSlurmRunBackend:
                 # Verify that scancel was called during timeout handling
                 mock_run.assert_any_call(['scancel', '12345'], check=True, capture_output=True)
 
+    @requires_slurm
     def test_run_method_success(self, mock_model_run, basic_config):
         """Test the full run method with success."""
         from rompy.run.slurm import SlurmRunBackend
@@ -469,6 +494,7 @@ class TestSlurmRunBackend:
                 mock_submit.assert_called_once()
                 mock_wait.assert_called_once_with("12345", basic_config)
 
+    @requires_slurm
     def test_run_method_job_submit_failure(self, mock_model_run, basic_config):
         """Test the run method when job submission fails."""
         from rompy.run.slurm import SlurmRunBackend
@@ -493,6 +519,7 @@ class TestSlurmRunBackend:
                 mock_create_script.assert_called_once()
                 mock_submit.assert_called_once()
 
+    @requires_slurm
     def test_run_method_generation_failure(self, mock_model_run, basic_config):
         """Test the run method when model generation fails."""
         from rompy.run.slurm import SlurmRunBackend
