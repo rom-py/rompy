@@ -8,8 +8,10 @@ This directory contains example configuration files for ROMPY backend systems. T
 
 - **`local_backend.yml`** - Single-document local backend configuration
 - **`docker_backend.yml`** - Single-document Docker backend configuration
+- **`slurm_backend.yml`** - Single-document SLURM backend configuration
 - **`local_backend_examples.yml`** - Multi-document local backend examples
 - **`docker_backend_examples.yml`** - Multi-document Docker backend examples
+- **`slurm_backend_examples.yml`** - Multi-document SLURM backend examples
 - **`pipeline_config.yml`** - Complete pipeline configuration examples
 - **`validate_configs.py`** - Validation script for configuration files
 
@@ -92,6 +94,29 @@ rompy pipeline --config pipeline_config.yml
 | `user` | string | "root" | Container user |
 | `remove_container` | bool | true | Remove after execution |
 
+### SLURM Backend Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `queue` | string | - | SLURM partition name (required) |
+| `nodes` | int | 1 | Number of compute nodes to allocate (1-100) |
+| `ntasks` | int | 1 | Number of tasks (processes) to run |
+| `cpus_per_task` | int | 1 | Number of CPU cores per task (1-128) |
+| `time_limit` | string | "1:00:00" | Time limit in HH:MM:SS format |
+| `account` | string | null | Account for billing/resource tracking |
+| `qos` | string | null | Quality of Service for the job |
+| `reservation` | string | null | Reservation name to run job under |
+| `output_file` | string | null | Output file path for job output |
+| `error_file` | string | null | Error file path for job errors |
+| `job_name` | string | null | Name for the SLURM job |
+| `mail_type` | string | null | Type of mail to send (BEGIN, END, FAIL, etc.) |
+| `mail_user` | string | null | Email address for notifications |
+| `additional_options` | list | [] | Additional SLURM options (e.g., ['--gres=gpu:1']) |
+| `timeout` | int | 3600 | Maximum execution time in seconds (1 minute to 24 hours) |
+| `env_vars` | dict | {} | Environment variables for execution |
+| `working_dir` | string | null | Working directory for execution |
+| `command` | string | null | Optional shell command to run instead of config.run() |
+
 ## Example Configurations
 
 ### Local Backend
@@ -117,6 +142,26 @@ volumes:
   - "/data:/app/data:rw"
 env_vars:
   MODEL_THREADS: "4"
+```
+
+### SLURM Backend
+
+```yaml
+backend_type: slurm
+config:
+  queue: "general"
+  timeout: 7200
+  nodes: 2
+  ntasks: 8
+  cpus_per_task: 4
+  time_limit: "02:00:00"
+  account: "myproject"
+  additional_options:
+    - "--gres=gpu:v100:2"
+  job_name: "simulation_job"
+  env_vars:
+    OMP_NUM_THREADS: "4"
+    MODEL_CONFIG: "production"
 ```
 
 ### Pipeline Configuration

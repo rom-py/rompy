@@ -1,129 +1,75 @@
-# Backend Examples
+# ROMPY SLURM Backend Examples
 
-This directory contains examples demonstrating how to use ROMPY's backend configuration system to execute models in different environments.
+This directory contains examples of how to use ROMPY with SLURM for HPC cluster execution.
 
-## Overview
+## Examples
 
-ROMPY uses Pydantic-based backend configurations to provide type-safe, validated execution parameters for different environments. This system enables precise control over model execution while maintaining flexibility and extensibility.
+### 05_slurm_backend_run.py
+A comprehensive tutorial showing different ways to configure and use the SLURM backend:
 
-## Available Examples
+- Basic SLURM execution
+- Advanced SLURM configuration with multiple parameters
+- Custom commands on SLURM
+- Creating configurations from dictionaries
+- Configuration validation
 
-### 1. Basic Local Run (`01_basic_local_run.py`)
-Demonstrates the simplest use case:
-- Local execution with `LocalConfig`
-- Basic timeout and command configuration
-- No-op postprocessing
-
-### 2. Docker Run (`02_docker_run.py`)
-Shows Docker container execution:
-- Using pre-built Docker images
-- Volume mounting for data access
-- Environment variable configuration
-- Resource limits (CPU, memory)
-
-### 3. Custom Postprocessor (`03_custom_postprocessor.py`)
-Illustrates custom postprocessing:
-- Creating custom postprocessor classes
-- Processing model outputs after execution
-- Error handling and result reporting
-
-### 4. Complete Workflow (`04_complete_workflow.py`)
-Demonstrates a full workflow:
-- Model execution with local backend
-- Custom postprocessing with file analysis
-- Comprehensive logging and error handling
-
-## Backend Configuration Types
-
-### LocalConfig
-For execution on the local system:
-```python
-from rompy.backends import LocalConfig
-
-config = LocalConfig(
-    timeout=3600,  # 1 hour
-    command="python run_model.py",
-    env_vars={"OMP_NUM_THREADS": "4"},
-    shell=True,
-    capture_output=True
-)
-```
-
-### DockerConfig
-For execution in Docker containers:
-```python
-from rompy.backends import DockerConfig
-
-config = DockerConfig(
-    image="python:3.9-slim",
-    cpu=2,
-    memory="2g",
-    timeout=7200,
-    volumes=["/data:/app/data:rw"],
-    env_vars={"MODEL_CONFIG": "production"}
-)
-```
-
-## Running the Examples
-
-Each example can be run directly:
-
+Run the example:
 ```bash
-# Basic local execution
-python 01_basic_local_run.py
-
-# Docker execution (requires Docker)
-python 02_docker_run.py
-
-# Custom postprocessing
-python 03_custom_postprocessor.py
-
-# Complete workflow
-python 04_complete_workflow.py
+python 05_slurm_backend_run.py
 ```
+
+## Configuration Files
+
+### slurm_backend.yml
+A basic configuration file for running jobs on SLURM with minimal parameters.
+
+### slurm_backend_examples.yml
+A collection of different SLURM configuration examples:
+- Basic SLURM configuration
+- Advanced GPU job configuration 
+- High-memory job configuration
+- Custom working directory configuration
 
 ## Key Features
 
-- **Type Safety**: All configurations are validated using Pydantic
-- **IDE Support**: Full autocompletion and inline documentation
-- **Flexibility**: Easy to extend with custom backends and postprocessors
-- **Error Handling**: Clear validation errors and execution feedback
-- **Serialization**: Configurations can be saved/loaded as YAML/JSON
+The ROMPY SLURM backend supports:
 
-## Configuration Validation
+- **Resource allocation**: Specify nodes, tasks, and CPU cores
+- **Queue/partition selection**: Run on different SLURM partitions
+- **Time limits**: Set job time limits in HH:MM:SS format
+- **Environment variables**: Set environment variables for your job
+- **Job notifications**: Email notifications on job start/end/failure
+- **Custom commands**: Run custom commands instead of the default model run
+- **Additional SLURM options**: Pass any additional SLURM options via `additional_options`
+- **GPU resources**: Support for GPU allocation via `--gres` options
 
-Backend configurations provide comprehensive validation:
-- Timeout values must be between 60 and 86400 seconds
-- Working directories must exist if specified
-- Docker image names must follow valid conventions
-- Volume mounts must reference existing host paths
+## Usage
 
-## Best Practices
+To use the SLURM backend in your application:
 
-1. **Set appropriate timeouts** based on your model complexity
-2. **Use environment variables** for sensitive configuration
-3. **Validate configurations** before execution
-4. **Handle errors gracefully** in your postprocessors
-5. **Use resource limits** appropriately in Docker configurations
+```python
+from rompy.backends import SlurmConfig
+from rompy.model import ModelRun
 
-## Output Structure
+# Create SLURM configuration
+config = SlurmConfig(
+    queue="gpu",                    # SLURM partition
+    nodes=2,                        # Number of nodes
+    ntasks=8,                       # Number of tasks
+    cpus_per_task=4,               # CPU cores per task
+    time_limit="02:00:00",         # Time limit
+    account="research_project",     # Account for billing
+    additional_options=["--gres=gpu:v100:2"],  # GPU allocation
+)
 
-All examples create output in the `./output` directory with the following structure:
+# Create and run your model
+model = ModelRun(...)
+model.run(backend=config)
 ```
-output/
-├── <run_id>/
-│   ├── INPUT              # Generated model input file
-│   ├── datasets/          # Placeholder for input datasets
-│   ├── outputs/           # Placeholder for model outputs
-│   └── <additional files> # Any files created during execution
-```
 
-## Extending the Examples
+## Validation
 
-You can extend these examples by:
-- Creating custom backend configurations
-- Implementing custom postprocessors
-- Adding new execution environments
-- Integrating with workflow orchestration systems
-
-For more detailed information, see the [Backend Configurations documentation](../../docs/source/backend_configurations.rst).
+The SLURM backend includes comprehensive validation:
+- Time limit format validation (HH:MM:SS)
+- Bounds checking for nodes, CPUs, etc.
+- Required field validation

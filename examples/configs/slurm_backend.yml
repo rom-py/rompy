@@ -1,0 +1,18 @@
+# Basic SLURM Backend Configuration
+# This is a minimal configuration for running a model on a SLURM cluster
+
+backend_type: "slurm"
+config:
+  queue: "general"  # SLURM partition name
+  timeout: 3600     # Max execution time in seconds (1 hour)
+  nodes: 1          # Number of compute nodes to allocate
+  ntasks: 1         # Number of tasks (processes) to run
+  cpus_per_task: 2  # Number of CPU cores per task
+  time_limit: "01:00:00"  # Time limit in HH:MM:SS format
+  job_name: "rompy_basic_job"  # Name for the SLURM job
+  output_file: "slurm-%j.out"  # Output file pattern using job ID
+  error_file: "slurm-%j.err"   # Error file pattern using job ID
+  env_vars:  # Environment variables for the job
+    OMP_NUM_THREADS: "2"
+    MODEL_DEBUG: "false"
+  command: "python -c \"print('SLURM job executed successfully')\""  # Command to run
