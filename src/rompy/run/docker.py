@@ -284,16 +284,15 @@ class DockerRunBackend:
             logger.debug(f"Volumes: {volumes}")
             logger.debug(f"Environment: {env_vars}")
 
-            # Run the container
-            container = client.containers.run(**container_config)
+            # Run the container and capture output
+            container_output = client.containers.run(**container_config)
 
-            # Log output
-            if container:
-                logger.info("Model run completed successfully")
-                return True
-            else:
-                logger.error("Model run failed - no output from container")
-                return False
+            # Log the container output
+            if container_output:
+                logger.info(f"Container output:\n{container_output.decode('utf-8')}")
+            
+            logger.info("Model run completed successfully")
+            return True
 
         except ContainerError as e:
             logger.error(f"Container error: {e}")

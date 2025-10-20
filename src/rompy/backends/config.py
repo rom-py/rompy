@@ -8,7 +8,7 @@ while maintaining type safety and validation.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -287,6 +287,10 @@ class DockerConfig(BaseBackendConfig):
 class SlurmConfig(BaseBackendConfig):
     """Configuration for SLURM cluster execution."""
 
+    model_type: Literal["slurm"] = Field(
+        "slurm", 
+        description="The backend type."
+    )
     queue: str = Field(
         ..., 
         description="SLURM partition name (equivalent to queue)"
