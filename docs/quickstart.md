@@ -2,13 +2,13 @@
 
 ## Installation
 
-Install from PyPI
+### Install from PyPI
 
 ```bash
 pip install rompy
 ```
 
-or from source code
+### Install from source code
 
 ```bash
 git clone git@github.com:rom-py/rompy.git

@@ -16,7 +16,9 @@ A model implementation will generally consist of the following components:
 2. A grid class that inherits from BaseGrid and implements the minimal interface of either loading the grid from file or a model specific grid specification string
 3. An XArray accessor that has methods that translate an XArray dataset into a model specific input file format (usually some bespoke text file format). This allows convenient namespacing of methods from an XArray dataset e.g.:
 
-   `ds.swan.to_inpgrid(filename)`
+   ```python
+   ds.swan.to_inpgrid(filename)
+   ```
 
 The final main component of the library is an intake driver that builds on the intake-xarray.DataSourceMixin and allows for the stacking of multiple model forecast datasets that are typically published in netCDF format on THREDDS/OpenDAP servers. The unique feature of the driver include:
 
@@ -25,6 +27,8 @@ The final main component of the library is an intake driver that builds on the i
 3. The result is either a stack of model forcasts normalised to an initialisation and lead time (hindcast=false), or a pseudo-reanalysis that selects the shortest lead-time for each time point in the stack.
 
 ## Table of Contents
+
+- [Home](index.md)
 - [Quickstart](quickstart.md)
 - [Core Concepts](core_concepts.md)
 - [Formatting and Logging](formatting_and_logging.md)
@@ -35,3 +39,9 @@ The final main component of the library is an intake driver that builds on the i
 - [Demo](demo.md)
 - [API](api.md)
 - [Developer](developer/index.md)
+
+## Indices and tables
+
+- [General Index](genindex.md)
+- [Module Index](modindex.md)
+- [Search](search.md)
