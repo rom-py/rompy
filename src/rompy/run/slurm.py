@@ -176,13 +176,13 @@ class SlurmRunBackend:
 
             # Check if SLURM controller is responsive
             result = subprocess.run(
-                ["squeue", "--help"],
+                ["scontrol", "--help"],
                 capture_output=True,
                 text=True,
                 timeout=10  # Don't wait too long
             )
             if result.returncode != 0:
-                logger.error("SLURM controller is not responsive. squeue command failed.")
+                logger.error("SLURM controller is not responsive. scontrol command failed.")
                 return None
 
             # Submit the job using sbatch
@@ -233,7 +233,9 @@ class SlurmRunBackend:
         logger.info(f"Waiting for SLURM job {job_id} to complete...")
 
         # Terminal states that indicate job completion (successful or failed)
-        terminal_states = {'CD', 'CA', 'F', 'TO', 'NF', 'OOM', 'BF', 'DL', 'PR'}
+        # Using SLURM job states: https://slurm.schedmd.com/squeue.html#SECTION_JOB-STATE-CODES
+        terminal_states = {'BOOT_FAIL', 'CANCELLED', 'COMPLETED', 'DEADLINE', 'FAILED', 
+                          'NODE_FAIL', 'OUT_OF_MEMORY', 'PREEMPTED', 'TIMEOUT'}
 
         # Start time for timeout check
         start_time = time.time()
@@ -244,42 +246,56 @@ class SlurmRunBackend:
             if elapsed_time > config.timeout:
                 logger.error(f"Timeout waiting for job {job_id} after {config.timeout} seconds")
                 
-                # Try to cancel the job
-                try:
-                    subprocess.run(['scancel', job_id], check=True, capture_output=True)
-                    logger.info(f"Cancelled job {job_id} due to timeout")
-                except subprocess.CalledProcessError:
-                    logger.warning(f"Could not cancel job {job_id} due to timeout")
-                
+                # Let SLURM handle job cancellation according to its configured policies
                 return False
 
-            # Get job status
+            # Get job status using scontrol for more reliable detection
             try:
                 result = subprocess.run(
-                    ['squeue', '-j', job_id, '-h', '-o', '%T'],
+                    ['scontrol', 'show', 'job', job_id],
                     capture_output=True,
                     text=True,
                     check=True
                 )
                 
-                state = result.stdout.strip()
+                # Parse the output to get the job state
+                output = result.stdout
+                if 'JobState=' in output:
+                    state = output.split('JobState=')[1].split()[0].split('_')[0]  # Extract state like 'RUNNING', 'COMPLETED', etc.
+                else:
+                    # If JobState is not found, we might have an issue with parsing
+                    logger.warning(f"Could not determine job state from output for job {job_id}")
+                    state = None
                 
-                if not state:  # If job is not found, it may have completed and been purged
-                    logger.info(f"Job {job_id} not found in queue - likely completed")
-                    return True  # Assume successful completion if not in queue
+                if state is None:  # If job state can't be determined, check if job is not found
+                    if 'slurm_load_jobs error' in output or 'Invalid job id' in output.lower():
+                        logger.info(f"Job {job_id} not found - likely completed")
+                        return True  # Assume successful completion if job ID is invalid
                 
                 if state in terminal_states:
-                    if state == 'CD':  # Completed
+                    if state == 'COMPLETED':  # Completed successfully
                         logger.info(f"SLURM job {job_id} completed successfully")
                         return True
-                    elif state == 'CA':  # Cancelled
+                    elif state == 'CANCELLED':  # Cancelled
                         logger.warning(f"SLURM job {job_id} was cancelled")
                         return False
-                    elif state == 'F':  # Failed
+                    elif state == 'FAILED':  # Failed
                         logger.error(f"SLURM job {job_id} failed")
                         return False
-                    elif state == 'TO':  # Timeout
+                    elif state == 'TIMEOUT':  # Timeout
                         logger.error(f"SLURM job {job_id} timed out")
+                        return False
+                    elif state == 'BOOT_FAIL':  # Boot failure
+                        logger.error(f"SLURM job {job_id} failed to boot")
+                        return False
+                    elif state == 'NODE_FAIL':  # Node failure
+                        logger.error(f"SLURM job {job_id} failed due to node failure")
+                        return False
+                    elif state == 'OUT_OF_MEMORY':  # Out of memory
+                        logger.error(f"SLURM job {job_id} ran out of memory")
+                        return False
+                    elif state == 'PREEMPTED':  # Preempted
+                        logger.error(f"SLURM job {job_id} was preempted")
                         return False
                     else:
                         logger.error(f"SLURM job {job_id} ended with state: {state}")
