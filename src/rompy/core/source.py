@@ -191,6 +191,7 @@ class SourceDatamesh(SourceBase):
         description="The id of the datasource on Datamesh",
     )
     token: Optional[str] = Field(
+        default=None,
         description="Datamesh API token, taken from the environment if not provided",
     )
     kwargs: dict = Field(
