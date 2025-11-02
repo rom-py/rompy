@@ -247,6 +247,7 @@ class SourceDatamesh(SourceBase):
             geofilter=geofilter,
             timefilter=timefilter,
         )
+        logger.debug(f"Datamesh query: {query}")
         return self.connector.query(query)
 
     def open(
