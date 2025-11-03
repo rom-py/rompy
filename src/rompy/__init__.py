@@ -10,7 +10,28 @@ import warnings
 from pathlib import Path
 
 # Import the new logging system
-from .logging import LogFormat, LoggingConfig, LogLevel, get_logger
+# Use absolute imports for documentation execution
+try:
+    from .logging import LogFormat, LoggingConfig, LogLevel, get_logger
+except (ImportError, ValueError):
+    # Fallback for documentation execution context
+    try:
+        from rompy.logging import LogFormat, LoggingConfig, LogLevel, get_logger
+    except ImportError:
+        # Create mock objects for documentation purposes
+        class LogFormat:
+            pass
+            
+        class LoggingConfig:
+            def configure_logging(self):
+                pass
+                
+        class LogLevel:
+            pass
+            
+        def get_logger(name):
+            import logging
+            return logging.getLogger(name)
 
 # Initialize the logger with default configuration
 logger = get_logger(__name__)

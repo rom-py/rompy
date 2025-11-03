@@ -2,7 +2,7 @@
 
 ## Overview
 
-ROMPY provides a comprehensive framework for consistent formatting and logging across the codebase. This framework ensures that:
+Rompy provides a comprehensive framework for consistent formatting and logging across the codebase. This framework ensures that:
 
 1. Log messages are consistent and configurable
 2. String representations of objects are clear and hierarchical
@@ -30,7 +30,7 @@ The framework consists of several key components:
 
 ## Logging System
 
-ROMPY's logging system is built on Python's standard `logging` module but provides additional features and consistency.
+Rompy's logging system is built on Python's standard `logging` module but provides additional features and consistency.
 
 ### Basic Usage
 
@@ -74,7 +74,7 @@ config.update(
 
 ## Hierarchical String Representation
 
-All ROMPY models include a hierarchical string representation for better readability of complex objects.
+All Rompy models include a hierarchical string representation for better readability of complex objects.
 
 ### Basic Usage
 
@@ -115,7 +115,7 @@ class CustomModel(RompyBaseModel):
 
 ## Formatted Output
 
-ROMPY provides utilities for creating consistent, visually appealing output.
+Rompy provides utilities for creating consistent, visually appealing output.
 
 ### Boxes and Sections
 
@@ -167,7 +167,7 @@ logger.success("Processing complete!")
 
 ## Example Integration
 
-Here's how these components work together in a typical ROMPY module:
+Here's how these components work together in a typical Rompy module:
 
 ```python
 from rompy.logging import get_logger

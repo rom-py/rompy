@@ -1,47 +1,133 @@
-# Welcome to rompy's documentation!
+# Welcome to Rompy's Documentation
 
-*Taking the pain out of ocean model setup*
+## *Streamlining Ocean Modeling with Python*
 
-**This library is in early prototype stage and the interfaces are likely to change**
+Rompy (Relocatable Ocean Modelling in PYthon) is a comprehensive, modular Python library designed to simplify the setup, configuration, execution, and analysis of coastal ocean models. It combines templated model configuration with powerful xarray-based data handling and pydantic validation, enabling users to efficiently generate model control files and input datasets for a variety of ocean and wave models.
 
-This library takes an opinionated approach to combining the functionality of the cookie-cutter library (https://github.com/cookiecutter/cookiecutter) with the XArray ecosystem (http://xarray.pydata.org/en/stable/related-projects.html) and intake (https://github.com/intake/intake) for data to aid in the configuration and evaluation of coastal scale numerical models.
+---
 
-There are two base classes BaseModel and BaseGrid. BaseModel implements the cookie-cutter code and model configuration packaging. BaseGrid defines a loose definition of the grid as two arrays of x, y points that establish the models geographic extents, bounding box and convex hull.
+## Key Features
 
-At present only one example model has been implemented - the SwanModel (http://swanmodel.sourceforge.net/). An example cookie-cutter template for swan is provided in the `rompy/templates` folder.
+- **Modular Architecture**: Clean separation of configuration and execution logic supporting multiple ocean models
+- **Template-Based Configuration**: Reproducible model configuration using cookiecutter templates with pydantic validation
+- **Unified Data Interface**: Consistent interfaces for grids, data sources, boundary conditions, and spectra
+- **Extensible Plugin System**: Support for new models, data sources, backends, and postprocessors
+- **Multiple Execution Backends**: Support for local, Docker, and HPC execution environments
+- **Rich Logging & Formatting**: Comprehensive, visually appealing logging with formatted output and diagnostics
+- **Pydantic Validation**: Strong typing and validation throughout the API for robust error handling
 
-A model implementation will generally consist of the following components:
+---
 
-1. A model class that inherits from BaseModel and implements the minimal interface. At present only a private `_get_grid()` method.
-2. A grid class that inherits from BaseGrid and implements the minimal interface of either loading the grid from file or a model specific grid specification string
-3. An XArray accessor that has methods that translate an XArray dataset into a model specific input file format (usually some bespoke text file format). This allows convenient namespacing of methods from an XArray dataset e.g.:
+## Getting Started
 
-   ```python
-   ds.swan.to_inpgrid(filename)
-   ```
+New to Rompy? Start with our comprehensive guides:
 
-The final main component of the library is an intake driver that builds on the intake-xarray.DataSourceMixin and allows for the stacking of multiple model forecast datasets that are typically published in netCDF format on THREDDS/OpenDAP servers. The unique feature of the driver include:
+- [**Installation Guide**](installation.md) - Prerequisites, installation methods, and environment setup
+- [**User Guide**](user_guide.md) - Complete tutorial from installation to running your first model
+- [**Quickstart**](quickstart.md) - Basic example to quickly get up and running
+- [**Progressive Tutorials**](progressive_tutorials.md) - Step-by-step tutorials building from basic to advanced usage
 
-1. The ability to use format strings in the urlpath and pass a dictionary of values for the format keys. The product of the dictionary values is expanded to a set of URLs that are scanned checked for existence using the fsspec library. This allows for scanning of both local filesystems and http servers in a targetted fashion, for example a specific date range of interest.
-2. The subset of urls identified are opened with XArray with a preprocessing function that takes a dictionary of filters for common operations that are applied during pre-processing - allowing this to be parameterised in the intake catalog yaml entry for a specific dataset.
-3. The result is either a stack of model forcasts normalised to an initialisation and lead time (hindcast=false), or a pseudo-reanalysis that selects the shortest lead-time for each time point in the stack.
+---
 
-## Table of Contents
+## Tutorials & Examples
 
-- [Home](index.md)
-- [Quickstart](quickstart.md)
-- [Core Concepts](core_concepts.md)
-- [Formatting and Logging](formatting_and_logging.md)
-- [CLI](cli.md)
-- [Backends](backends.md)
-- [Backend Reference](backend_reference.md)
-- [Models](models.md)
-- [Demo](demo.md)
-- [API](api.md)
-- [Developer](developer/index.md)
+Learn through practical examples:
 
-## Indices and tables
+- [**Progressive Tutorials**](progressive_tutorials.md) - Structured learning path from basic to advanced usage
+- [**Practical Examples**](examples.md) - Real-world scenarios with complete code examples
+- [**Common Workflows**](common_workflows.md) - Typical ocean modeling patterns and best practices
 
-- [General Index](genindex.md)
-- [Module Index](modindex.md)
-- [Search](search.md)
+---
+
+## Model Support
+
+Rompy currently supports multiple ocean and wave models with plans for continued expansion:
+
+- [**Models Overview**](models.md) - Introduction to supported models
+- [**SWAN Guide**](swan_guide.md) - Comprehensive guide for SWAN model configuration
+- [**SCHISM Guide**](schism_guide.md) - Detailed configuration for SCHISM model
+- [**Extending Models**](extending_models.md) - Guide to adding new model implementations
+
+---
+
+## Advanced Topics
+
+For more complex implementations and custom extensions:
+
+- [**Backends**](backends.md) - Execution backends for different environments
+- [**CLI**](cli.md) - Command-line interface for automation
+- [**Plugin Architecture**](plugin_architecture.md) - Extending Rompy with custom plugins
+- [**Architecture Overview**](architecture_overview.md) - System architecture and component relationships
+
+---
+
+## Development & Contribution
+
+For those looking to contribute or extend Rompy:
+
+- [**Contribution Guidelines**](contributing.md) - How to contribute to the project
+- [**Development Setup**](developer/index.md) - Getting started with development
+- [**Testing Guide**](testing_guide.md) - Writing and running tests for Rompy
+- [**Backend Reference**](developer/backend_reference.md) - Technical details for backend development
+
+---
+
+## Resources
+
+- [**FAQ**](faq.md) - Common questions and troubleshooting solutions
+- [**Demo**](demo.md) - Interactive demonstration of Rompy capabilities
+- [**API Reference**](api.md) - Complete API documentation with usage examples
+
+---
+
+## Quick Example
+
+Here's a simple example to demonstrate Rompy's capabilities:
+
+```python
+from rompy.model import ModelRun
+from rompy.core.config import BaseConfig
+from rompy.core.time import TimeRange
+from datetime import datetime
+
+# Create a basic model configuration
+config = BaseConfig(
+    template="path/to/your/template",  # Path to cookiecutter template
+    checkout="main",                   # Git branch for template
+)
+
+# Create a model run instance with time range
+run = ModelRun(
+    run_id="my_first_run",
+    period=TimeRange(
+        start=datetime(2023, 1, 1),
+        end=datetime(2023, 1, 2),
+        interval="1H",  # Hourly intervals
+    ),
+    config=config,
+    output_dir="./output",
+)
+
+# Generate model input files
+run.generate()
+
+# Execute the model run
+from rompy.backends import LocalConfig
+backend_config = LocalConfig(timeout=3600, command="your_model_executable")
+success = run.run(backend=backend_config)
+
+if success:
+    print("Model run completed successfully!")
+else:
+    print("Model run failed.")
+```
+
+---
+
+## Support & Community
+
+- [**GitHub Repository**](https://github.com/rom-py/rompy) - Source code and issue tracking
+- [**Contributing**](contributing.md) - How to contribute to the project
+- [**FAQ**](faq.md) - Answers to common questions
+
+**Note**: Rompy is under active development—features, model support, and documentation are continually evolving. Contributions and feedback are welcome!

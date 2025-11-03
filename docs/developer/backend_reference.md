@@ -1,6 +1,6 @@
 # Backend Reference
 
-This document provides comprehensive technical reference for ROMPY's backend system, focusing on concepts, usage patterns, and advanced configuration techniques.
+This document provides comprehensive technical reference for Rompy's backend system, focusing on concepts, usage patterns, and advanced configuration techniques.
 
 > [!NOTE]
 > For getting started with backends, see [backends](backends.md). For complete API documentation, see [api](api.md).
@@ -662,4 +662,4 @@ For complete API documentation, see:
 * `rompy.backends.postprocessors` - Postprocessor implementations
 * `rompy.backends` - Backend discovery and registry
 
-This reference covers the key concepts and patterns for working with ROMPY's backend system. For implementation details and complete parameter documentation, refer to the API documentation.
+This reference covers the key concepts and patterns for working with Rompy's backend system. For implementation details and complete parameter documentation, refer to the API documentation.

@@ -2,9 +2,9 @@
 
 ## Thumbnails Gallery
 
-The following demonstration notebooks showcase various aspects of ROMPY's functionality:
+The following demonstration notebooks showcase various aspects of Rompy's functionality:
 
-* [Demo Notebook](../notebooks/demo.ipynb) - Basic demonstration of ROMPY features
+* [Demo Notebook](../notebooks/demo.ipynb) - Basic demonstration of Rompy features
 * [Templates Demo](../notebooks/templates_demo.ipynb) - Using cookiecutter templates for model setup
 * [SWAN Declarative Example](../notebooks/swan/example_declarative.ipynb) - Declarative configuration of SWAN models
 * [SWAN Procedural Example](../notebooks/swan/example_procedural.ipynb) - Procedural configuration of SWAN models
@@ -14,13 +14,13 @@ The following demonstration notebooks showcase various aspects of ROMPY's functi
 * [Physics](../notebooks/physics.ipynb) - Physics-based model configurations
 * [SCHISM Procedural](../notebooks/schism_procedural.ipynb) - Procedural configuration of SCHISM models
 
-These notebooks provide practical examples of how to use ROMPY for various ocean modeling tasks. Each notebook demonstrates different aspects of the framework, from basic usage to advanced features.
+These notebooks provide practical examples of how to use Rompy for various ocean modeling tasks. Each notebook demonstrates different aspects of the framework, from basic usage to advanced features.
 
 ## Getting Started
 
 To run these notebooks:
 
-1. Install ROMPY with notebook dependencies:
+1. Install Rompy with notebook dependencies:
    ```bash
    pip install rompy[notebooks]
    ```

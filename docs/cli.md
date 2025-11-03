@@ -2,11 +2,11 @@
 
 <a name="cli"></a>
 
-The ROMPY Command Line Interface (CLI) provides a comprehensive set of tools for generating, running, and processing ocean, wave, and hydrodynamic model configurations with support for multiple execution backends.
+The Rompy Command Line Interface (CLI) provides a comprehensive set of tools for generating, running, and processing ocean, wave, and hydrodynamic model configurations with support for multiple execution backends.
 
 ## Overview
 
-ROMPY CLI provides a comprehensive command structure:
+Rompy CLI provides a comprehensive command structure:
 
 ```bash
 rompy <command> [options] [arguments]
@@ -166,7 +166,7 @@ rompy validate --config-from-env
 
 ## Configuration Sources
 
-ROMPY CLI commands support loading configuration from two sources:
+Rompy CLI commands support loading configuration from two sources:
 
 **File-based Configuration:**
 
@@ -271,7 +271,7 @@ All commands support these common options:
 
 ## Backend Types
 
-ROMPY supports multiple execution backends through its plugin architecture:
+Rompy supports multiple execution backends through its plugin architecture:
 
 ### Run Backends
 

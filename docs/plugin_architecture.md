@@ -1,8 +1,10 @@
-# Execution and Output Processing Plugin Architecture
+# Plugin Architecture
 
 Rompy features a flexible plugin-based architecture that allows for extensible model execution and output processing. The system uses Python entry points to automatically discover and load backends, making it easy to extend with custom implementations.
 
-## Overview
+For basic plugin usage, please see the [User Guide](user_guide.md) and [Advanced Topics](backends.md).
+
+## Architecture Overview
 
 The plugin architecture is built around three main categories:
 
@@ -281,19 +283,14 @@ class CloudPipelineBackend:
 - Test error conditions and edge cases
 - Include integration tests where appropriate
 
-## Examples
-
-Complete examples demonstrating the plugin architecture can be found in the `examples/backends/` directory:
-
-- `01_basic_local_run.py`: Simple local execution
-- `02_docker_run.py`: Docker container execution
-- `03_custom_postprocessor.py`: Custom output processing
-- `04_complete_workflow.py`: End-to-end custom workflow
-
-For interactive examples, see the `notebooks/backend_examples.ipynb` notebook.
-
 ## API Reference
 
 ::: rompy.run
 ::: rompy.postprocess
 ::: rompy.pipeline
+
+## Next Steps
+
+- Review the [Architecture Overview](architecture_overview.md) for more details on the overall system design
+- Check the [Developer Guide](developer/index.md) for advanced development topics
+- Look at the [API Reference](api.md) for detailed class documentation

@@ -1,10 +1,10 @@
 # Backend Systems
 
-ROMPY's backend system provides flexible, type-safe execution environments for wave models. Whether you're running simple local simulations or complex containerized workflows, the backend system handles execution, resource management, and result processing.
+Rompy's backend system provides flexible, type-safe execution environments for wave models. Whether you're running simple local simulations or complex containerized workflows, the backend system handles execution, resource management, and result processing.
 
 ## Overview
 
-Backend systems in ROMPY control **how** and **where** your models execute. They provide:
+Backend systems in Rompy control **how** and **where** your models execute. They provide:
 
 * **Execution Environments**: Local system, Docker containers, HPC clusters
 * **Resource Management**: CPU, memory, and timeout controls
@@ -171,7 +171,7 @@ For complete parameter documentation, see `rompy.backends.config.DockerConfig`.
 
 ### With ModelRun
 
-Backend configurations integrate directly with ROMPY's model execution via `rompy.model.ModelRun.run`:
+Backend configurations integrate directly with Rompy's model execution via `rompy.model.ModelRun.run`:
 
 ```python
 from rompy.model import ModelRun
