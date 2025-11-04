@@ -18,7 +18,7 @@ import click
 import yaml
 
 import rompy
-from rompy.backends import DockerConfig, LocalConfig
+from rompy.backends import DockerConfig, LocalConfig, SlurmConfig
 from rompy.logging import LogFormat, LoggingConfig, LogLevel, get_logger
 from rompy.model import PIPELINE_BACKENDS, POSTPROCESSORS, RUN_BACKENDS, ModelRun
 
@@ -291,31 +291,12 @@ def _get_backend_config_registry():
     Build a registry of backend config classes from entry points and built-ins.
     Returns: dict mapping backend type name to config class
     """
+    # TODO Remove hardcoding
     registry = {
         "local": LocalConfig,
         "docker": DockerConfig,
+        "slurm": SlurmConfig,  # Add SLURM backend config
     }
-    # Try to load from entry points (rompy.config and rompy.backend_config)
-    try:
-        eps = importlib.metadata.entry_points()
-        # Support both 'rompy.config' and 'rompy.backend_config' for flexibility
-        for group in ["rompy.config", "rompy.backend_config"]:
-            if hasattr(eps, "select"):  # Python 3.10+
-                entries = eps.select(group=group)
-            elif hasattr(eps, "get"):  # Python 3.8-3.9
-                entries = eps.get(group, [])
-            else:
-                entries = []
-            for ep in entries:
-                try:
-                    cls = ep.load()
-                    registry[ep.name] = cls
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to load backend config entry point {ep.name}: {e}"
-                    )
-    except Exception as e:
-        logger.warning(f"Could not load backend config entry points: {e}")
     return registry
 
 

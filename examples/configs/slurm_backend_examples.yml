@@ -1,0 +1,85 @@
+# SLURM Backend Configuration Examples
+# These examples show various ways to configure SLURM jobs for different scenarios
+# 
+# NOTE: This format (with named sections) is different from the single-document
+# backend config format used with the CLI command. For CLI usage, use the format
+# in slurm_backend.yml with 'type' field at the root level.
+
+# Basic SLURM configuration
+basic_slurm:
+  type: "slurm"
+  config:
+    queue: "general"
+    timeout: 3600
+    nodes: 1
+    ntasks: 1
+    cpus_per_task: 2
+    time_limit: "01:00:00"
+    command: "echo 'Running basic SLURM job' && sleep 10"
+
+# Advanced SLURM configuration for GPU jobs
+advanced_gpu_slurm:
+  type: "slurm"
+  config:
+    queue: "gpu"
+    timeout: 7200
+    nodes: 2
+    ntasks: 8
+    cpus_per_task: 4
+    time_limit: "02:00:00"
+    account: "research_project"
+    qos: "high"
+    reservation: "special_reservation"
+    output_file: "slurm-%j.out"
+    error_file: "slurm-%j.err"
+    job_name: "gpu_simulation"
+    mail_type: "BEGIN,END,FAIL"
+    mail_user: "researcher@domain.com"
+    additional_options:
+      - "--gres=gpu:v100:2"
+      - "--exclusive"
+    env_vars:
+      OMP_NUM_THREADS: "4"
+      MODEL_DEBUG: "true"
+      DATA_PATH: "/shared/data"
+      RESULTS_PATH: "/shared/results"
+    command: "python /app/run_simulation.py --config config.json"
+
+# SLURM configuration for high-memory jobs
+high_memory_slurm:
+  type: "slurm"
+  config:
+    queue: "memory"
+    timeout: 14400
+    nodes: 1
+    ntasks: 2
+    cpus_per_task: 8
+    time_limit: "04:00:00"
+    account: "bigmem_project"
+    additional_options:
+      - "--mem=64G"
+    job_name: "high_memory_analysis"
+    output_file: "output_%j.log"
+    error_file: "error_%j.log"
+    env_vars:
+      MEMORY_LIMIT: "64G"
+      ANALYSIS_TYPE: "deep"
+    command: "Rscript analysis.R"
+
+# SLURM configuration with custom working directory
+custom_workdir_slurm:
+  type: "slurm"
+  config:
+    queue: "compute"
+    timeout: 7200
+    nodes: 1
+    ntasks: 4
+    cpus_per_task: 2
+    time_limit: "02:00:00"
+    account: "analysis_project"
+    working_dir: "/shared/workspaces/my_project"
+    job_name: "workspace_analysis"
+    env_vars:
+      WORKSPACE: "/shared/workspaces/my_project"
+      TOOLS_PATH: "/shared/tools"
+    command: "./run_analysis.sh"

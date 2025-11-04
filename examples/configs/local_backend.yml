@@ -2,13 +2,13 @@
 # Configuration for executing models on the local system
 
 # Backend type specification
-backend_type: local
+type: local
 
 # Configuration parameters
 timeout: 7200 # 2 hours - Maximum execution time in seconds (60-86400)
 
 # Optional shell command to run instead of config.run()
-command: "python run_model.py"
+command: "ls -l"
 
 # Whether to execute commands through the shell (default: true)
 shell: true
@@ -22,8 +22,8 @@ capture_output: true
 
 # Additional environment variables to set during execution
 env_vars:
-  OMP_NUM_THREADS: "4"
-  MODEL_CONFIG: "production"
-  DATA_DIR: "/data"
-  PYTHONPATH: "/app/lib"
-  LOG_LEVEL: "INFO"
+    OMP_NUM_THREADS: "4"
+    MODEL_CONFIG: "production"
+    DATA_DIR: "/data"
+    PYTHONPATH: "/app/lib"
+    LOG_LEVEL: "INFO"

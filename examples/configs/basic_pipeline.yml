@@ -1,0 +1,37 @@
+# Complete Pipeline Configuration for CLI Testing
+# This demonstrates how to use the basic model run with different backends via CLI
+
+pipeline_backend: local  # or 'docker', 'slurm' depending on your system
+
+model_run:
+  run_id: "cli_test_backend_run"
+  output_dir: "./output/cli_test"
+  delete_existing: true
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+
+# This would be the backend for the actual model run execution
+# Uncomment the appropriate section based on your system:
+
+# Local backend configuration
+run_backend:
+  backend_type: local
+  timeout: 3600
+  command: "echo 'Running basic model test'"
+  env_vars:
+    MODEL_TYPE: "test"
+    ENVIRONMENT: "cli"
+
+# To run with local backend:
+# rompy run --config basic_modelrun.yml --backend-config local_backend.yml
+
+# To run with Docker backend:
+# rompy run --config basic_modelrun.yml --backend-config docker_backend.yml
+
+# To run with SLURM backend:
+# rompy run --config basic_modelrun.yml --backend-config slurm_backend.yml
+
+postprocessing:
+  processor: "noop"  # or other available processors

@@ -1,0 +1,10 @@
+# Basic ModelRun Configuration for CLI Testing
+# This configuration can be used with the ROMPY CLI to test different backends
+
+run_id: "cli_test_backend_run"
+period:
+  start: "2023-01-01T00:00:00"
+  end: "2023-01-02T00:00:00"
+  interval: "1H"
+output_dir: "./output/cli_test"
+delete_existing: true
