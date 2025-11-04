@@ -290,6 +290,144 @@ def run_complete_model_workflow():
 # Run the complete workflow
 workflow_result = run_complete_model_workflow()
 print(f"Workflow result: {workflow_result}")
+
+
+## Using YAML Configuration Files
+
+One of the key advantages of Rompy's schema-based approach is the ability to represent complex model configurations as transportable YAML files. This section demonstrates how to convert Python-based configurations to YAML and run them using Rompy's command-line interface.
+
+### Converting Python Configuration to YAML
+
+Let's take the complete workflow example from Tutorial 6 and represent it as a YAML configuration file:
+
+```yaml
+# model_config.yaml
+run_id: "yaml_workflow"
+period:
+  start: "2023-01-01T00:00:00"
+  end: "2023-01-02T00:00:00"
+  interval: "1H"
+config:
+  template: "path/to/template"
+  checkout: "path/to/checkout"
+  grid:
+    _type: "regular"
+    lon_min: -75.0
+    lon_max: -65.0
+    lat_min: 35.0
+    lat_max: 45.0
+    dx: 0.1
+    dy: 0.1
+output_dir: "./yaml_output"
+```
+
+### Understanding the YAML Structure
+
+The YAML representation preserves all the information from the Python configuration:
+
+1. **Discriminator Field**: The `_type: "regular"` field identifies the specific grid implementation
+2. **Hierarchical Structure**: Nested objects maintain the same structure as in Python
+3. **Type Safety**: The schema ensures all values match expected types when loaded
+4. **Validation**: All constraints defined in the Pydantic models are enforced
+
+### Running with the Command Line Interface
+
+Once you have your YAML configuration, you can run it using Rompy's CLI:
+
+```bash
+rompy run --config model_config.yaml
+```
+
+To specify a different backend:
+
+```bash
+rompy run --config model_config.yaml --backend local --timeout 3600
+```
+
+For more information about available CLI options, see the [CLI Reference](cli.md).
+
+### Benefits of YAML Configuration
+
+1. **Transportability**: The entire model configuration is contained in a single, human-readable file
+2. **Version Control**: YAML files can be easily committed to version control systems
+3. **Reproducibility**: Sharing a single YAML file allows others to reproduce the exact same model run
+4. **Declarative**: The config file fully describes the model run without requiring Python code
+5. **Validation**: All configurations are validated against the schema when loaded
+
+### Converting an Existing Python Configuration to YAML
+
+You can programmatically generate YAML from a Python configuration:
+
+```python
+from rompy.model import ModelRun
+from rompy.core.config import BaseConfig
+from rompy.core.time import TimeRange
+from rompy.core.grid import RegularGrid
+from datetime import datetime
+
+# Create your configuration in Python
+grid = RegularGrid(
+    lon_min=-75.0,
+    lon_max=-65.0,
+    lat_min=35.0,
+    lat_max=45.0,
+    dx=0.1,
+    dy=0.1,
+)
+
+time_range = TimeRange(
+    start=datetime(2023, 1, 1),
+    end=datetime(2023, 1, 2),
+    interval="1H"
+)
+
+config = BaseConfig(
+    template="path/to/template",
+    checkout="path/to/checkout",
+    grid=grid,
+)
+
+model_run = ModelRun(
+    run_id="yaml_export",
+    period=time_range,
+    config=config,
+    output_dir="./yaml_export_output",
+)
+
+# Export the configuration to YAML
+yaml_content = model_run.model_dump_yaml()
+print(yaml_content)
+
+# Or save directly to a file
+with open("exported_config.yaml", "w") as f:
+    f.write(yaml_content)
+```
+
+### Loading and Using YAML Configuration
+
+To use a YAML configuration in Python:
+
+```python
+from rompy.model import ModelRun
+
+# Load the configuration from YAML
+with open("model_config.yaml", "r") as f:
+    yaml_content = f.read()
+
+# Create the model run from YAML
+model_run = ModelRun.model_validate_yaml(yaml_content)
+
+# Now run as normal
+staging_dir = model_run.generate()
+print(f"Generated at: {staging_dir}")
+
+# Execute with a backend
+backend_config = LocalConfig(timeout=3600, command="your_model_executable")
+success = model_run.run(backend=backend_config)
+print(f"Execution status: {'Success' if success else 'Failed'}")
+```
+
+This approach allows for maximum flexibility - you can create configurations in Python, export them to YAML for sharing, and load them back into Python when needed, all while maintaining the validation benefits of the schema-driven approach.
 ```
 
 ## Model-Specific Tutorials
