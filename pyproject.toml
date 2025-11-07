@@ -1,27 +1,14 @@
 [build-system]
-requires = [
-    "setuptools",
-    "versioneer[toml]",
-]
+requires = ["setuptools", "versioneer[toml]"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "rompy"
 description = "Core rompy library for ocean wave modeling with plugin system"
 readme = "README.md"
-keywords = [
-    "relocatable",
-    "ocean",
-    "modelling",
-    "python",
-    "csiro",
-]
-authors = [
-    { name = "CSIRO", email = "paul.branson@csiro.au" },
-]
-maintainers = [
-  {name = "Rompy Contributors", email = "developers@rompy.com"}
-]
+keywords = ["relocatable", "ocean", "modelling", "python", "csiro"]
+authors = [{ name = "CSIRO", email = "paul.branson@csiro.au" }]
+maintainers = [{ name = "Rompy Contributors", email = "developers@rompy.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -58,7 +45,6 @@ dependencies = [
     "pandas",
     "pydantic>2",
     "pydantic-settings",
-    "pydantic_numpy",
     "scipy",
     "tqdm",
     "xarray",
@@ -66,9 +52,7 @@ dependencies = [
     "isodate",
     "appdirs",
 ]
-dynamic = [
-    "version",
-]
+dynamic = ["version"]
 
 [project.license]
 file = "LICENSE"
@@ -106,40 +90,16 @@ noop = "rompy.postprocess:NoopPostprocessor"
 local = "rompy.pipeline:LocalPipelineBackend"
 
 [project.optional-dependencies]
-test = [
-    "pytest",
-    "envyaml",
-    "coverage",
-]
-extra = [
-    "gcsfs",
-    "zarr",
-    "cloudpathlib[s3,gs,azure]",
-]
-dev = [
-    "pytest",
-    "envyaml",
-    "coverage",
-    "ruff",
-    "black",
-]
-docs = [
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocstrings[python]"
-]
+test = ["pytest", "envyaml", "coverage"]
+extra = ["gcsfs", "zarr", "cloudpathlib[s3,gs,azure]"]
+dev = ["pytest", "envyaml", "coverage", "ruff", "black"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.setuptools.packages.find]
-where = [
-    "src",
-]
+where = ["src"]
 
 [tool.setuptools.package-data]
-"*" = [
-    "*.y*ml",
-    "*.csv",
-    "*.html",
-]
+"*" = ["*.y*ml", "*.csv", "*.html"]
 
 [tool.setuptools.dynamic.version]
 attr = "rompy.__version__"
