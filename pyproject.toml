@@ -97,6 +97,7 @@ docs = [
     "mkdocstrings[python]",
     "mkdocs-gallery",
     "mkdocs-execute-plugin",
+    "mkdocs-jupyter",
 ]
 notebooks = [
     "rompy-notebooks @ git+https://github.com/rom-py/rompy-notebooks.git@package",
