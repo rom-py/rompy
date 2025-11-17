@@ -35,7 +35,6 @@ dependencies = [
     "h5py",
     "intake",
     "intake-xarray",
-    "intake-geopandas",
     "matplotlib",
     "netcdf4",
     "numpy",
