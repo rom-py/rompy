@@ -45,7 +45,6 @@ dependencies = [
     "pandas",
     "pydantic>2",
     "pydantic-settings",
-    "pydantic_numpy",
     "scipy",
     "tqdm",
     "xarray",
