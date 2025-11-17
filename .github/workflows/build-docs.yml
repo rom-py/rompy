@@ -28,5 +28,6 @@ jobs:
               run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
             - run: cd /tmp && git clone --depth 1 https://github.com/rom-py/rompy-notebooks.git
             - run: cp -r /tmp/rompy-notebooks/notebooks docs/
+            - run: rm docs/notebooks/schism/schism_basic_setup.ipynb -f
             - run: pip install .[docs]
             - run: mkdocs gh-deploy --force
