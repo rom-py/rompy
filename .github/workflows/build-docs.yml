@@ -24,5 +24,7 @@ jobs:
                   path: ~/.cache
                   restore-keys: |
                       mkdocs-material-
+            - run: cd /tmp && git clone --depth 1 https://github.com/rom-py/rompy-notebooks.git
+            - run: cp -r /tmp/rompy-notebooks/notebooks docs/
             - run: pip install .[docs]
             - run: mkdocs gh-deploy --force

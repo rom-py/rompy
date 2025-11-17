@@ -32,7 +32,6 @@ dependencies = [
     "dask",
     "docker",
     "fsspec",
-    "geopandas",
     "h5py",
     "intake",
     "intake-xarray",
