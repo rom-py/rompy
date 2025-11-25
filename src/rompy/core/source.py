@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
 from typing import Literal, Optional, Union
+import json
+import hashlib
 
 import fsspec
 import intake
@@ -14,12 +16,63 @@ import xarray as xr
 from intake.catalog import Catalog
 from intake.catalog.local import YAMLFileCatalog
 from oceanum.datamesh import Connector
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, model_validator, PrivateAttr
 
 from rompy.core.filters import Filter
+from rompy.logging import get_logger
 from rompy.core.types import DatasetCoords, RompyBaseModel
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+
+def render_datetimes(dict_obj: dict) -> dict:
+    """Convert datetime objects in a dictionary to ISO format strings.
+
+    Parameters
+    ----------
+    dict_obj : dict
+        The dictionary to process.
+
+    Returns
+    -------
+    dict
+        The processed dictionary with datetime objects converted to strings.
+    """
+    for key, value in dict_obj.items():
+        if isinstance(value, dict):
+            dict_obj[key] = render_datetimes(value)
+        if isinstance(value, list):
+            for i, item in enumerate(value):
+                if isinstance(item, dict):
+                    value[i] = render_datetimes(item)
+                elif hasattr(item, "isoformat"):
+                    value[i] = item.isoformat()
+        elif hasattr(value, "isoformat"):
+            dict_obj[key] = value.isoformat()
+    return dict_obj
+
+
+def dict_to_key(data: dict) -> str:
+    """Convert a dictionary to a hashable key string.
+
+    This function converts a dictionary uniquely to a string
+    which can be used as a hashable key.
+
+    Parameters
+    ----------
+    data : dict
+        The dictionary to convert.
+
+    Returns
+    -------
+    str
+        A string representation of the sorted dictionary items.
+    """
+    data = render_datetimes(data)
+    unique_str = json.dumps(data, sort_keys=True)
+    hash_str = hashlib.sha256(unique_str.encode()).hexdigest()
+    return hash_str
+
 
 # Import stubs for classes moved to rompy_binary_datasources
 try:
@@ -199,6 +252,8 @@ class SourceDatamesh(SourceBase):
         description="Keyword arguments to pass to `oceanum.datamesh.Connector`",
     )
 
+    _query_cache: dict = PrivateAttr(default_factory=dict)
+
     def __str__(self) -> str:
         return f"SourceDatamesh(datasource={self.datasource})"
 
@@ -247,8 +302,14 @@ class SourceDatamesh(SourceBase):
             geofilter=geofilter,
             timefilter=timefilter,
         )
-        logger.debug(f"Datamesh query: {query}")
-        return self.connector.query(query)
+        query_key = dict_to_key(query)
+        if query_key in self._query_cache:
+            logger.info("Using cached Datamesh query result")
+        else:
+            logger.info(f"Querying Datamesh datasource '{self.datasource}'")
+            logger.debug(f"Datamesh query: {query}")
+            self._query_cache[query_key] = self.connector.query(query)
+        return self._query_cache[query_key]
 
     def open(
         self, filters: Filter, coords: DatasetCoords, variables: list = []
