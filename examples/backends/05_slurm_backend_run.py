@@ -3,7 +3,7 @@
 ROMPY SLURM Backend Example
 
 This example demonstrates how to use the SLURM backend to run models on HPC clusters.
-The SLURM backend enables resource management and job scheduling for high-performance 
+The SLURM backend enables resource management and job scheduling for high-performance
 computing environments.
 
 Run this example:
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def example_slurm_basic():
     """
     Example 1: Basic SLURM execution
-    
+
     This example demonstrates the simplest configuration for running a model
     on a SLURM cluster with minimal parameters.
     """
@@ -55,9 +55,10 @@ def example_slurm_basic():
         # Basic SLURM configuration
         config = SlurmConfig(
             queue="general",  # SLURM partition name
-            timeout=1800,     # Max execution time in seconds (30 minutes)
-            nodes=1,          # Number of nodes to allocate
-            ntasks=1,         # Number of tasks (processes) to run
+            command="python run_model.py",  # Command to run in the workspace
+            timeout=1800,  # Max execution time in seconds (30 minutes)
+            nodes=1,  # Number of nodes to allocate
+            ntasks=1,  # Number of tasks (processes) to run
             cpus_per_task=2,  # Number of CPU cores per task
             time_limit="00:30:00",  # Time limit in HH:MM:SS format
         )
@@ -66,20 +67,31 @@ def example_slurm_basic():
         logger.info("Running model with basic SLURM configuration...")
 
         try:
-            # This would submit the job to SLURM (in a real environment)
-            # success = model.run(backend=config)
-            # Since we're not in a real SLURM environment, we'll just show the config
-            logger.info("✅ SlurmConfig validated successfully")
-            logger.info("Key concepts: SlurmConfig, queue, nodes, ntasks, cpus_per_task")
-            logger.info("Note: In a real environment, this would submit to SLURM")
+            # Submit the job to SLURM (in a real environment)
+            success = model.run(backend=config)
+            if success:
+                logger.info("✅ SLURM job submitted successfully")
+            else:
+                logger.info(
+                    "⚠️  SLURM job submission completed but may have failed (e.g., in test environment)"
+                )
+            logger.info(
+                "Key concepts: SlurmConfig, queue, nodes, ntasks, cpus_per_task"
+            )
+            logger.info(
+                "Note: In a real SLURM environment, this would submit the job for execution"
+            )
         except Exception as e:
             logger.error(f"❌ SLURM model run failed: {e}")
+            logger.info(
+                "Note: This may fail in non-SLURM environments, which is expected"
+            )
 
 
 def example_slurm_advanced():
     """
     Example 2: Advanced SLURM execution with multiple parameters
-    
+
     This example shows how to configure complex SLURM jobs with multiple
     resource allocations, environment variables, and custom options.
     """
@@ -103,22 +115,23 @@ def example_slurm_advanced():
 
         # Advanced SLURM configuration with many parameters
         config = SlurmConfig(
-            queue="gpu",                    # GPU partition
-            timeout=7200,                   # 2 hours timeout
-            nodes=2,                        # 2 compute nodes
-            ntasks=8,                       # 8 tasks total
-            cpus_per_task=4,               # 4 CPUs per task
-            time_limit="02:00:00",         # 2 hours time limit
-            account="research_project",     # Account for billing
-            qos="high",                     # Quality of Service
+            queue="gpu",  # GPU partition
+            command="python run_model.py --gpu",  # Command to run in the workspace
+            timeout=7200,  # 2 hours timeout
+            nodes=2,  # 2 compute nodes
+            ntasks=8,  # 8 tasks total
+            cpus_per_task=4,  # 4 CPUs per task
+            time_limit="02:00:00",  # 2 hours time limit
+            account="research_project",  # Account for billing
+            qos="high",  # Quality of Service
             reservation="special_reservation",  # Reservation name
-            output_file="slurm-%j.out",     # Output file pattern (job ID)
-            error_file="slurm-%j.err",      # Error file pattern
-            job_name="advanced_simulation", # Name of the SLURM job
-            mail_type="BEGIN,END,FAIL",     # Types of notifications
+            output_file="slurm-%j.out",  # Output file pattern (job ID)
+            error_file="slurm-%j.err",  # Error file pattern
+            job_name="advanced_simulation",  # Name of the SLURM job
+            mail_type="BEGIN,END,FAIL",  # Types of notifications
             mail_user="researcher@domain.com",  # Email for notifications
             additional_options=["--gres=gpu:v100:2", "--exclusive"],  # GPU resources
-            env_vars={                      # Environment variables
+            env_vars={  # Environment variables
                 "OMP_NUM_THREADS": "4",
                 "MODEL_DEBUG": "true",
                 "DATA_PATH": "/shared/data",
@@ -130,18 +143,24 @@ def example_slurm_advanced():
         logger.info("Running model with advanced SLURM configuration...")
 
         try:
-            # Show validation success
-            logger.info("✅ Advanced SlurmConfig validated successfully")
-            logger.info("Key concepts: account, qos, reservations, GRES, environment variables")
-            logger.info("Note: In a real environment, this would submit a complex job to SLURM")
+            success = model.run(backend=config)
+            if success:
+                logger.info("✅ Advanced SLURM job submitted successfully")
+            else:
+                logger.info(
+                    "⚠️  Advanced SLURM job submission completed but may have failed"
+                )
         except Exception as e:
             logger.error(f"❌ Advanced SLURM configuration failed: {e}")
+            logger.info(
+                "Note: This may fail in non-SLURM environments, which is expected"
+            )
 
 
 def example_slurm_with_custom_command():
     """
     Example 3: SLURM execution with custom command
-    
+
     This example shows how to run a custom command on the SLURM cluster,
     useful for executing different types of jobs or calling external binaries.
     """
@@ -179,17 +198,28 @@ def example_slurm_with_custom_command():
         logger.info("Running custom command on SLURM...")
 
         try:
-            logger.info("✅ SlurmConfig with custom command validated successfully")
+            success = model.run(backend=config)
+            if success:
+                logger.info("✅ SLURM job with custom command submitted successfully")
+            else:
+                logger.info(
+                    "⚠️  SLURM job with custom command completed but may have failed"
+                )
             logger.info("Key concepts: command parameter, custom execution")
-            logger.info("Note: In a real environment, this would execute the custom command on SLURM")
+            logger.info(
+                "Note: In a real SLURM environment, this would execute the custom command"
+            )
         except Exception as e:
             logger.error(f"❌ SLURM custom command configuration failed: {e}")
+            logger.info(
+                "Note: This may fail in non-SLURM environments, which is expected"
+            )
 
 
 def example_slurm_from_dict():
     """
     Example 4: Creating SLURM configuration from dictionary
-    
+
     This example shows how to create SLURM configurations from dictionaries,
     which is useful when loading from configuration files (YAML/JSON).
     """
@@ -202,6 +232,7 @@ def example_slurm_from_dict():
     # Simulate loading from YAML/JSON file
     slurm_config_data = {
         "queue": "compute",
+        "command": "python run_model.py",
         "timeout": 7200,
         "nodes": 1,
         "ntasks": 4,
@@ -211,10 +242,10 @@ def example_slurm_from_dict():
         "env_vars": {
             "OMP_NUM_THREADS": "2",
             "MODEL_PRECISION": "double",
-            "DATA_DIR": "/shared/data"
+            "DATA_DIR": "/shared/data",
         },
         "job_name": "yaml_configured_job",
-        "additional_options": ["--mem-per-cpu=2048"]
+        "additional_options": ["--mem-per-cpu=2048"],
     }
 
     try:
@@ -236,14 +267,16 @@ def example_slurm_from_dict():
 def example_slurm_validation():
     """
     Example 5: SLURM configuration validation
-    
+
     This example demonstrates ROMPY's built-in validation for SLURM configurations.
     The Pydantic model catches configuration errors before runtime.
     """
     logger.info("=" * 60)
     logger.info("Example 5: SLURM Configuration Validation")
     logger.info("=" * 60)
-    logger.info("This example shows how ROMPY validates SLURM configurations automatically.")
+    logger.info(
+        "This example shows how ROMPY validates SLURM configurations automatically."
+    )
     logger.info("")
 
     from pydantic import ValidationError
@@ -252,12 +285,13 @@ def example_slurm_validation():
     try:
         valid_config = SlurmConfig(
             queue="general",
+            command="python run_model.py",
             timeout=3600,
             nodes=1,
             ntasks=1,
             cpus_per_task=2,
             time_limit="01:00:00",
-            env_vars={"TEST_VAR": "value"}
+            env_vars={"TEST_VAR": "value"},
         )
         logger.info("✅ Valid SlurmConfig created successfully")
     except Exception as e:
@@ -268,45 +302,60 @@ def example_slurm_validation():
     try:
         invalid_config = SlurmConfig(
             queue="general",
+            command="python run_model.py",
             time_limit="25:00",  # Invalid format - missing seconds
         )
         logger.info("❌ This should not succeed")
     except ValidationError as e:
-        logger.info(f"✅ Validation correctly caught time limit error: {e.errors()[0]['msg']}")
+        logger.info(
+            f"✅ Validation correctly caught time limit error: {e.errors()[0]['msg']}"
+        )
 
     # Invalid number of nodes (too high)
     logger.info("Testing invalid number of nodes...")
     try:
         invalid_config = SlurmConfig(
             queue="general",
+            command="python run_model.py",
             nodes=101,  # Max is 100
-            time_limit="01:00:00"
+            time_limit="01:00:00",
         )
         logger.info("❌ This should not succeed")
     except ValidationError as e:
-        logger.info(f"✅ Validation correctly caught nodes error: {e.errors()[0]['msg']}")
+        logger.info(
+            f"✅ Validation correctly caught nodes error: {e.errors()[0]['msg']}"
+        )
 
     # Invalid cpus_per_task (too high)
     logger.info("Testing invalid CPUs per task...")
     try:
         invalid_config = SlurmConfig(
             queue="general",
+            command="python run_model.py",
             cpus_per_task=129,  # Max is 128
-            time_limit="01:00:00"
+            time_limit="01:00:00",
         )
         logger.info("❌ This should not succeed")
     except ValidationError as e:
-        logger.info(f"✅ Validation correctly caught cpus_per_task error: {e.errors()[0]['msg']}")
+        logger.info(
+            f"✅ Validation correctly caught cpus_per_task error: {e.errors()[0]['msg']}"
+        )
 
-    logger.info("Key concepts: Pydantic validation, error handling, configuration safety")
+    logger.info(
+        "Key concepts: Pydantic validation, error handling, configuration safety"
+    )
 
 
 def main():
     """Run all SLURM backend examples."""
     logger.info("🚀 ROMPY SLURM Backend Examples")
     logger.info("================================")
-    logger.info("These examples demonstrate how to use ROMPY with SLURM clusters for HPC jobs.")
-    logger.info("Each example builds on the previous one to show increasingly sophisticated usage.")
+    logger.info(
+        "These examples demonstrate how to use ROMPY with SLURM clusters for HPC jobs."
+    )
+    logger.info(
+        "Each example builds on the previous one to show increasingly sophisticated usage."
+    )
     logger.info("")
 
     # Run examples
@@ -345,8 +394,11 @@ def main():
     logger.info("1. Review the SlurmConfig documentation for all available parameters")
     logger.info("2. Try these configurations in your actual SLURM environment")
     logger.info("3. Create your own SLURM configuration files for your models")
-    logger.info("4. Combine with other ROMPY features like postprocessing and pipelines")
+    logger.info(
+        "4. Combine with other ROMPY features like postprocessing and pipelines"
+    )
 
 
 if __name__ == "__main__":
     main()
+

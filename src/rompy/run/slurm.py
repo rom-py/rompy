@@ -142,7 +142,12 @@ class SlurmRunBackend:
         for key, value in config.env_vars.items():
             script_lines.append(f"export {key}={value}")
 
-        # Add the actual command to run the model\n        # First, check if there's a specific command in config, otherwise use the model's run method\n        if hasattr(config, 'command') and config.command:\n            script_lines.extend([\n                \"\",\n                \"# Execute custom command\",\n                config.command,\n            ])\n        else:\n            script_lines.extend([\n                \"\",\n                \"# Execute model using model_run.config.run() method\",\n                \"python -c \\\"\",\n                \"import sys\",\n                \"import os\",\n                \"sys.path.insert(0, os.getcwd())\",\n                \"from rompy.model import ModelRun\",\n                f\"model_run = ModelRun.from_dict({model_run.model_dump()})\",\n                \"model_run.config.run(model_run)\",\n                \"\\\"\",\n            ])
+        # Add the actual command to run the model
+        script_lines.extend([
+            "",
+            "# Execute command in the workspace",
+            config.command,
+        ])
 
         # Create temporary job script file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:

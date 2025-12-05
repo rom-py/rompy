@@ -11,7 +11,6 @@ mpiexec: ""
 volumes:
     - "/tmp:/tmp:rw"
 env_vars:
-    PYTHONUNBUFFERED: "1"
     MODEL_THREADS: "4"
     DATA_DIR: "/app/data"
 remove_container: true

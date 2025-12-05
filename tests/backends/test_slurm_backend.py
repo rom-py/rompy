@@ -46,12 +46,14 @@ class TestSlurmConfig:
         """Test default values for SlurmConfig."""
         config = SlurmConfig(
             queue="general",  # Required field
+            command="python run_model.py",  # Required field
         )
 
         assert config.timeout == 3600
         assert config.env_vars == {}
         assert config.working_dir is None
         assert config.queue == "general"
+        assert config.command == "python run_model.py"
         assert config.nodes == 1
         assert config.ntasks == 1
         assert config.cpus_per_task == 1
@@ -71,6 +73,7 @@ class TestSlurmConfig:
         with TemporaryDirectory() as tmp_dir:
             config = SlurmConfig(
                 queue="compute",
+                command="python run_model.py --param value",
                 nodes=2,
                 ntasks=4,
                 cpus_per_task=8,
@@ -118,7 +121,7 @@ class TestSlurmConfig:
         ]
 
         for time_limit in valid_time_limits:
-            config = SlurmConfig(queue="test", time_limit=time_limit)
+            config = SlurmConfig(queue="test", command="python run_model.py", time_limit=time_limit)
             assert config.time_limit == time_limit
 
         # Invalid time limits (format-based validation)
@@ -135,24 +138,25 @@ class TestSlurmConfig:
 
         for time_limit in invalid_time_limits:
             with pytest.raises(ValidationError):
-                SlurmConfig(queue="test", time_limit=time_limit)
+                SlurmConfig(queue="test", command="python run_model.py", time_limit=time_limit)
 
     def test_additional_options_validation(self):
         """Test additional options validation."""
         # Valid additional options
         config = SlurmConfig(
             queue="test",
+            command="python run_model.py",
             additional_options=["--gres=gpu:1", "--exclusive", "--mem-per-cpu=2048"]
         )
         assert config.additional_options == ["--gres=gpu:1", "--exclusive", "--mem-per-cpu=2048"]
 
         # Empty list should be valid
-        config = SlurmConfig(queue="test", additional_options=[])
+        config = SlurmConfig(queue="test", command="python run_model.py", additional_options=[])
         assert config.additional_options == []
 
     def test_get_backend_class(self):
         """Test that get_backend_class returns the correct class."""
-        config = SlurmConfig(queue="test")
+        config = SlurmConfig(queue="test", command="python run_model.py")
         backend_class = config.get_backend_class()
 
         # Should return SlurmRunBackend class
@@ -168,14 +172,14 @@ class TestSlurmConfig:
             config = SlurmConfig(**example)
             assert isinstance(config, SlurmConfig)
 
-    def test_required_queue_field(self):
-        """Test that queue field is required."""
-        # Should fail without queue
-        with pytest.raises(ValidationError, match="Field required"):
-            SlurmConfig()
+    def test_queue_field_is_optional(self):
+        """Test that queue field is optional."""
+        # Should work without queue (None)
+        config = SlurmConfig(command="python run_model.py")
+        assert config.queue is None
 
         # Should work with queue
-        config = SlurmConfig(queue="general")
+        config = SlurmConfig(queue="general", command="python run_model.py")
         assert config.queue == "general"
 
     def test_field_boundaries(self):
@@ -183,6 +187,7 @@ class TestSlurmConfig:
         # Test minimum values
         config = SlurmConfig(
             queue="test",
+            command="python run_model.py",
             nodes=1,
             ntasks=1,
             cpus_per_task=1,
@@ -194,6 +199,7 @@ class TestSlurmConfig:
         # Test maximum values
         config = SlurmConfig(
             queue="test",
+            command="python run_model.py",
             nodes=100,  # Max nodes
             cpus_per_task=128,  # Max cpus per task
         )
@@ -202,16 +208,33 @@ class TestSlurmConfig:
 
         # Test out of bounds
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", nodes=0)  # Min nodes is 1
+            SlurmConfig(queue="test", command="python run_model.py", nodes=0)  # Min nodes is 1
 
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", nodes=101)  # Max nodes is 100
+            SlurmConfig(queue="test", command="python run_model.py", nodes=101)  # Max nodes is 100
 
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", cpus_per_task=0)  # Min cpus_per_task is 1
+            SlurmConfig(queue="test", command="python run_model.py", cpus_per_task=0)  # Min cpus_per_task is 1
 
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", cpus_per_task=129)  # Max cpus_per_task is 128
+            SlurmConfig(queue="test", command="python run_model.py", cpus_per_task=129)  # Max cpus_per_task is 128
+
+    def test_command_field(self):
+        """Test the command field validation and functionality."""
+        # Test with a custom command
+        config = SlurmConfig(
+            queue="test",
+            command="python my_script.py --param value",
+        )
+        assert config.command == "python my_script.py --param value"
+
+        # Test with no command provided - this should now raise an error since command is required
+        with pytest.raises(ValidationError):
+            SlurmConfig(queue="test")
+
+        # Test with empty command - this should now raise an error since command is required
+        with pytest.raises(ValidationError):
+            SlurmConfig(queue="test", command="")
 
 
 @requires_slurm
@@ -239,6 +262,7 @@ class TestSlurmRunBackend:
         """Create a basic SlurmConfig."""
         return SlurmConfig(
             queue="general",
+            command="python run_model.py",
             timeout=3600,
             nodes=1,
             ntasks=1,
@@ -330,6 +354,40 @@ class TestSlurmRunBackend:
             # Clean up
             if os.path.exists(script_path):
                 os.remove(script_path)
+
+    def test_create_job_script_with_command(self, mock_model_run):
+        """Test the _create_job_script method with command."""
+        from rompy.run.slurm import SlurmRunBackend
+
+        # Create a config with a command
+        config = SlurmConfig(
+            queue="general",
+            command="python my_script.py --param value",
+            nodes=1,
+            ntasks=1,
+            cpus_per_task=1,
+            time_limit="01:00:00",
+        )
+
+        backend = SlurmRunBackend()
+
+        with TemporaryDirectory() as staging_dir:
+            script_path = backend._create_job_script(mock_model_run, config, staging_dir)
+
+            with open(script_path, 'r') as f:
+                content = f.read()
+
+            # Check that the command is in the script
+            assert "python my_script.py --param value" in content
+            # Check that it's properly marked as command execution
+            assert "# Execute command in the workspace" in content
+            # Make sure the old model execution is not present
+            assert "# Execute model using model_run.config.run() method" not in content
+
+            # Clean up
+            if os.path.exists(script_path):
+                os.remove(script_path)
+
 
     def test_submit_job(self, basic_config):
         """Test the _submit_job method."""

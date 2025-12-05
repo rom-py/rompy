@@ -288,16 +288,18 @@ class SlurmConfig(BaseBackendConfig):
     """Configuration for SLURM cluster execution."""
 
     model_type: Literal["slurm"] = Field(
-        "slurm", 
+        "slurm",
         description="The backend type."
     )
-    queue: str = Field(
-        ..., 
+    queue: Optional[str] = Field(
+        None,
         description="SLURM partition name (equivalent to queue)"
     )
-    
-    command: Optional[str] = Field(
-        None, description="Optional shell command to run instead of config.run()"
+
+    command: str = Field(
+        ...,
+        description="Shell command to run in the workspace directory",
+        min_length=1
     )
     nodes: int = Field(
         1, 
@@ -376,6 +378,7 @@ class SlurmConfig(BaseBackendConfig):
             "examples": [
                 {
                     "queue": "general",
+                    "command": "python run_model.py",
                     "nodes": 1,
                     "ntasks": 1,
                     "cpus_per_task": 4,
@@ -385,6 +388,7 @@ class SlurmConfig(BaseBackendConfig):
                 },
                 {
                     "queue": "gpu",
+                    "command": "python run_model.py --gpu",
                     "nodes": 2,
                     "ntasks": 8,
                     "cpus_per_task": 2,
