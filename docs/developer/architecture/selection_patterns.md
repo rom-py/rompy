@@ -1,6 +1,6 @@
 # Component Selection Patterns
 
-One of the most important architectural decisions in rompy is the use of two different selection patterns for different types of functionality. Both patterns use entry points for discovery, but differ in when and how selection occurs. Understanding when and why to use each pattern is crucial for effective rompy development.
+A noteable architectural decisions in rompy is the use of two different selection patterns for different types of functionality. Both patterns use entry points for discovery, but differ in when and how selection occurs. Understanding when and why to use each pattern is crucial for effective rompy development.
 
 ## Overview
 
