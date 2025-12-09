@@ -4,7 +4,7 @@ We welcome contributions from the community! This document provides guidelines a
 
 ## Code of Conduct
 
-Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.rst) to ensure a welcoming and inclusive environment for everyone.
+Please read and follow our [Code of Conduct](../CODE_OF_CONDUCT.rst) to ensure a welcoming and inclusive environment for everyone.
 
 ## How to Contribute
 
@@ -211,7 +211,7 @@ If you need help with your contribution:
 
 ## Recognition
 
-All contributors are recognized in the [AUTHORS.rst](AUTHORS.rst) file. Contributions of any size are valuable to the project.
+All contributors are recognized in the [AUTHORS.rst](../AUTHORS.rst) file. Contributions of any size are valuable to the project.
 
 ## Pull Request Process
 

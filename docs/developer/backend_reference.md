@@ -3,7 +3,7 @@
 This document provides comprehensive technical reference for Rompy's backend system, focusing on concepts, usage patterns, and advanced configuration techniques.
 
 > [!NOTE]
-> For getting started with backends, see [backends](backends.md). For complete API documentation, see [api](api.md).
+> For getting started with backends, see [backends](../backends.md). For complete API documentation, see [api](../api.md).
 
 ## Backend Configuration System
 
@@ -642,7 +642,7 @@ config = LocalConfig(
 
 ### Getting Help
 
-1. **Check Documentation**: Review [backends](backends.md) and [api](api.md)
+1. **Check Documentation**: Review [backends](../backends.md) and [api](../api.md)
 2. **Validate Configuration**: Use `rompy backends validate`
 3. **Check Logs**: Review execution logs for error details
 4. **Test Incrementally**: Start with simple configurations
@@ -654,7 +654,7 @@ For additional help, see the troubleshooting section in [backends](backends.md) 
 
 For complete API documentation, see:
 
-* [api](api.md) - Complete API documentation
+* [api](../api.md) - Complete API documentation
 * `rompy.backends.config.BaseBackendConfig` - Base configuration class
 * `rompy.backends.config.LocalConfig` - Local execution configuration
 * `rompy.backends.config.DockerConfig` - Docker execution configuration

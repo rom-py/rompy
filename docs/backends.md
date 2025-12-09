@@ -502,7 +502,7 @@ class HPCConfig(BaseBackendConfig):
         return HPCRunBackend
 ```
 
-For detailed implementation guidance, see [backend_reference](backend_reference.md).
+For detailed implementation guidance, see [backend_reference](developer/backend_reference.md).
 
 ### Postprocessors
 
@@ -614,6 +614,6 @@ For complete API documentation, see:
 * `rompy.backends.config.DockeConfig` - Docker execution configuration
 * `rompy.run` - Run backend implementations
 * `rompy.backends.postprocessors` - Postprocessor implementations
-* [backend_reference](backend_reference.md) - Comprehensive technical reference
+* [backend_reference](developer/backend_reference.md) - Comprehensive technical reference
 
 The backend system provides a robust, type-safe foundation for model execution while maintaining flexibility for different deployment scenarios. From simple local development to complex containerized production environments, the backend system adapts to your needs while ensuring consistent, reproducible results.

@@ -32,6 +32,7 @@ nav:
     - Developer Guide:
           - Contributing: contributing.md
           - Development Setup: developer/index.md
+          - Seclection Patterns: developer/architecture/selection_patterns.md
           - Testing: testing_guide.md
           - Backend Reference: developer/backend_reference.md
     - API Reference: api.md

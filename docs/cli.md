@@ -242,7 +242,7 @@ volumes:
 executable: "/usr/local/bin/swan"
 ```
 
-For complete configuration options, see [backend_reference](backend_reference.md).
+For complete configuration options, see [backend_reference](developer/backend_reference.md).
 
 ## Global Options
 

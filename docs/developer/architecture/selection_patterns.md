@@ -476,7 +476,6 @@ The pattern demonstrates that **the same plugin discovery mechanism can serve di
 
 ## Further Reading
 
-- [Custom Backends](../extending/custom_backends.md) - Practical guide to creating new backends
-- [Custom Models](../extending/custom_models.md) - Guide to adding new model configurations
-- [Entry Points](../api_design/entry_points.md) - Technical details on the entry point system
-- [Configuration Patterns](configuration_patterns.md) - Deep dive into configuration design patterns
+- [Custom Backends](../../extending/custom_backends.md) - Practical guide to creating new backends
+- [Custom Models](../../extending/custom_models.md) - Guide to adding new model configurations
+- [Entry Points](../../api_design/entry_points.md) - Technical details on the entry point system
