@@ -37,11 +37,8 @@ from rompy.core.time import TimeRange
 from datetime import datetime
 
 # Create a basic model configuration
-config = BaseConfig(
-    template='path/to/your/template',  # Path to your model template
-    checkout='path/to/checkout',      # Path where model files will be generated
-)
-print('Created BaseConfig with template and checkout paths')
+config = BaseConfig()  # Empy configuration for demonstration purposes
+print('Created BaseConfig')
 
 # Create a time range for the simulation
 time_range = TimeRange(
@@ -62,24 +59,29 @@ print(f'Created ModelRun with ID: {run.run_id}')
 print(f'Output directory: {run.output_dir}')
 ```
 
-The actual model generation and execution would require real model executables and data sources. Here's how you would complete the actual workflow:
+To generate the model workspace, we then run the generate method, with will create all necessary input files based on the configuration provided (noting here that we are just using the base objects here with very little active configuration, so the generated workspace is very minimal).
 
 ```python
 # Generate model input files (this requires actual templates)
-# run.generate()
+run.generate()
+print('Generated model workspace')
+```
 
+Finally, we execute the model run using a local backend configuration. In a real run, the command would be configured as the actual model executable, here we just use a placeholder command (`ls -l`) for demonstration purposes to list the generated files in the model workspace.
+
+```python
 # Execute the model run with a local backend (this requires actual model executables)
-# from rompy.backends import LocalConfig
-# backend_config = LocalConfig(
-#     timeout=3600,                  # Maximum runtime in seconds
-#     command='your_model_executable',  # Command to run your model
-# )
-# success = run.run(backend=backend_config)
+from rompy.backends import LocalConfig
+backend_config = LocalConfig(
+    timeout=3600,                  # Maximum runtime in seconds
+    command='ls -l',  # Command to run your model
+)
+success = run.run(backend=backend_config)
 
-# if success:
-#     print('Model run completed successfully!')
-# else:
-#     print('Model run failed.')
+if success:
+    print('Model run completed successfully!')
+else:
+    print('Model run failed.')
 ```
 
 ## Understanding the Components
@@ -97,7 +99,7 @@ The actual model generation and execution would require real model executables a
 For more detailed information about Rompy concepts and usage:
 
 - Follow our [Complete User Guide](user_guide.md)
-- Explore the [Core Concepts](core_concepts.md) to understand the fundamental components 
+- Explore the [Core Concepts](core_concepts.md) to understand the fundamental components
 - Check out the [Progressive Tutorials](progressive_tutorials.md) for a structured learning path
 - Get started with [Configuration Deep Dive](configuration_deep_dive.md) for detailed configuration options
 
