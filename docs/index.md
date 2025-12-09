@@ -91,10 +91,7 @@ from rompy.core.time import TimeRange
 from datetime import datetime
 
 # Create a basic model configuration
-config = BaseConfig(
-    template="path/to/your/template",  # Path to cookiecutter template
-    checkout="main",                   # Git branch for template
-)
+config = BaseConfig()
 
 # Create a model run instance with time range
 run = ModelRun(
@@ -113,7 +110,7 @@ run.generate()
 
 # Execute the model run
 from rompy.backends import LocalConfig
-backend_config = LocalConfig(timeout=3600, command="your_model_executable")
+backend_config = LocalConfig(timeout=3600, command="echo 'Running model...'")
 success = run.run(backend=backend_config)
 
 if success:
