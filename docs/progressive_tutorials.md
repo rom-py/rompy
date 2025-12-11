@@ -2,35 +2,163 @@
 
 This section contains a series of progressive tutorials that gradually introduce more complex concepts. Each tutorial builds on the previous one, creating a learning path from basic usage to advanced features. If you're new to Rompy, you may want to start with the [User Guide](user_guide.md).
 
-## Tutorial 1: Basic Model Configuration and Execution
+## Understanding Rompy Components
 
-In this first tutorial, we'll cover the fundamentals of creating a model configuration and running it.
+Rompy is a python package for generating configuration files and forcing data for numerical wave and wave-climate models. The core architecture consists of several key components:
+
+1. **ModelRun**: Combines all components and generates a simulation workspace ready to run
+   - **Key Attributes**: run_id, period (TimeRange), config, output_dir
+   - **Methods**: `run()`: Executes the model simulation
+
+2. **Grid**: Defines the spatial domain and resolution
+   - **Types**: `RegularGrid`: Uniform spacing in x and y directions, `UnstructuredGrid`: Non-uniform mesh (if supported)
+   - **Key Attributes**: x0, y0, nx, ny, dx, dy
+
+3. **TimeRange**: Specifies the temporal domain of the simulation
+   - **Key Attributes**: start, end, interval
+
+4. **Data Sources**: Provides input data for the model
+   - **Types**: `SwanDataGrid`: For SWAN model inputs, Other model-specific data types
+   - **Components**: Bathymetry, Wind, Boundary conditions, Other environmental variables
+
+5. **Config**: Holds model-specific configuration settings
+   - **Types**: `SwanConfig`: For SWAN model, Other model-specific configs
+   - **Key Components**: Physics parameters, Numerical scheme settings, Output specifications
+
+6. **Output**: Defines what data to save from the model run
+   - **Components**: Variables to output, Output locations, Output frequency
+
+## Tutorial 1: Grid Configuration and Visualization
+
+In this first tutorial, we'll explore grid configuration and visualization capabilities of Rompy:
+
+```python
+from rompy.core.grid import RegularGrid
+from pathlib import Path
+
+# Create a RegularGrid for an area off the west coast of Australia
+grid = RegularGrid(
+    x0=110.0,  # Longitude of the lower-left corner
+    y0=-35.2,  # Latitude of the lower-left corner
+    rot=4.0,   # Rotation angle in degrees
+    dx=0.5,    # Grid spacing in the x-direction (degrees)
+    dy=0.5,    # Grid spacing in the y-direction (degrees)
+    nx=15,     # Number of grid points in the x-direction
+    ny=25,     # Number of grid points in the y-direction
+)
+
+# Each grid has a bbox and a plot method
+print("Grid bounding box:", grid.bbox())
+
+# The grid can be plotted directly
+# grid.plot()  # Uncomment to visualize
+```
+
+## Tutorial 2: Working with Data Sources
+
+Now let's work with data sources to extract relevant oceanographic data:
+
+```python
+from rompy.core.data import DataGrid
+from rompy.core.source import SourceFile
+from rompy.core.time import TimeRange
+
+# Define a data source for bathymetry
+# For this example, we'll use a sample GEBCO file (you would replace with your actual path)
+bathymetry_source = SourceFile(uri="path/to/gebco_bathymetry.nc")
+
+# Create a DataGrid object for bathymetry
+gebco_grid = DataGrid(
+    id="gebco_bathymetry",
+    source=bathymetry_source,
+    variables=["elevation"],
+    coords={"y": "lat", "x": "lon"},
+)
+
+# Extract bathymetry data for our grid
+workdir = Path("./output_bathymetry")
+workdir.mkdir(exist_ok=True)
+
+# Output will be the path to the extracted data file
+output = gebco_grid.get(grid=grid, destdir=workdir)
+print(f"Bathymetry data extracted to: {output}")
+```
+
+## Tutorial 3: Time-Series Data Extraction
+
+Let's work with time-series data, such as atmospheric forcing:
+
+```python
+# Create a TimeRange for our simulation period
+timerange = TimeRange(
+    start="2023-01-01T00:00:00",
+    end="2023-01-02T00:00:00",
+    interval="1H",  # Hourly intervals
+)
+
+# Define a source for time-varying data (e.g., ERA5 wind data)
+wind_source = SourceFile(uri="path/to/era5_wind.nc")
+
+# Create a DataGrid for wind forcing
+from rompy.core.filters import Filter
+
+era5_forcing = DataGrid(
+    id="era5_wind",
+    source=wind_source,
+    variables=["u10", "v10"],  # 10m wind components
+    coords={"t": "time", "y": "latitude", "x": "longitude"},
+    # Use filter to handle coordinate issues (like reversed latitude)
+    filter=Filter(sort=dict(coords=["latitude"])),
+)
+
+# Extract wind data for our grid and time range
+wind_output = era5_forcing.get(grid=grid, time=timerange, destdir=workdir)
+print(f"Wind data extracted to: {wind_output}")
+```
+
+## Tutorial 4: Boundary Condition Data
+
+For wave models, we often need boundary conditions from spectral data:
+
+```python
+from rompy.core.boundary import BoundaryWaveStation
+
+# Create a boundary dataset from spectra data
+boundary_stations = BoundaryWaveStation(
+    id="ww3_boundary",
+    source=SourceFile(uri="path/to/spec_data.nc"),
+    sel_method="idw",  # Inverse distance weighting selection method
+    sel_method_kwargs={
+        "tolerance": 4  # Distance tolerance for selection
+    },
+)
+
+# Extract boundary condition data along the grid boundary
+boundary_output = boundary_stations.get(grid=grid, time=timerange, destdir=workdir)
+print(f"Boundary data extracted to: {boundary_output}")
+```
+
+## Tutorial 5: Basic ModelRun Configuration
+
+Now let's create a basic model configuration using Rompy's core components:
 
 ```python
 from rompy.model import ModelRun
 from rompy.core.config import BaseConfig
-from rompy.core.time import TimeRange
-from datetime import datetime
 
-# Define a simple model configuration
+# Create a basic configuration
 config = BaseConfig(
-    template="path/to/template",
-    checkout="path/to/checkout",
-)
-
-# Define the time period for the simulation
-time_range = TimeRange(
-    start=datetime(2023, 1, 1),
-    end=datetime(2023, 1, 2),
-    interval="1H",
+    template="path/to/model_template",
+    checkout="path/to/model_checkout",
+    grid=grid,  # Include the grid we defined earlier
 )
 
 # Create a model run
 model_run = ModelRun(
-    run_id="basic_tutorial",
-    period=time_range,
+    run_id="progressive_tutorial_run",
+    period=timerange,  # Use the time range we defined earlier
     config=config,
-    output_dir="./output",
+    output_dir="./model_output",
 )
 
 # Generate the model input files
@@ -38,131 +166,83 @@ staging_dir = model_run.generate()
 print(f"Model files generated at: {staging_dir}")
 ```
 
-## Tutorial 2: Adding a Grid Configuration
+## Tutorial 6: Complete Workflow with Data Integration
 
-Let's extend the basic example by adding a grid configuration:
+Let's create a more complete example that integrates multiple data sources:
 
 ```python
-from rompy.core.grid import RegularGrid
+from pathlib import Path
+import tempfile
 
-# Define a regular grid
+# Create a temporary workspace
+workdir = Path("./integrated_output")
+workdir.mkdir(exist_ok=True)
+
+# Define our area and time range
 grid = RegularGrid(
-    lon_min=-75.0,
-    lon_max=-65.0,
-    lat_min=35.0,
-    lat_max=45.0,
-    dx=0.1,
-    dy=0.1,
+    x0=110.0,
+    y0=-35.2,
+    rot=4.0,
+    dx=0.5,
+    dy=0.5,
+    nx=15,
+    ny=25,
 )
 
-# Create a configuration with the grid
-config_with_grid = BaseConfig(
-    template="path/to/template",
-    checkout="path/to/checkout",
-    grid=grid,  # Add the grid configuration
+timerange = TimeRange(
+    start="2023-01-01T00:00:00",
+    end="2023-01-02T00:00:00",
+    interval="1H",
 )
 
-# Create and run the model as before
-model_run = ModelRun(
-    run_id="grid_tutorial",
-    period=time_range,
-    config=config_with_grid,
-    output_dir="./output_grid",
+# Create multiple data sources
+bathy_source = DataGrid(
+    id="gebco_bathy",
+    source=SourceFile(uri="path/to/bathy.nc"),
+    variables=["elevation"],
+    coords={"y": "lat", "x": "lon"},
 )
 
-staging_dir = model_run.generate()
-print(f"Model with grid config generated at: {staging_dir}")
-```
-
-## Tutorial 3: Using Data Sources
-
-Now, let's add data sources to our configuration:
-
-```python
-from rompy.core.data import DataGrid
-from rompy.core.source import SourceFile
-
-# Define a data source
-data_source = SourceFile(
-    uri="path/to/data.nc",
-    driver="netcdf",
+wind_source = DataGrid(
+    id="era5_wind",
+    source=SourceFile(uri="path/to/wind.nc"),
+    variables=["u10", "v10"],
+    coords={"t": "time", "y": "latitude", "x": "longitude"},
+    filter=Filter(sort=dict(coords=["latitude"])),
 )
 
-# Create a data object using the source
-data_object = DataGrid(
-    source=data_source,
-    var_map={"significant_wave_height": "swh"},
-)
+# Extract data for our model domain
+bathy_output = bathy_source.get(grid=grid, destdir=workdir)
+wind_output = wind_source.get(grid=grid, time=timerange, destdir=workdir)
 
-# Create a configuration with grid and data
-config_with_data = BaseConfig(
-    template="path/to/template",
-    checkout="path/to/checkout",
+print(f"Bathymetry data: {bathy_output}")
+print(f"Wind data: {wind_output}")
+
+# Now create a model configuration that uses this data
+config = BaseConfig(
+    template="path/to/model_template",
+    checkout="path/to/model_checkout",
     grid=grid,
-    # Add data sources to the configuration
-    data_sources=[data_object],
 )
 
 model_run = ModelRun(
-    run_id="data_tutorial",
-    period=time_range,
-    config=config_with_data,
-    output_dir="./output_data",
+    run_id="integrated_workflow",
+    period=timerange,
+    config=config,
+    output_dir=workdir / "model_outputs",
 )
 
+# Generate inputs
 staging_dir = model_run.generate()
-print(f"Model with data sources generated at: {staging_dir}")
+print(f"Generated model files at: {staging_dir}")
 ```
 
-## Tutorial 4: Multi-Source Data Integration
-
-Let's see how to integrate multiple data sources:
-
-```python
-from rompy.core.source import SourceIntake
-
-# Define additional data sources
-remote_source = SourceIntake(
-    catalog="https://catalog.example.com/catalog.yml",
-    entry="ocean_currents",
-)
-
-# Create multiple data objects
-wave_data = DataGrid(
-    source=data_source,  # From previous tutorial
-    var_map={"significant_wave_height": "swh"},
-)
-
-current_data = DataGrid(
-    source=remote_source,
-    var_map={"eastward_sea_water_velocity": "u", "northward_sea_water_velocity": "v"},
-)
-
-# Create configuration with multiple data sources
-config_multi_data = BaseConfig(
-    template="path/to/template",
-    checkout="path/to/checkout",
-    grid=grid,
-    data_sources=[wave_data, current_data],
-)
-
-model_run = ModelRun(
-    run_id="multi_data_tutorial",
-    period=time_range,
-    config=config_multi_data,
-    output_dir="./output_multi_data",
-)
-
-staging_dir = model_run.generate()
-print(f"Model with multiple data sources generated at: {staging_dir}")
-```
-
-## Tutorial 5: Model Execution with Different Backends
+## Tutorial 7: Model Execution with Different Backends
 
 Now let's run our model using different execution backends:
 
 ```python
-from rompy.backends import LocalConfig, DockerConfig
+from rompy.backends import LocalConfig
 
 # Execute with local backend
 local_config = LocalConfig(
@@ -172,165 +252,51 @@ local_config = LocalConfig(
 )
 
 # Run the model
-success_local = model_run.run(backend=local_config)
-print(f"Local execution status: {'Success' if success_local else 'Failed'}")
-
-# Execute with Docker backend (conceptual)
-docker_config = DockerConfig(
-    image="model_image:latest",
-    timeout=7200,
-    cpu=4,
-    memory="8g",
-    volumes=[f"{model_run.output_dir}:/output:rw"],
-)
-
-# Run the model in Docker
-success_docker = model_run.run(backend=docker_config)
-print(f"Docker execution status: {'Success' if success_docker else 'Failed'}")
+success = model_run.run(backend=local_config)
+print(f"Execution status: {'Success' if success else 'Failed'}")
 ```
 
-## Tutorial 6: Post-processing Results
+## Tutorial 8: Using YAML Configuration Files
 
-Finally, let's process the results after model execution:
+One of the key advantages of Rompy's schema-based approach is the ability to represent complex model configurations as transportable YAML files.
+
+### Exporting to YAML
+
+You can programmatically generate YAML from a Python configuration:
 
 ```python
-# Process results after successful execution
-if success_local:
-    # Use a basic processor
-    results = model_run.postprocess(processor="noop")
-    print(f"Post-processing results: {results}")
-    
-    # Or run a complete pipeline (generate, run, and process)
-    pipeline_results = model_run.pipeline(
-        pipeline_backend="local",
-        run_backend="local",
-        processor="noop",
-        run_kwargs={"timeout": 3600, "command": "your_model_executable"},
-        process_kwargs={"cleanup": True},
-    )
-    print(f"Pipeline results: {pipeline_results}")
+# Export the complete model configuration to YAML
+yaml_content = model_run.model_dump_yaml()
+print("YAML Configuration:")
+print(yaml_content)
+
+# Or save directly to a file
+config_file = workdir / "model_config.yaml"
+with open(config_file, "w") as f:
+    f.write(yaml_content)
+print(f"Configuration saved to: {config_file}")
 ```
 
-## Advanced Tutorial: Complete Workflow with Error Handling
+### Loading from YAML
 
-For a more complete example with error handling and validation:
+To use a YAML configuration in Python:
 
 ```python
 from rompy.model import ModelRun
-from rompy.core.config import BaseConfig
-from rompy.core.time import TimeRange
-from rompy.core.grid import RegularGrid
-from rompy.backends import LocalConfig
-from datetime import datetime
 
-def run_complete_model_workflow():
-    try:
-        # 1. Define spatial and temporal domain
-        grid = RegularGrid(
-            lon_min=-75.0,
-            lon_max=-65.0,
-            lat_min=35.0,
-            lat_max=45.0,
-            dx=0.1,
-            dy=0.1,
-        )
-        
-        time_range = TimeRange(
-            start=datetime(2023, 1, 1),
-            end=datetime(2023, 1, 2),
-            interval="1H"
-        )
-        
-        # 2. Create configuration
-        config = BaseConfig(
-            template="path/to/template",
-            checkout="path/to/checkout",
-            grid=grid,
-        )
-        
-        # 3. Create model run
-        model_run = ModelRun(
-            run_id="complete_workflow",
-            period=time_range,
-            config=config,
-            output_dir="./complete_output",
-        )
-        
-        # 4. Generate inputs
-        print("Generating model input files...")
-        staging_dir = model_run.generate()
-        print(f"Input files generated at: {staging_dir}")
-        
-        # 5. Execute model
-        print("Executing model run...")
-        backend_config = LocalConfig(
-            timeout=3600,
-            command="your_model_executable"  # Replace with actual command
-        )
-        
-        success = model_run.run(backend=backend_config)
-        
-        if success:
-            print("Model execution completed successfully!")
-            
-            # 6. Process results
-            print("Processing results...")
-            results = model_run.postprocess(processor="noop")
-            print(f"Post-processing results: {results}")
-            
-            return {"success": True, "results": results}
-        else:
-            print("Model execution failed!")
-            return {"success": False, "error": "Model execution failed"}
-            
-    except Exception as e:
-        print(f"Workflow failed with error: {str(e)}")
-        return {"success": False, "error": str(e)}
+# Load the configuration from YAML
+with open(config_file, "r") as f:
+    yaml_content = f.read()
 
-# Run the complete workflow
-workflow_result = run_complete_model_workflow()
-print(f"Workflow result: {workflow_result}")
+# Create the model run from YAML
+loaded_model_run = ModelRun.model_validate_yaml(yaml_content)
 
-
-## Using YAML Configuration Files
-
-One of the key advantages of Rompy's schema-based approach is the ability to represent complex model configurations as transportable YAML files. This section demonstrates how to convert Python-based configurations to YAML and run them using Rompy's command-line interface.
-
-### Converting Python Configuration to YAML
-
-Let's take the complete workflow example from Tutorial 6 and represent it as a YAML configuration file:
-
-```yaml
-# model_config.yaml
-run_id: "yaml_workflow"
-period:
-  start: "2023-01-01T00:00:00"
-  end: "2023-01-02T00:00:00"
-  interval: "1H"
-config:
-  template: "path/to/template"
-  checkout: "path/to/checkout"
-  grid:
-    _type: "regular"
-    lon_min: -75.0
-    lon_max: -65.0
-    lat_min: 35.0
-    lat_max: 45.0
-    dx: 0.1
-    dy: 0.1
-output_dir: "./yaml_output"
+# Use it just like the original
+staging_dir = loaded_model_run.generate()
+print(f"Generated from YAML at: {staging_dir}")
 ```
 
-### Understanding the YAML Structure
-
-The YAML representation preserves all the information from the Python configuration:
-
-1. **Discriminator Field**: The `_type: "regular"` field identifies the specific grid implementation
-2. **Hierarchical Structure**: Nested objects maintain the same structure as in Python
-3. **Type Safety**: The schema ensures all values match expected types when loaded
-4. **Validation**: All constraints defined in the Pydantic models are enforced
-
-### Running with the Command Line Interface
+### Running with Command Line Interface
 
 Once you have your YAML configuration, you can run it using Rompy's CLI:
 
@@ -341,93 +307,34 @@ rompy run --config model_config.yaml
 To specify a different backend:
 
 ```bash
-rompy run --config model_config.yaml --backend local --timeout 3600
+rompy run --config model_config.yaml --backend-config local_backend.yml
 ```
 
 For more information about available CLI options, see the [CLI Reference](cli.md).
 
-### Benefits of YAML Configuration
+## Tutorial 9: Advanced Data Processing
 
-1. **Transportability**: The entire model configuration is contained in a single, human-readable file
-2. **Version Control**: YAML files can be easily committed to version control systems
-3. **Reproducibility**: Sharing a single YAML file allows others to reproduce the exact same model run
-4. **Declarative**: The config file fully describes the model run without requiring Python code
-5. **Validation**: All configurations are validated against the schema when loaded
-
-### Converting an Existing Python Configuration to YAML
-
-You can programmatically generate YAML from a Python configuration:
+Working with real-world data often requires more sophisticated data processing techniques:
 
 ```python
-from rompy.model import ModelRun
-from rompy.core.config import BaseConfig
-from rompy.core.time import TimeRange
-from rompy.core.grid import RegularGrid
-from datetime import datetime
+# For boundary condition data, you can extract and interpolate
+# data to specific grid boundary points using various methods
 
-# Create your configuration in Python
-grid = RegularGrid(
-    lon_min=-75.0,
-    lon_max=-65.0,
-    lat_min=35.0,
-    lat_max=45.0,
-    dx=0.1,
-    dy=0.1,
+boundary_data = BoundaryWaveStation(
+    id="boundary_conditions",
+    source=SourceFile(uri="path/to/boundary_data.nc"),
+    sel_method="idw",  # Use inverse distance weighting
+    sel_method_kwargs={"tolerance": 4.0},
 )
 
-time_range = TimeRange(
-    start=datetime(2023, 1, 1),
-    end=datetime(2023, 1, 2),
-    interval="1H"
-)
-
-config = BaseConfig(
-    template="path/to/template",
-    checkout="path/to/checkout",
+# Extract boundary data for our grid and time period
+boundary_output = boundary_data.get(
     grid=grid,
+    time=timerange,
+    destdir=workdir
 )
 
-model_run = ModelRun(
-    run_id="yaml_export",
-    period=time_range,
-    config=config,
-    output_dir="./yaml_export_output",
-)
-
-# Export the configuration to YAML
-yaml_content = model_run.model_dump_yaml()
-print(yaml_content)
-
-# Or save directly to a file
-with open("exported_config.yaml", "w") as f:
-    f.write(yaml_content)
-```
-
-### Loading and Using YAML Configuration
-
-To use a YAML configuration in Python:
-
-```python
-from rompy.model import ModelRun
-
-# Load the configuration from YAML
-with open("model_config.yaml", "r") as f:
-    yaml_content = f.read()
-
-# Create the model run from YAML
-model_run = ModelRun.model_validate_yaml(yaml_content)
-
-# Now run as normal
-staging_dir = model_run.generate()
-print(f"Generated at: {staging_dir}")
-
-# Execute with a backend
-backend_config = LocalConfig(timeout=3600, command="your_model_executable")
-success = model_run.run(backend=backend_config)
-print(f"Execution status: {'Success' if success else 'Failed'}")
-```
-
-This approach allows for maximum flexibility - you can create configurations in Python, export them to YAML for sharing, and load them back into Python when needed, all while maintaining the validation benefits of the schema-driven approach.
+print(f"Boundary conditions extracted to: {boundary_output}")
 ```
 
 ## Model-Specific Tutorials

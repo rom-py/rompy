@@ -23,10 +23,10 @@ nav:
           - Extending Models: extending_models.md
 
     - Advanced Topics:
+          - Architecture Overview: architecture_overview.md
           - Backends: backends.md
           - CLI: cli.md
           - Plugin Architecture: plugin_architecture.md
-          - Architecture Overview: architecture_overview.md
           - Formatting and Logging: formatting_and_logging.md
           - Schema Advantages: schema_advantages.md
     - Developer Guide:
@@ -37,8 +37,9 @@ nav:
           - Backend Reference: developer/backend_reference.md
     - API Reference: api.md
     - FAQ: faq.md
-    - Demonstration Notebooks:
-          - Rompy core: notebooks/common/rompy_core_features.ipynb
+    - Notebooks:
+          - Rompy core:
+                - Core features: notebooks/common/rompy_core_features.ipynb
           - SWAN:
                 - Basic demo: notebooks/swan/example_procedural.ipynb
                 - Sensitivity demo: notebooks/swan/example_sensitivity.ipynb
