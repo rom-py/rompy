@@ -155,7 +155,7 @@ class SlurmRunBackend:
             script_path = f.name
 
         logger.debug(f"SLURM job script created at: {script_path}")
-        logger.debug(f"Job script content:\n{'\n'.join(script_lines)}")
+	logger.debug("Job script content:\n%s", "\n".join(script_lines))
 
         return script_path
 
