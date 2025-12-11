@@ -1,11 +1,6 @@
 # Core Concepts
 
-> [!NOTE]
-> For information about Rompy's formatting and logging system, see [formatting_and_logging](formatting_and_logging.md).
-> 
-> For details on using the command line interface, see [cli](cli.md).
-
-This section delves into the fundamental components that make up Rompy's architecture. If you're new to Rompy, start with the [User Guide](user_guide.md) before diving into these concepts.
+This section explores the fundamental components that make up Rompy's architecture. If you're new to Rompy, start with the [User Guide](user_guide.md) before diving into these concepts.
 
 Rompy is a modular library with configuration and execution separated by design. The core framework consists of two primary concepts:
 
@@ -18,10 +13,20 @@ At a high level, ModelRun orchestrates the entire model execution process includ
 
 ### Grid Components
 
-Grids define the spatial domain of models. Rompy provides several grid types:
+Grids define the spatial domain of models. The base objects described here have base methods and attributes that are used by the core rompy framework when performing things like fetching data. These base objects are inherited by model implementations, with additional required model specific functionality then implemented implemented in top.
+
+Rompy provides several grid types:
 
 ::: rompy.core.grid.BaseGrid
 ::: rompy.core.grid.RegularGrid
+
+### Source Components
+
+Source objects represent different ways to access data for models. They represent the abstraction layer between data inputs and model configurations, allowing for flexibility in data sourcing.
+
+::: rompy.core.source.SourceBase
+::: rompy.core.source.SourceFile
+::: rompy.core.source.SourceIntake
 
 ### Data Components
 
@@ -29,9 +34,6 @@ Data objects represent and handle input data for models:
 
 ::: rompy.core.data.DataBlob
 ::: rompy.core.data.DataGrid
-::: rompy.core.source.SourceBase
-::: rompy.core.source.SourceFile
-::: rompy.core.source.SourceIntake
 
 ### Boundary Components
 
