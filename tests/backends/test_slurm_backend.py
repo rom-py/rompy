@@ -11,7 +11,8 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, mock_open, patch
-
+import os
+import tempfile
 import pytest
 from pydantic import ValidationError
 
@@ -309,6 +310,7 @@ class TestSlurmRunBackend:
             ntasks=4,
             cpus_per_task=8,
             time_limit="24:00:00",
+            command="echo 'Test'",
             account="myproject",
             qos="high",
             reservation="special",
