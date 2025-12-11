@@ -92,10 +92,6 @@ local = "rompy.pipeline:LocalPipelineBackend"
 test = ["pytest", "envyaml", "coverage"]
 extra = ["gcsfs", "zarr", "cloudpathlib[s3,gs,azure]"]
 dev = ["pytest", "envyaml", "coverage", "ruff", "black"]
-
-test = ["pytest", "envyaml", "coverage"]
-extra = ["gcsfs", "zarr", "cloudpathlib[s3,gs,azure]"]
-dev = ["pytest", "envyaml", "coverage", "ruff", "black"]
 docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.setuptools.packages.find]
