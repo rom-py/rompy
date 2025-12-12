@@ -42,11 +42,15 @@ class SlurmRunBackend:
 
         # Use provided workspace or generate if not provided (for backwards compatibility)
         if workspace_dir is None:
-            logger.warning(
-                "No workspace_dir provided, generating files (this may cause double generation in pipeline)"
-            )
-            staging_dir = model_run.generate()
-            logger.info(f"Model inputs generated in: {staging_dir}")
+            try:
+                logger.warning(
+                    "No workspace_dir provided, generating files (this may cause double generation in pipeline)"
+                )
+                staging_dir = model_run.generate()
+                logger.info(f"Model inputs generated in: {staging_dir}")
+            except Exception as e:
+                logger.exception(f"Model generation failed: {e}")
+                return False
         else:
             logger.info(f"Using provided workspace directory: {workspace_dir}")
             staging_dir = workspace_dir
