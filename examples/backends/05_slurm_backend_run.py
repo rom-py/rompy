@@ -54,9 +54,10 @@ def example_slurm_basic():
 
         # Basic SLURM configuration
         config = SlurmConfig(
-            queue="general",  # SLURM partition name
             command="python run_model.py",  # Command to run in the workspace
             timeout=1800,  # Max execution time in seconds (30 minutes)
+            output_file="slurm-%j.out",  # Output file pattern (job ID)
+            error_file="slurm-%j.err",  # Error file pattern
             nodes=1,  # Number of nodes to allocate
             ntasks=1,  # Number of tasks (processes) to run
             cpus_per_task=2,  # Number of CPU cores per task
@@ -115,22 +116,18 @@ def example_slurm_advanced():
 
         # Advanced SLURM configuration with many parameters
         config = SlurmConfig(
-            queue="gpu",  # GPU partition
-            command="python run_model.py --gpu",  # Command to run in the workspace
+            command="python run_model.py",  # Command to run in the workspace
             timeout=7200,  # 2 hours timeout
             nodes=2,  # 2 compute nodes
             ntasks=8,  # 8 tasks total
             cpus_per_task=4,  # 4 CPUs per task
             time_limit="02:00:00",  # 2 hours time limit
-            account="research_project",  # Account for billing
-            qos="high",  # Quality of Service
-            reservation="special_reservation",  # Reservation name
             output_file="slurm-%j.out",  # Output file pattern (job ID)
             error_file="slurm-%j.err",  # Error file pattern
             job_name="advanced_simulation",  # Name of the SLURM job
             mail_type="BEGIN,END,FAIL",  # Types of notifications
             mail_user="researcher@domain.com",  # Email for notifications
-            additional_options=["--gres=gpu:v100:2", "--exclusive"],  # GPU resources
+            additional_options=["--exclusive"],  # GPU resources
             env_vars={  # Environment variables
                 "OMP_NUM_THREADS": "4",
                 "MODEL_DEBUG": "true",
@@ -184,7 +181,6 @@ def example_slurm_with_custom_command():
 
         # SLURM configuration with a custom command
         config = SlurmConfig(
-            queue="general",
             timeout=3600,  # 1 hour timeout
             nodes=1,
             ntasks=1,
