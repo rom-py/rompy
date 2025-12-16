@@ -80,6 +80,7 @@ rompy_data = "rompy:cat"
 [project.entry-points."rompy.run"]
 local = "rompy.run:LocalRunBackend"
 docker = "rompy.run.docker:DockerRunBackend"
+slurm = "rompy.run.slurm:SlurmRunBackend"
 
 [project.entry-points."rompy.postprocess"]
 noop = "rompy.postprocess:NoopPostprocessor"
