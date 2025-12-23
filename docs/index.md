@@ -6,6 +6,30 @@ Rompy (Relocatable Ocean Modelling in PYthon) is a comprehensive, modular Python
 
 ---
 
+## Why Rompy?
+
+Rompy was developed to address common pain points in the ocean modeling workflow:
+
+- **Complex Model Setup & Configuration**: Traditional model setup can be a convoluted process involving manual editing of text files and scripts, making it error-prone and difficult to reproduce.
+- **Data Handling Complexity**: Ocean models require a wide variety of data formats for forcing, boundary conditions, and validation, each with its own complexities.
+- **Environment-Specific Execution**: Running models across different environments (local, Docker, HPC) often requires significant changes to the execution scripts and environment setup.
+- **Reproducibility & Version Control**: It can be challenging to version control a complete model configuration, including the exact data and software versions used.
+- **Model-Specific Complexity**: Each model has its own unique set of tools and conventions, making it difficult to switch between models or to couple them.
+
+---
+
+## History
+
+- **2021**: Initial development by Paul Branson.
+- **Sept 2022**: Synergies with internal efforts at Oceanum lead to initialisation of collaboration.
+- **Currently**: Supported through the ROAM Gen 3 effort.
+
+All code is open source and available under an Apache license. You can find a list of contributors [here](https://github.com/rom-py/rompy/blob/main/CONTRIBUTORS) and the project's history [here](https://github.com/rom-py/rompy/blob/main/HISTORY.rst).
+
+
+
+---
+
 ## Key Features
 
 - **Modular Architecture**: Clean separation of configuration and execution logic supporting multiple ocean models
@@ -20,12 +44,7 @@ Rompy (Relocatable Ocean Modelling in PYthon) is a comprehensive, modular Python
 
 ## Getting Started
 
-New to Rompy? Start with our comprehensive guides:
-
-- [**Installation Guide**](installation.md) - Prerequisites, installation methods, and environment setup
-- [**User Guide**](user_guide.md) - Complete tutorial from installation to running your first model
-- [**Quickstart**](quickstart.md) - Basic example to quickly get up and running
-- [**Progressive Tutorials**](progressive_tutorials.md) - Step-by-step tutorials building from basic to advanced usage
+New to Rompy? Our **[Getting Started Guide](getting_started.md)** will walk you through installation, core concepts, and running your first model simulation.
 
 ---
 

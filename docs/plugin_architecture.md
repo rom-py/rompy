@@ -1,18 +1,52 @@
 # Plugin Architecture
 
-Rompy features a flexible plugin-based architecture that allows for extensible model execution and output processing. The system uses Python entry points to automatically discover and load backends, making it easy to extend with custom implementations.
+Rompy features a flexible plugin-based architecture that allows for extensible model execution and output processing. The system uses Python entry points to automatically discover and load plugins, making it easy to extend with custom implementations.
 
-For basic plugin usage, please see the [User Guide](user_guide.md) and [Advanced Topics](backends.md).
+## Core Plugin Categories
 
-## Architecture Overview
+ROMPY implements three main plugin categories using Python entry points:
 
-The plugin architecture is built around three main categories:
+1.  **Configuration Plugins (`rompy.config`)**: Model-specific configurations.
+2.  **Data Source Plugins (`rompy.source`)**: Custom data acquisition implementations.
+3.  **Execution Plugins**: Three subcategories:
+    - **Run Backends (`rompy.run`)**: Model execution environments.
+    - **Postprocessors (`rompy.postprocess`)**: Output analysis and transformation.
+    - **Pipeline Backends (`rompy.pipeline`)**: Workflow orchestration.
 
-1. **Run Backends** (`rompy.run`): Handle model execution in different environments
-2. **Postprocessors** (`rompy.postprocess`): Handle model output analysis and transformation
-3. **Pipeline Backends** (`rompy.pipeline`): Orchestrate complete model workflows
+## Dual Selection Pattern
 
-Each category uses Python entry points for automatic discovery and loading, allowing third-party packages to easily extend rompy's capabilities.
+ROMPY uses two distinct selection patterns for different plugin types:
+
+-   **Pattern 1: Pydantic Discriminated Union (for configurations)**
+    -   **Selection**: At model instantiation time via a `model_type` discriminator field.
+    -   **State**: The configuration becomes part of the persistent, serializable model state.
+    -   **Benefit**: Enables reproducible science with full validation.
+
+-   **Pattern 2: Runtime String Selection (for backends)**
+    -   **Selection**: At execution time via string parameters.
+    -   **State**: Allows environment-specific deployment without changing the model configuration.
+    -   **Benefit**: Supports late binding and optional availability.
+
+## Entry Point Registration
+
+All plugins are registered in `pyproject.toml`:
+
+```toml
+[project.entry-points."rompy.config"]
+swan = "rompy.swan.config:SwanConfig"
+schism = "rompy.schism.config:SCHISMConfig"
+
+[project.entry-points."rompy.source"]
+file = "rompy.core.source:SourceFile"
+intake = "rompy.core.source:SourceIntake"
+
+[project.entry-points."rompy.run"]
+local = "rompy.run:LocalRunBackend"
+docker = "rompy.run.docker:DockerRunBackend"
+```
+
+For basic plugin usage, please see the [Getting Started Guide](getting_started.md) and [Advanced Topics](backends.md).
+
 
 ## Run Backends
 

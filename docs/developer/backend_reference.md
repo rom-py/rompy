@@ -3,7 +3,7 @@
 This document provides comprehensive technical reference for Rompy's backend system, focusing on concepts, usage patterns, and advanced configuration techniques.
 
 > [!NOTE]
-> For getting started with backends, see [backends](../backends.md). For complete API documentation, see [api](../api.md).
+> For getting started with backends, see [backends](https://rom-py.github.io/rompy/backends/). For complete API documentation, see [api](../api.md).
 
 ## Backend Configuration System
 

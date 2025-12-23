@@ -7,7 +7,7 @@ Welcome to the rompy developer documentation. This section provides detailed tec
 To get started developing for Rompy:
 
 1. **Fork and clone the repository**
-2. **Set up your development environment** - See the [Installation Guide](../installation.md) for setup instructions
+- **Set up your development environment** - See the [Getting Started Guide](../getting_started.md) for setup instructions
 3. **Run the tests** - Make sure you can run the test suite before making changes
 4. **Read the contribution guidelines** - See the [Contribution Guidelines](../contributing.md) for important information
 

@@ -1,6 +1,6 @@
 # Progressive Tutorials
 
-This section contains a series of progressive tutorials that gradually introduce more complex concepts. Each tutorial builds on the previous one, creating a learning path from basic usage to advanced features. If you're new to Rompy, you may want to start with the [User Guide](user_guide.md).
+This section contains a series of progressive tutorials that gradually introduce more complex concepts. Each tutorial builds on the previous one, creating a learning path from basic usage to advanced features. If you're new to Rompy, you may want to start with the [Getting Started Guide](getting_started.md).
 
 ## Understanding Rompy Components
 

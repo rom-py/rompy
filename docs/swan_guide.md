@@ -189,6 +189,14 @@ Configure SWAN outputs based on your needs:
 - Optimize physics options (simplify where possible)
 - Use appropriate parallelization settings
 
+## Notebook Examples
+
+For practical, hands-on examples of how to use SWAN with Rompy, please see the following notebooks:
+
+- **[Basic Demo](notebooks/swan/example_procedural.ipynb)**: A basic demonstration of a procedural SWAN run.
+- **[Sensitivity Demo](notebooks/swan/example_sensitivity.ipynb)**: An example of how to run a sensitivity analysis with SWAN.
+- **[Boundary Conditions](notebooks/swan/boundary/boundnest1.ipynb)**: Examples of how to set up different types of boundary conditions.
+
 ## Next Steps
 
 - Review the [Backends Guide](backends.md) for detailed execution options

@@ -1,6 +1,20 @@
 # Extending Models
 
-This document provides detailed information on how to add new ocean models to Rompy. For basic concepts about model configuration, please see the [User Guide](user_guide.md) and [Progressive Tutorials](progressive_tutorials.md). For advanced architecture information, see [Plugin Architecture](plugin_architecture.md).
+This document provides detailed information on how to add new ocean models to Rompy. For basic concepts about model configuration, please see the [Getting Started Guide](getting_started.md) and [Progressive Tutorials](progressive_tutorials.md). For advanced architecture information, see [Plugin Architecture](plugin_architecture.md).
+
+## Getting Started with the Rompy Cookiecutter
+
+The easiest way to start implementing a new model is to use the `rompy-cookiecutter` repository. This cookiecutter template will create a new project with the basic structure for a new Rompy model, including:
+
+-   Project scaffolding
+-   Basic inheritance structure for core Rompy objects
+-   Entrypoint setup
+-   Testing and documentation templating
+
+You can find the `rompy-cookiecutter` repository [here](https://github.com/rom-py/cookiecutter-rompy).
+
+---
+
 
 ## Overview
 

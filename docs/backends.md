@@ -605,7 +605,14 @@ pipeline = Pipeline([
 results = pipeline.run()
 ```
 
+## Notebook Examples
+
+For a practical, hands-on example of how to use the different backends, please see the following notebook:
+
+- **[Backend Examples](notebooks/backends/backend_examples.ipynb)**: A demonstration of how to use the local and Docker backends.
+
 ## API Reference
+
 
 For complete API documentation, see:
 

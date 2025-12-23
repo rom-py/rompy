@@ -2,14 +2,31 @@
 
 ## Overview
 
-Rompy provides model-specific implementations for various ocean, wave, and hydrodynamic models. Each model implementation includes configuration classes, grid definitions, data handling, and execution backends. For basic concepts about models, see the [User Guide](user_guide.md).
+Rompy provides model-specific implementations for various ocean, wave, and hydrodynamic models. Each model implementation includes configuration classes, grid definitions, data handling, and execution backends. For basic concepts about models, see the [Getting Started Guide](getting_started.md).
 
 ## Supported Models
 
-Rompy currently supports the following models:
+Rompy currently supports the following models, each with a varying level of maturity:
 
-* [SWAN Guide](swan_guide.md) - Spectral Wave Nearshore model
-* [SCHISM Guide](schism_guide.md) - Semi-implicit Cross-scale Hydroscience Integrated Modeling System
+- **SWAN**: Spectral Wave Nearshore model
+- **SCHISM**: Semi-implicit Cross-scale Hydroscience Integrated Modeling System
+- **XBeach**: A numerical model for the simulation of nearshore and coastal processes.
+- **WAVEWATCH III**: A third-generation wave model developed at NOAA/NCEP.
+
+## Model Maturity
+
+The integration of each model into the Rompy framework is at a different stage of development. Here is a summary of the current status:
+
+-   **SWAN**: Full(er) implementation. The SWAN integration is the most mature and has the most features.
+-   **SCHISM**: Under active development.
+-   **XBeach**: Under active development.
+-   **WAVEWATCH III**: Planned, but not yet implemented.
+
+For more detailed information on each model, please refer to their specific guides:
+
+* [SWAN Guide](swan_guide.md)
+* [SCHISM Guide](schism_guide.md)
+
 
 ## Model Architecture
 

@@ -1,33 +1,8 @@
 # Configuration Deep Dive
 
-This section provides detailed information on configuring different aspects of ocean models in Rompy, covering advanced configuration options, best practices, and common patterns. If you're new to Rompy, start with the [User Guide](user_guide.md) before reading this section.
+This section provides detailed information on configuring different aspects of ocean models in Rompy, covering advanced configuration options, best practices, and common patterns. If you're new to Rompy, start with the [Getting Started Guide](getting_started.md) before reading this section.
 
 ## Advanced Configuration Patterns
-
-### Conditional Configuration
-
-You can create configurations that adapt based on parameters:
-
-```python
-from typing import Optional
-from pydantic import BaseModel, Field
-
-class AdaptiveConfig(BaseModel):
-    model_name: str
-    use_high_res: bool = False
-    physics_options: dict = Field(default_factory=dict)
-    
-    def get_grid_resolution(self):
-        if self.use_high_res:
-            return 0.01  # High resolution
-        else:
-            return 0.1   # Low resolution
-    
-    def get_physics_config(self):
-        base_physics = {"barotropic": True}
-        base_physics.update(self.physics_options)
-        return base_physics
-```
 
 ### Configuration Validation
 
@@ -41,13 +16,13 @@ class ValidatedModelRun(BaseModel):
     start_time: datetime
     end_time: datetime
     duration_limit: int = 86400  # Maximum duration in seconds
-    
+
     @validator('end_time')
     def end_after_start(cls, v, values):
         if 'start_time' in values and v < values['start_time']:
             raise ValueError('end_time must be after start_time')
         return v
-    
+
     @validator('end_time')
     def duration_limit_check(cls, v, values):
         if 'start_time' in values:
@@ -88,7 +63,7 @@ from pydantic import BaseSettings
 class ModelSettings(BaseSettings):
     api_key: str = os.getenv("MODEL_API_KEY", "")
     data_dir: str = os.getenv("MODEL_DATA_DIR", "./data")
-    
+
     class Config:
         env_file = ".env"
 ```
@@ -143,7 +118,7 @@ class TemplateConfig(BaseModel):
     template_dir: str
     template_files: Dict[str, str]  # {logical_name: template_filename}
     parameter_mapping: Dict[str, str]  # {config_param: template_var}
-    
+
     def render_template(self, output_dir: str, **kwargs):
         """Render templates with provided configurations."""
         # Implementation to render templates using cookiecutter or similar
@@ -169,10 +144,12 @@ class MultiSourceConfig(BaseModel):
 
 **Symptoms**: Pydantic validation errors when creating model objects
 
-**Solution**: 
+**Solution**:
+
 1. Check the error message for specific validation issues
 2. Verify data types match expected types
 3. Use the model's schema to understand field requirements:
+
    ```python
    print(ModelRun.model_json_schema())
    ```
@@ -182,6 +159,7 @@ class MultiSourceConfig(BaseModel):
 **Symptoms**: Configuration works locally but fails in Docker or HPC
 
 **Solution**:
+
 1. Use relative paths where possible
 2. Make paths configurable through environment variables
 3. Ensure file permissions are appropriate
@@ -195,3 +173,4 @@ Different ocean models have specific configuration requirements. See the [Model-
 - Review the [Model-Specific Guides](models.md) for configuration details for specific models
 - Learn about [Plugin Architecture](plugin_architecture.md) to extend configuration capabilities
 - Explore [Backends](backends.md) for different execution environments
+

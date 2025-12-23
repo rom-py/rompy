@@ -4,8 +4,7 @@ This section has been consolidated into other documentation pages. Please refer 
 
 ## Getting Started
 
-- [**User Guide**](user_guide.md) - Complete tutorial from installation to running your first model
-- [**Quickstart**](quickstart.md) - Basic example to quickly get up and running
+- [**Getting Started Guide**](getting_started.md) - Complete tutorial from installation to running your first model
 
 ## Tutorials & Examples
 

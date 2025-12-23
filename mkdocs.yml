@@ -6,10 +6,8 @@ edit_uri: edit/main/docs/
 
 nav:
     - Home: index.md
-    - Installation: installation.md
-    - User Guide:
-          - Overview: user_guide.md
-          - Quickstart: quickstart.md
+    - Getting Started:
+          - getting_started.md
           - Core Concepts: core_concepts.md
           - Configuration: configuration_deep_dive.md
     - Tutorials:
@@ -23,42 +21,24 @@ nav:
           - Extending Models: extending_models.md
 
     - Advanced Topics:
-          - Architecture Overview: architecture_overview.md
           - Backends: backends.md
           - CLI: cli.md
-          - Plugin Architecture: plugin_architecture.md
           - Formatting and Logging: formatting_and_logging.md
-          - Schema Advantages: schema_advantages.md
     - Developer Guide:
           - Contributing: contributing.md
           - Development Setup: developer/index.md
-          - Seclection Patterns: developer/architecture/selection_patterns.md
           - Testing: testing_guide.md
-          - Backend Reference: developer/backend_reference.md
+    - Architecture:
+          - Architecture Overview: architecture_overview.md
+          - Plugin Architecture: plugin_architecture.md
+          - Selection Patterns: developer/architecture/selection_patterns.md # Moved for better organization
+          - Schema Advantages: schema_advantages.md
+    - Backend Development:
+          - Backend Reference: developer/backend_reference.md # Moved for better organization
     - API Reference: api.md
     - FAQ: faq.md
-    - Notebooks:
-          - Rompy core:
-                - Core features: notebooks/common/rompy_core_features.ipynb
-          - SWAN:
-                - Basic demo: notebooks/swan/example_procedural.ipynb
-                - Sensitivity demo: notebooks/swan/example_sensitivity.ipynb
-                - Boundary Conditions:
-                      - boundnest1: notebooks/swan/boundary/boundnest1.ipynb
-                      - boundspec_segment: notebooks/swan/boundspec_segment.ipynb
-                      - boundspec_side: notebooks/swan/boundary/boundspec_side.ipynb
-          - SCHISM:
-                - notebooks/schism/schism_demo.ipynb
-          - XBEACH:
-                - Basic: notebooks/xbeach/example_procedural.ipynb
-                - Grid: notebooks/xbeach/forcing-demo.ipynb
-                - Forcing: notebooks/xbeach/forcing-demo.ipynb
-                - Source: notebooks/xbeach/source-demo.ipynb
-                - Grid expanding: notebooks/xbeach/grid-expanding.ipynb
-                - Wave boundary: notebooks/xbeach/grid-expanding.ipynb
-                - Bathy boundary: notebooks/xbeach/grid-expanding.ipynb
-          - backends:
-                - notebooks/backends/backend_examples.ipynb
+    - Examples: notebook_gallery.md
+
     # - Gallery:
     #       - Generated Examples: generated/gallery/index.md
 
@@ -139,4 +119,8 @@ markdown_extensions:
     - pymdownx.mark
     - pymdownx.tilde
     - attr_list
-    - md_in_html
+    - pymdownx.superfences:
+          custom_fences:
+              - name: mermaid
+                class: mermaid
+                format: !!python/name:pymdownx.superfences.fence_code_format

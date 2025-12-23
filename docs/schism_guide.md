@@ -193,6 +193,12 @@ Configure the initial state of your simulation:
 - Consider using a barotropic mode for initial spin-up
 - Tune vertical mixing parameters if needed
 
+## Notebook Examples
+
+For a practical, hands-on example of how to use SCHISM with Rompy, please see the following notebook:
+
+- **[SCHISM Demo](notebooks/schism/schism_demo.ipynb)**: A basic demonstration of a SCHISM run.
+
 ## Next Steps
 
 - Review the [Backends Guide](backends.md) for detailed execution options

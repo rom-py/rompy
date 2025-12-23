@@ -1,6 +1,6 @@
 # Core Concepts
 
-This section explores the fundamental components that make up Rompy's architecture. If you're new to Rompy, start with the [User Guide](user_guide.md) before diving into these concepts.
+This section explores the fundamental components that make up Rompy's architecture. If you're new to Rompy, start with the [Getting Started Guide](getting_started.md) before diving into these concepts.
 
 Rompy is a modular library with configuration and execution separated by design. The core framework consists of two primary concepts:
 
@@ -9,7 +9,50 @@ Rompy is a modular library with configuration and execution separated by design.
 
 At a high level, ModelRun orchestrates the entire model execution process including generation, execution, and post-processing, while configuration objects are responsible for defining the model setup.
 
+## Data Management System
+
+Rompy's data management system is designed to provide a unified and flexible interface for handling the diverse data requirements of ocean models. It is built on three key abstractions: Source, Grid, and Data.
+
+### Source Abstraction
+
+The source abstraction is a plugin-based system that allows Rompy to access data from a wide variety of sources through a unified interface. This enables users to seamlessly switch between different data sources without changing their model configuration.
+
+- **Purpose**: Plugin-based system for accessing diverse data sources through a unified interface.
+- **Key implementations**:
+    - `SourceFile`: For accessing local or remote files via xarray.
+    - `SourceIntake`: For accessing datasets from an Intake catalog.
+    - `SourceDatamesh`: For integration with the Oceanum Datamesh API.
+    - `SourceWavespectra`: For reading data using the `wavespectra` library.
+- **Architecture**: Uses Python entry points for dynamic plugin loading, enabling type-safe source selection via Pydantic discriminated unions.
+- **Benefits**: Provides access to a large catalog of datasets from different sources through a common API.
+
+### Grid Abstraction
+
+The grid abstraction is used to define the spatial domains for model execution, with built-in support for coordinate system management.
+
+- **Purpose**: Defines spatial domains for model execution with coordinate system management.
+- **Key implementations**:
+    - `BaseGrid`: The foundation class for all grid types.
+    - `RegularGrid`: For structured rectangular grids.
+    - `UnstructuredGrid`: For unstructured grids.
+- **Features**: Boundary point extraction, bounding box calculations, CRS transformations, and plotting capabilities.
+- **Inheritance**: These base grid types are inherited by model-specific grid implementations (e.g., `SwanGrid`, `SchismGrid`, `XBeachGrid`) to add model-specific functionality.
+
+### Data Abstraction
+
+The data abstraction provides a unified interface for ingesting, filtering, and preparing data for model consumption.
+
+- **Purpose**: Unified interface for ingesting, filtering, and preparing data for model consumption.
+- **Three-tier hierarchy**:
+    - `DataBlob`: For basic file operations (copy/link).
+    - `DataPoint`: For timeseries data with temporal filtering.
+    - `DataGrid`: For spatial data with grid and time filtering, as well as cropping and visualization capabilities.
+- **Processing pipeline**: Source opening → variable selection → spatial/temporal filtering → coordinate transformation → model-specific formatting.
+- **Inheritance**: These base data types are inherited by model-specific data implementations (e.g., `SwanDataGrid`, `SchismDataGrid`, `XBeachDataGrid`) to add model-specific functionality.
+
+
 ## Core Component Categories
+
 
 ### Grid Components
 
@@ -89,6 +132,12 @@ Execution backends abstract the computational environment:
 1. **Template-based Generation**: Use cookiecutter templates for model input generation
 2. **Environment Agnostic**: Design models to run in different computational environments
 3. **Data Abstraction**: Abstract data sources to support multiple input formats
+
+## Notebook Examples
+
+For a practical, hands-on example of the core concepts, please see the following notebook:
+
+- **[Core Features](notebooks/common/rompy_core_features.ipynb)**: A demonstration of the core features of Rompy.
 
 ## Next Steps
 

@@ -1,6 +1,6 @@
 # Common Workflows
 
-This section documents typical ocean modeling workflows and best practices using Rompy. For basic workflow concepts, please see the [User Guide](user_guide.md) and [Progressive Tutorials](progressive_tutorials.md).
+This section documents typical ocean modeling workflows and best practices using Rompy. For basic workflow concepts, please see the [Getting Started Guide](getting_started.md) and [Progressive Tutorials](progressive_tutorials.md).
 
 ## Common Workflow Patterns
 
