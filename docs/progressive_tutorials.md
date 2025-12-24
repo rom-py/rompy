@@ -4,29 +4,48 @@ This section contains a series of progressive tutorials that gradually introduce
 
 ## Understanding Rompy Components
 
-Rompy is a python package for generating configuration files and forcing data for numerical wave and wave-climate models. The core architecture consists of several key components:
+Rompy is a Python package for generating configuration files and forcing data for numerical wave and wave-climate models. The core architecture consists of several key components:
 
-1. **ModelRun**: Combines all components and generates a simulation workspace ready to run
-   - **Key Attributes**: run_id, period (TimeRange), config, output_dir
-   - **Methods**: `run()`: Executes the model simulation
+### ModelRun
+Combines all components and generates a simulation workspace ready to run.
+- **Key Attributes**: `run_id`, `period` (TimeRange), `config`, `output_dir`
+- **Methods**: `run()` - Executes the model simulation
 
-2. **Grid**: Defines the spatial domain and resolution
-   - **Types**: `RegularGrid`: Uniform spacing in x and y directions, `UnstructuredGrid`: Non-uniform mesh (if supported)
-   - **Key Attributes**: x0, y0, nx, ny, dx, dy
+### Grid
+Defines the spatial domain and resolution.
+- **Types**:
+  - `RegularGrid`: Uniform spacing in x and y directions
+  - `UnstructuredGrid`: Non-uniform mesh (if supported)
+- **Key Attributes**: `x0`, `y0`, `nx`, `ny`, `dx`, `dy`
 
-3. **TimeRange**: Specifies the temporal domain of the simulation
-   - **Key Attributes**: start, end, interval
+### TimeRange
+Specifies the temporal domain of the simulation.
+- **Key Attributes**: `start`, `end`, `interval`
 
-4. **Data Sources**: Provides input data for the model
-   - **Types**: `SwanDataGrid`: For SWAN model inputs, Other model-specific data types
-   - **Components**: Bathymetry, Wind, Boundary conditions, Other environmental variables
+### Data Sources
+Provides input data for the model.
+- **Types**:
+  - `DataGrid`: For gridded model inputs
+  - `DataPoint`: For point-based time series data
+  - `DataBlob`: For generic file-based data
+- **Components**: Bathymetry, Wind, Boundary conditions, Other environmental variables
 
-5. **Config**: Holds model-specific configuration settings
-   - **Types**: `SwanConfig`: For SWAN model, Other model-specific configs
-   - **Key Components**: Physics parameters, Numerical scheme settings, Output specifications
+### Config
+Holds model-specific configuration settings.
+- **Types**: Model-specific configs (e.g., `SwanConfig`, `SCHISMConfig`)
+- **Key Components**: Physics parameters, Numerical scheme settings, Output specifications
 
-6. **Output**: Defines what data to save from the model run
-   - **Components**: Variables to output, Output locations, Output frequency
+### Source
+Defines data sources for model inputs.
+- **Types**:
+  - `SourceFile`: For file-based data sources
+  - `SourceIntake`: For intake catalog-based data
+  - `SourceDatamesh`: For Datamesh-based data
+- **Components**: URI/path to data, variable mappings, coordinate definitions
+
+### Output
+Defines what data to save from the model run.
+- **Components**: Variables to output, Output locations, Output frequency
 
 ## Tutorial 1: Grid Configuration and Visualization
 

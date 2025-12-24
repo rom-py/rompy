@@ -618,7 +618,7 @@ For complete API documentation, see:
 
 * `rompy.backends.config.BaseBackendConfig` - Base configuration class
 * `rompy.backends.config.LocalConfig` - Local execution configuration
-* `rompy.backends.config.DockeConfig` - Docker execution configuration
+* `rompy.backends.config.DockerConfig` - Docker execution configuration
 * `rompy.run` - Run backend implementations
 * `rompy.backends.postprocessors` - Postprocessor implementations
 * [backend_reference](developer/backend_reference.md) - Comprehensive technical reference

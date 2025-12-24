@@ -648,7 +648,7 @@ config = LocalConfig(
 4. **Test Incrementally**: Start with simple configurations
 5. **Community Support**: Check GitHub issues and discussions
 
-For additional help, see the troubleshooting section in [backends](backends.md) or file an issue on GitHub.
+For additional help, see the troubleshooting section in [backends](../backends.md) or file an issue on GitHub.
 
 ## API Reference
 
