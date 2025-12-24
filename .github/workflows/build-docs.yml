@@ -29,5 +29,6 @@ jobs:
             - run: cd /tmp && git clone --depth 1 https://github.com/rom-py/rompy-notebooks.git
             - run: cp -r /tmp/rompy-notebooks/notebooks docs/
             - run: rm docs/notebooks/schism/schism_basic_setup.ipynb -f
+            - run: rm docs/notebooks/common/rompy_core_features.py -f # This interferes with the rendered notebook
             - run: pip install .[docs]
             - run: mkdocs gh-deploy --force
