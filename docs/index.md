@@ -18,18 +18,6 @@ Rompy was developed to address common pain points in the ocean modeling workflow
 
 ---
 
-## History
-
-- **2021**: Initial development by Paul Branson.
-- **Sept 2022**: Synergies with internal efforts at Oceanum lead to initialisation of collaboration.
-- **Currently**: Supported through the ROAM Gen 3 effort.
-
-All code is open source and available under an Apache license. You can find a list of contributors [here](https://github.com/rom-py/rompy/blob/main/CONTRIBUTORS) and the project's history [here](https://github.com/rom-py/rompy/blob/main/HISTORY.rst).
-
-
-
----
-
 ## Key Features
 
 - **Modular Architecture**: Clean separation of configuration and execution logic supporting multiple ocean models
