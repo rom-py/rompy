@@ -18,10 +18,13 @@ nav:
           - Overview: models.md
           - SWAN Guide: swan_guide.md
           - SCHISM Guide: schism_guide.md
+          - XBeach Guide: xbeach_guide.md
+          - WAVEWATCH III Guide: ww3_guide.md
           - Extending Models: extending_models.md
 
     - Advanced Topics:
           - Backends: backends.md
+          - Backend Reference: developer/backend_reference.md
           - CLI: cli.md
           - Formatting and Logging: formatting_and_logging.md
     - Developer Guide:
@@ -33,8 +36,6 @@ nav:
           - Plugin Architecture: plugin_architecture.md
           - Selection Patterns: developer/architecture/selection_patterns.md # Moved for better organization
           - Schema Advantages: schema_advantages.md
-    - Backend Development:
-          - Backend Reference: developer/backend_reference.md # Moved for better organization
     - API Reference: api.md
     - FAQ: faq.md
     - Examples: notebook_gallery.md

@@ -8,10 +8,10 @@ Rompy provides model-specific implementations for various ocean, wave, and hydro
 
 Rompy currently supports the following models, each with a varying level of maturity:
 
-- **SWAN**: Spectral Wave Nearshore model
-- **SCHISM**: Semi-implicit Cross-scale Hydroscience Integrated Modeling System
-- **XBeach**: A numerical model for the simulation of nearshore and coastal processes.
-- **WAVEWATCH III**: A third-generation wave model developed at NOAA/NCEP.
+- **SWAN**: Spectral Wave Nearshore model (install with `pip install rompy-swan`)
+- **SCHISM**: Semi-implicit Cross-scale Hydroscience Integrated Modeling System (install with `pip install rompy-schism`)
+- **XBeach**: A numerical model for the simulation of nearshore and coastal processes (install with `pip install rompy-xbeach`)
+- **WAVEWATCH III**: A third-generation wave model developed at NOAA/NCEP (install with `pip install rompy-ww3`)
 
 ## Model Maturity
 
@@ -26,7 +26,15 @@ For more detailed information on each model, please refer to their specific guid
 
 * [SWAN Guide](swan_guide.md)
 * [SCHISM Guide](schism_guide.md)
+* [XBeach Guide](xbeach_guide.md)
+* [WAVEWATCH III Guide](ww3_guide.md)
 
+## Model-Specific Documentation
+
+- **SWAN**: [https://rom-py.github.io/rompy-swan](https://rom-py.github.io/rompy-swan)
+- **SCHISM**: [https://rom-py.github.io/rompy-schism](https://rom-py.github.io/rompy-schism)
+- **XBeach**: [https://rom-py.github.io/rompy-xbeach](https://rom-py.github.io/rompy-xbeach)
+- **WAVEWATCH III**: [https://rom-py.github.io/rompy-ww3](https://rom-py.github.io/rompy-ww3)
 
 ## Model Architecture
 
