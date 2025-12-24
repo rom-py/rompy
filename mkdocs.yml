@@ -9,7 +9,6 @@ nav:
     - Getting Started:
           - getting_started.md
           - Core Concepts: core_concepts.md
-          - Configuration: configuration_deep_dive.md
     - Tutorials:
           - Progressive Tutorials: progressive_tutorials.md
           - Practical Examples: examples.md
