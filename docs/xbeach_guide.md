@@ -1,5 +1,8 @@
 # XBeach Model Guide
 
+> [!NOTE]
+> This documentation page is a placeholder. XBeach model support in Rompy is under active development, and comprehensive documentation is still being created.
+
 ## Installation
 
 To use the XBeach model with Rompy, install the dedicated plugin:

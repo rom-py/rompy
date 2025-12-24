@@ -17,17 +17,17 @@ Rompy currently supports the following models, each with a varying level of matu
 
 The integration of each model into the Rompy framework is at a different stage of development. Here is a summary of the current status:
 
--   **SWAN**: Full(er) implementation. The SWAN integration is the most mature and has the most features.
--   **SCHISM**: Under active development.
--   **XBeach**: Under active development.
--   **WAVEWATCH III**: Planned, but not yet implemented.
+- **SWAN**: Full implementation. The SWAN integration is the most mature and has the most features.
+- **SCHISM**: Full implementation. Less well tested and still under active development.
+- **XBeach**: Under active development
+- **WAVEWATCH III**: Under active development.
 
 For more detailed information on each model, please refer to their specific guides:
 
-* [SWAN Guide](swan_guide.md)
-* [SCHISM Guide](schism_guide.md)
-* [XBeach Guide](xbeach_guide.md)
-* [WAVEWATCH III Guide](ww3_guide.md)
+- [SWAN Guide](swan_guide.md)
+- [SCHISM Guide](schism_guide.md)
+- [XBeach Guide](xbeach_guide.md)
+- [WAVEWATCH III Guide](ww3_guide.md)
 
 ## Model-Specific Documentation
 
@@ -64,11 +64,11 @@ Classes for analyzing and visualizing model output.
 
 Models integrate with Rompy's core framework through:
 
-* Pydantic-based configuration classes for type safety
-* XArray accessors for data manipulation
-* Intake drivers for data catalog integration
-* Cookiecutter templates for model setup
-* Unified execution backends for consistent deployment
+- Pydantic-based configuration classes for type safety
+- XArray accessors for data manipulation
+- Intake drivers for data catalog integration
+- Cookiecutter templates for model setup
+- Unified execution backends for consistent deployment
 
 ## Best Practices
 
@@ -88,8 +88,9 @@ To add support for a new model, see the [Extending Models](extending_models.md) 
 
 For further information on working with models in Rompy:
 
-* Check the [Extending Models](extending_models.md) guide to add new model support
-* Follow the [Progressive Tutorials](progressive_tutorials.md) for hands-on examples
-* Review [Configuration Deep Dive](configuration_deep_dive.md) for advanced configuration techniques
-* Understand the [Architecture Overview](architecture_overview.md) for component integration
-* Explore [Common Workflows](common_workflows.md) for practical implementation patterns
+- Check the [Extending Models](extending_models.md) guide to add new model support
+- Follow the [Progressive Tutorials](progressive_tutorials.md) for hands-on examples
+- Review [Configuration Deep Dive](configuration_deep_dive.md) for advanced configuration techniques
+- Understand the [Architecture Overview](architecture_overview.md) for component integration
+- Explore [Common Workflows](common_workflows.md) for practical implementation patterns
+
