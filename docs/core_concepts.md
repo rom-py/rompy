@@ -137,7 +137,7 @@ Execution backends abstract the computational environment:
 
 For a practical, hands-on example of the core concepts, please see the following notebook:
 
-- **[Core Features](notebooks/common/rompy_core_features.ipynb)**: A demonstration of the core features of Rompy.
+- **[Core Features](notebooks/common/rompy_core_features.ipynb)**: A demonstration of the core features of Rompy, covering the fundamental concepts.
 
 ## Next Steps
 

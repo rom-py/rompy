@@ -275,8 +275,8 @@ sequenceDiagram
  end
  
  Backend-->>ModelRun: "success/failure boolean"
- 
- opt "Post-processing"
+
+ alt "Post-processing (Optional)"
  User->>ModelRun: "postprocess(processor='custom')"
  ModelRun->>Postprocessor: "process(model_run)"
  Postprocessor->>Postprocessor: "Validate outputs, create archives"
