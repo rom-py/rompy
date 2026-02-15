@@ -223,3 +223,7 @@ All contributors are recognized in the [AUTHORS.rst](httpshttps://github.com/rom
 6. Submit a pull request with a clear description
 7. Address review feedback
 8. Wait for approval and merge
+
+## License
+
+Rompy is released under the [Apache License 2.0](https://github.com/rom-py/rompy/blob/main/LICENSE). By contributing to Rompy, you agree that your contributions will be licensed under the same license.

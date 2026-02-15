@@ -136,23 +136,26 @@ print(f"Template path: {config.template}")
 
 ### Q: How can I optimize model run performance?
 **A:** Consider these approaches:
-- Use appropriate resolution for your problem (not finer than needed)
-- Optimize resource allocation in backend configurations
-- Consider parallel execution options if your model supports it
-- Use Docker for consistent, optimized execution environments
+
+- Use appropriate resolution for your problem (not finer than needed).
+- Optimize resource allocation in backend configurations.
+- Consider parallel execution options if your model supports it.
+- Use Docker for consistent, optimized execution environments.
 
 ### Q: How do I manage memory usage during large model runs?
-**A:** 
-- Increase memory allocation in Docker configurations: `memory="16g"`
-- Use appropriate grid resolution for your use case
-- Consider breaking large simulations into smaller time segments
+**A:**
+
+- Increase memory allocation in Docker configurations: `memory="16g"`.
+- Use appropriate grid resolution for your use case.
+- Consider breaking large simulations into smaller time segments.
 
 ## Extensions
 
 ### Q: How do I extend Rompy with new functionality?
 **A:** Rompy uses a plugin architecture:
-- Use entry points to register new model configurations
-- Implement custom backends that follow the run interface
+
+- Use entry points to register new model configurations.
+- Implement custom backends that follow the run interface.
 - Extend existing components like grids, data sources, etc.
 
 For detailed information on extension, see the [Extending Models](extending_models.md) documentation.
@@ -161,8 +164,9 @@ For detailed information on extension, see the [Extending Models](extending_mode
 
 ### Q: Where can I get help with Rompy?
 **A:** You can:
-- Check the documentation
-- Report issues on the GitHub repository
-- Contact the community through the GitHub discussions or issue tracker
+
+- Check the documentation.
+- Report issues on the GitHub repository.
+- Contact the community through the GitHub discussions or issue tracker.
 
 If your question isn't answered here, feel free to open an issue in the Rompy repository with details about your question or problem.

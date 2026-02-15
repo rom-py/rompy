@@ -1,6 +1,6 @@
 # Backend Systems
 
-Rompy's backend system provides flexible, type-safe execution environments for wave models. Whether you're running simple local simulations or complex containerized workflows, the backend system handles execution, resource management, and result processing.
+Rompy's backend system provides flexible, type-safe execution environments for ocean and coastal models. Whether you're running simple local simulations or complex containerized workflows, the backend system handles execution, resource management, and result processing.
 
 ## Overview
 
@@ -333,16 +333,18 @@ except ValidationError as e:
 Each configuration class validates fields according to execution environment requirements:
 
 **LocalConfig Validation:**
-* Working directory must exist if specified
-* Environment variables must be string key-value pairs
-* Timeout must be between 60 and 86400 seconds
+
+* Working directory must exist if specified.
+* Environment variables must be string key-value pairs.
+* Timeout must be between 60 and 86400 seconds.
 
 **DockerConfig Validation:**
-* Either `image` or `dockerfile` must be provided (not both)
-* CPU count must be between 1 and 128
-* Memory format must match pattern (e.g., "2g", "512m")
-* Volume mounts must use "host:container:mode" format
-* Docker image names must follow valid naming conventions
+
+* Either `image` or `dockerfile` must be provided (not both).
+* CPU count must be between 1 and 128.
+* Memory format must match pattern (e.g., "2g", "512m").
+* Volume mounts must use "host:container:mode" format.
+* Docker image names must follow valid naming conventions.
 
 ## Best Practices
 
@@ -509,10 +511,10 @@ For detailed implementation guidance, see [backend_reference](developer/backend_
 Handle results after model execution using postprocessor classes:
 
 ```python
-# Basic postprocessing
+# Basic post-processing
 results = model_run.postprocess(processor="archive")
 
-# Custom postprocessing
+# Custom post-processing
 results = model_run.postprocess(
     processor="custom_analyzer",
     output_format="netcdf",
