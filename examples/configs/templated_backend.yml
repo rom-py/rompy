@@ -1,0 +1,23 @@
+# Example: Templated Backend Configuration
+# Demonstrates template variable substitution in backend configs
+
+# Environment variables:
+# - NUM_THREADS: Number of CPU threads (defaults to 4)
+# - JOB_TIMEOUT: Timeout in seconds (defaults to 3600)
+# - WORK_DIR: Working directory path
+
+type: local
+
+timeout: "${JOB_TIMEOUT:-3600}"
+
+command: "python run_model.py"
+
+env_vars:
+  OMP_NUM_THREADS: "${NUM_THREADS:-4}"
+  MODEL_TYPE: "production"
+  WORK_DIR: "${WORK_DIR}"
+
+# Usage:
+# export WORK_DIR=/scratch/my_job
+# export NUM_THREADS=8
+# rompy run config.yml --backend-config templated_backend.yml

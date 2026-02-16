@@ -1,0 +1,28 @@
+# Example: Templated ModelRun Configuration
+# This demonstrates template variable substitution in rompy configs
+
+# Environment variables required:
+# - CYCLE: ISO datetime string (e.g., 2023-01-01T00:00:00)
+# - DATA_ROOT: Path to input data directory
+# - OUTPUT_ROOT: (optional) Path to output directory (defaults to ./output)
+
+run_id: "cycle_${CYCLE|strftime:%Y%m%d}"
+
+period:
+  start: "${CYCLE}"
+  end: "${CYCLE|as_datetime|shift:+1d}"
+  interval: "1H"
+
+output_dir: "${OUTPUT_ROOT:-./output}/cycle_${CYCLE|strftime:%Y%m%d}"
+delete_existing: true
+
+# Example input files with templated paths
+input_files:
+  wind: "${DATA_ROOT}/wind/wind_${CYCLE|strftime:%Y%m%d}.nc"
+  wave: "${DATA_ROOT}/wave/wave_${CYCLE|strftime:%Y%m%d}.nc"
+
+# Usage:
+# export CYCLE=2023-01-01T00:00:00
+# export DATA_ROOT=/scratch/data
+# export OUTPUT_ROOT=/scratch/output  # Optional
+# rompy generate examples/configs/templated_modelrun.yml -v

@@ -21,6 +21,7 @@ import rompy
 from rompy.backends import DockerConfig, LocalConfig, SlurmConfig
 from rompy.logging import LogFormat, LoggingConfig, LogLevel, get_logger
 from rompy.model import PIPELINE_BACKENDS, POSTPROCESSORS, RUN_BACKENDS, ModelRun
+from rompy.templating import render_templates
 
 # Initialize the logger
 logger = get_logger(__name__)
@@ -165,10 +166,19 @@ def load_config(
     try:
         config = yaml.safe_load(content)
         logger.info("Parsed config as YAML")
-        return config
     except yaml.YAMLError as e:
         logger.error(f"Failed to parse config as JSON or YAML: {e}")
         raise click.UsageError("Config file is not valid JSON or YAML")
+
+    # Render template variables in config
+    try:
+        config = render_templates(config, context=dict(os.environ), strict=True)
+        logger.debug("Template variables rendered successfully")
+    except Exception as e:
+        logger.error(f"Failed to render template variables: {e}")
+        raise click.UsageError(f"Template rendering error: {e}")
+
+    return config
 
 
 def print_version(ctx, param, value):

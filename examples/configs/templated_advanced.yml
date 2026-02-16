@@ -1,0 +1,35 @@
+# Example: Advanced Templated Configuration
+# Shows datetime processing and complex filter chains
+
+# Environment variables:
+# - CYCLE: ISO datetime (e.g., 2023-01-15T00:00:00)
+# - DATA_ROOT: Base data directory
+# - FORECAST_HOURS: Hours to forecast (defaults to 24)
+
+run_id: "forecast_${CYCLE|strftime:%Y%m%d_%H%M}"
+
+period:
+  start: "${CYCLE}"
+  end: "${CYCLE|as_datetime|shift:+${FORECAST_HOURS:-24}h}"
+  interval: "1H"
+
+output_dir: "${DATA_ROOT}/output/${CYCLE|strftime:%Y/%m/%d}"
+
+input_files:
+  wind:
+    current: "${DATA_ROOT}/wind/wind_${CYCLE|strftime:%Y%m%d}.nc"
+    previous: "${DATA_ROOT}/wind/wind_${CYCLE|as_datetime|shift:-1d|strftime:%Y%m%d}.nc"
+  
+  wave:
+    current: "${DATA_ROOT}/wave/wave_${CYCLE|strftime:%Y%m%d}.nc"
+    forecast: "${DATA_ROOT}/wave/wave_${CYCLE|as_datetime|shift:+1d|strftime:%Y%m%d}.nc"
+
+config:
+  lookback_days: 3
+  lookback_start: "${CYCLE|as_datetime|shift:-3d}"
+
+# Usage with datetime arithmetic:
+# export CYCLE=2023-01-15T12:00:00
+# export DATA_ROOT=/data/ocean
+# export FORECAST_HOURS=48
+# rompy generate examples/configs/templated_advanced.yml
