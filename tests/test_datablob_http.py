@@ -119,19 +119,51 @@ def test_http_size_limit(tmp_download_dir):
             download_http_file(url, tmp_download_dir)
 
 
+@pytest.mark.skipif(respx is None, reason="respx not installed")
 def test_datablob_accepts_http_url():
-    """Test that DataBlob accepts HTTP URLs (Task 3 integration test placeholder)."""
-    pytest.skip("Integration test - will be implemented in Task 3")
+    """Test that DataBlob accepts HTTP URLs."""
+    from rompy.core.data import DataBlob
+    from pydantic import HttpUrl
+
+    url = "https://example.com/data.nc"
+
+    blob = DataBlob(source=url)
+
+    assert isinstance(blob.source, HttpUrl)
+    assert str(blob.source) == url
+    assert blob.link is False
 
 
+@pytest.mark.skipif(respx is None, reason="respx not installed")
 def test_datablob_http_link_error():
-    """Test that DataBlob raises error when link=True with HTTP URL (Task 3)."""
-    pytest.skip("Integration test - will be implemented in Task 3")
+    """Test that DataBlob raises error when link=True with HTTP URL."""
+    from rompy.core.data import DataBlob
+    from pydantic import ValidationError
+
+    url = "https://example.com/data.nc"
+
+    with pytest.raises(ValidationError, match="Cannot use link=True with HTTP URLs"):
+        DataBlob(source=url, link=True)
 
 
-def test_datablob_http_get():
-    """Test DataBlob.get() with HTTP URL (Task 3)."""
-    pytest.skip("Integration test - will be implemented in Task 3")
+@pytest.mark.skipif(respx is None, reason="respx not installed")
+def test_datablob_http_get(tmp_download_dir):
+    """Test DataBlob.get() with HTTP URL."""
+    from rompy.core.data import DataBlob
+
+    url = "https://example.com/test.nc"
+    content = b"test netcdf content"
+
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, content=content))
+
+        blob = DataBlob(source=url)
+        result = blob.get(tmp_download_dir)
+
+        assert result.exists()
+        assert result.name == "test.nc"
+        assert result.read_bytes() == content
+        assert result.parent == tmp_download_dir
 
 
 @pytest.mark.skipif(respx is None, reason="respx not installed")

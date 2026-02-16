@@ -11,10 +11,11 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from cloudpathlib import AnyPath
-from pydantic import Field, PrivateAttr
+from pydantic import Field, HttpUrl, PrivateAttr, field_validator, model_validator
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
+from rompy.core.http_handler import download_http_file
 from rompy.core.time import TimeRange
 from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
 from rompy.utils import load_entry_points
@@ -51,7 +52,7 @@ class DataBlob(DataBase):
         default="data_blob",
         description="Model type discriminator",
     )
-    source: AnyPath = Field(
+    source: Union[AnyPath, HttpUrl] = Field(
         description="URI of the data source, either a local file path or a remote uri",
     )
     link: bool = Field(
@@ -59,6 +60,23 @@ class DataBlob(DataBase):
         description="Whether to create a symbolic link instead of copying the file",
     )
     _copied: str = PrivateAttr(default=None)
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def validate_source(cls, v):
+        if isinstance(v, str) and (v.startswith("http://") or v.startswith("https://")):
+            return HttpUrl(v)
+        return v
+
+    @model_validator(mode="after")
+    def validate_http_link_mode(self):
+        """Validate that HTTP URLs cannot be used with link=True."""
+        if isinstance(self.source, HttpUrl) and self.link:
+            raise ValueError(
+                "Cannot use link=True with HTTP URLs. "
+                "HTTP sources must be downloaded (link=False)."
+            )
+        return self
 
     def get(self, destdir: Union[str, Path], name: str = None, *args, **kwargs) -> Path:
         """Copy or link the data source to a new directory.
@@ -75,6 +93,15 @@ class DataBlob(DataBase):
         """
         destdir = Path(destdir).resolve()
 
+        # Handle HTTP URLs
+        if isinstance(self.source, HttpUrl):
+            outfile = download_http_file(
+                url=str(self.source), dest_dir=destdir, name=name
+            )
+            self._copied = str(outfile)
+            return outfile
+
+        # Handle local/cloud paths
         if self.link:
             # Create a symbolic link
             if name:
