@@ -5,7 +5,6 @@ These tests require Docker to be installed and running.
 They test the full Docker backend functionality with real containers.
 """
 
-import subprocess
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -15,7 +14,7 @@ import docker
 from docker.errors import APIError
 
 from rompy.backends.config import DockerConfig
-from rompy.core.config import BaseConfig
+from tests.test_helpers import DemoConfig
 from rompy.core.time import TimeRange
 from rompy.model import ModelRun
 from rompy.run.docker import DockerRunBackend
@@ -42,7 +41,7 @@ def model_run(tmp_path):
             interval="15M",
         ),
         output_dir=str(tmp_path),
-        config=BaseConfig(arg1="foo", arg2="bar"),
+        config=DemoConfig(arg1="foo", arg2="bar"),
     )
 
 
@@ -273,8 +272,8 @@ COPY test.txt /app/
                 call_kwargs = mock_client.images.build.call_args[1]
                 assert call_kwargs["path"] == str(context_dir)
 
-    def test_prepare_image_with_existing_image(self, docker_backend, tmp_path):
-        """Test _prepare_image with an image that already exists."""
+    def test_prepare_image_with_existing_image_already(self, docker_backend, tmp_path):
+        """Test _prepare_image with an image that already exists (alternate case)."""
         context_dir = tmp_path / "build_context"
         context_dir.mkdir()
         dockerfile = context_dir / "Dockerfile"

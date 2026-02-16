@@ -7,6 +7,7 @@ import pytest
 from test_utils.logging import get_test_logger
 
 from rompy.core.config import BaseConfig
+from tests.test_helpers import DemoConfig
 from rompy.core.time import TimeRange
 from rompy.model import ModelRun
 from tests.utils import compare_files
@@ -22,7 +23,7 @@ def model(tmpdir):
     return ModelRun(
         run_id="test_base",
         output_dir=str(tmpdir),
-        config=BaseConfig(arg1="foo", arg2="bar"),
+        config=DemoConfig(arg1="foo", arg2="bar"),
         # template=BaseConfig(),
     )
 

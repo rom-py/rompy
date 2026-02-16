@@ -6,6 +6,7 @@ import pytest
 from test_utils.logging import get_test_logger
 
 from rompy.core.config import BaseConfig
+from tests.test_helpers import DemoConfig
 from rompy.model import ModelRun
 
 from .utils import compare_files
@@ -18,9 +19,8 @@ here = Path(__file__).parent
 
 @pytest.fixture
 def template():
-    return BaseConfig(
-        template="../rompy/templates/base",
-    )
+    # Keep a minimal BaseConfig usage without extra kwargs for template tests
+    return BaseConfig(template="../rompy/templates/base")
 
 
 # def test_template():
@@ -30,7 +30,7 @@ def template():
 
 def test_newbaseconfig(tmpdir):
     """Test the swantemplate function."""
-    config = BaseConfig(arg1="foo", arg2="bar")
+    config = DemoConfig(arg1="foo", arg2="bar")
     runtime = ModelRun(
         run_id="test_base",
         output_dir=str(tmpdir),
@@ -44,7 +44,7 @@ def test_newbaseconfig(tmpdir):
 
 
 def test_custom_template(tmpdir):
-    config = BaseConfig(arg1="foo", arg2="bar")
+    config = DemoConfig(arg1="foo", arg2="bar")
     runtime = ModelRun(
         run_id="test_base",
         output_dir=str(tmpdir),
