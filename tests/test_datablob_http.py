@@ -1,8 +1,5 @@
 import pytest
 import httpx
-from pathlib import Path
-from unittest.mock import patch
-import time
 
 try:
     import respx
@@ -14,7 +11,6 @@ except Exception:
 from rompy.core.http_handler import (
     download_http_file,
     extract_filename_from_url,
-    retry_with_backoff,
 )
 
 
