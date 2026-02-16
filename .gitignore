@@ -168,3 +168,6 @@ tests/schism/test_data/
 # AGENTS.md files (generated, not committed)
 AGENTS.md
 **/AGENTS.md
+
+# uv lock
+uv.lock
