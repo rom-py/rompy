@@ -44,7 +44,40 @@ class DataBlob(DataBase):
     """Data source for model ingestion.
 
     Generic data source for files that either need to be copied to the model directory
-    or linked if `link` is set to True.
+    or linked if `link` is set to True. Supports both local/cloud paths and remote
+    HTTP/HTTPS URLs.
+
+    Parameters
+    ----------
+    source : Path | HttpUrl
+        URI of the data source, either a local file path, cloud storage URI (s3://, gs://),
+        or a remote HTTP/HTTPS URL.
+    link : bool
+        Whether to create a symbolic link instead of copying the file.
+        Note: Cannot be used with HTTP URLs (link=True with HTTP will raise ValueError).
+
+    Examples
+    --------
+    >>> from rompy.core.data import DataBlob
+    >>> from pathlib import Path
+
+    Local file:
+
+    >>> blob = DataBlob(source=Path("/data/input.nc"))
+    >>> blob.get(Path("/output/dir"))  # doctest: +ELLIPSIS
+    PosixPath('/output/dir/input.nc')
+
+    Remote HTTP file (automatically downloaded):
+
+    >>> blob = DataBlob(source="https://example.com/data.nc")
+    >>> blob.get(Path("/output/dir"))  # doctest: +ELLIPSIS
+    PosixPath('/output/dir/data.nc')
+
+    Remote file with custom name:
+
+    >>> blob = DataBlob(source="https://example.com/data.nc")
+    >>> blob.get(Path("/output/dir"), name="custom.nc")  # doctest: +ELLIPSIS
+    PosixPath('/output/dir/custom.nc')
 
     """
 
@@ -53,7 +86,10 @@ class DataBlob(DataBase):
         description="Model type discriminator",
     )
     source: Union[AnyPath, HttpUrl] = Field(
-        description="URI of the data source, either a local file path or a remote uri",
+        description=(
+            "URI of the data source: local file path, cloud storage URI (s3://, gs://), "
+            "or remote HTTP/HTTPS URL. HTTP/HTTPS URLs are automatically downloaded."
+        ),
     )
     link: bool = Field(
         default=False,
@@ -79,17 +115,36 @@ class DataBlob(DataBase):
         return self
 
     def get(self, destdir: Union[str, Path], name: str = None, *args, **kwargs) -> Path:
-        """Copy or link the data source to a new directory.
+        """Copy, download, or link the data source to a new directory.
+
+        For HTTP/HTTPS URLs, the file is automatically downloaded with retry logic.
+        For local/cloud paths, the file is either copied or symlinked based on the `link` attribute.
 
         Parameters
         ----------
         destdir : str | Path
-            The destination directory to copy or link the data source to.
+            The destination directory to copy/download/link the data source to.
+        name : str, optional
+            Override the output filename. For HTTP downloads, this overrides the filename
+            extracted from the URL.
 
         Returns
         -------
         Path
-            The path to the copied file or created symlink.
+            The path to the downloaded/copied file or created symlink.
+
+        Notes
+        -----
+        HTTP downloads include:
+        - Retry logic with exponential backoff (3 retries by default)
+        - Atomic writes (download to temp file, then rename)
+        - Caching (skip download if file already exists in destination)
+        - 500MB maximum file size limit
+
+        Raises
+        ------
+        ValueError
+            If link=True is used with an HTTP URL.
         """
         destdir = Path(destdir).resolve()
 

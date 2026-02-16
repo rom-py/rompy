@@ -1,4 +1,25 @@
-"""HTTP download handler with retry logic and atomic writes."""
+"""HTTP download handler with retry logic and atomic writes.
+
+This module provides utilities for downloading files from HTTP/HTTPS URLs with:
+- Retry logic with exponential backoff for transient failures
+- Atomic writes (download to temp file, then rename)
+- Caching support (skip download if file already exists)
+- File size limits to prevent excessive downloads
+
+Main Functions
+--------------
+download_http_file : Download a file from HTTP/HTTPS URL
+retry_with_backoff : Decorator for retry logic
+extract_filename_from_url : Extract filename from URL path
+
+Constants
+---------
+MAX_RETRIES : Maximum retry attempts (default: 3)
+RETRY_DELAY_BASE : Base delay for exponential backoff (default: 1 second)
+HTTP_TIMEOUT : Default timeout in seconds (default: 30)
+MAX_FILE_SIZE : Maximum file size in bytes (default: 500MB)
+
+"""
 
 import functools
 import logging
