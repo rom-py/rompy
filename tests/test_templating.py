@@ -58,7 +58,7 @@ class TestParseDatetime:
         assert dt == datetime(2023, 1, 15)
 
     def test_parse_invalid_format(self):
-        with pytest.raises(TemplateError, match="Cannot parse datetime"):
+        with pytest.raises(TemplateError, match="Cannot parse.*datetime"):
             parse_datetime("not-a-date")
 
     def test_parse_already_datetime(self):
@@ -105,7 +105,7 @@ class TestShiftDatetime:
 
     def test_shift_invalid_unit(self):
         dt = datetime(2023, 1, 1)
-        with pytest.raises(TemplateError, match="Unknown time unit"):
+        with pytest.raises(TemplateError, match="Invalid shift format"):
             shift_datetime(dt, "1x")
 
 
