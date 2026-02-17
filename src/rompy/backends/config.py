@@ -102,6 +102,10 @@ class LocalConfig(BaseBackendConfig):
         True, description="Whether to capture stdout and stderr"
     )
 
+    stream_output: bool = Field(
+        False, description="Whether to stream output in real-time"
+    )
+
     def get_backend_class(self):
         """Return the LocalRunBackend class."""
         from rompy.run import LocalRunBackend
@@ -117,6 +121,7 @@ class LocalConfig(BaseBackendConfig):
                     "command": "python run_model.py",
                 },
                 {"timeout": 3600, "working_dir": "/path/to/model/dir"},
+                {"timeout": 3600, "stream_output": True},
             ]
         }
     )
@@ -287,90 +292,59 @@ class DockerConfig(BaseBackendConfig):
 class SlurmConfig(BaseBackendConfig):
     """Configuration for SLURM cluster execution."""
 
-    model_type: Literal["slurm"] = Field(
-        "slurm",
-        description="The backend type."
-    )
+    model_type: Literal["slurm"] = Field("slurm", description="The backend type.")
     queue: Optional[str] = Field(
-        None,
-        description="SLURM partition name (equivalent to queue)"
+        None, description="SLURM partition name (equivalent to queue)"
     )
 
     command: str = Field(
-        ...,
-        description="Shell command to run in the workspace directory",
-        min_length=1
+        ..., description="Shell command to run in the workspace directory", min_length=1
     )
-    nodes: int = Field(
-        1, 
-        ge=1, 
-        le=100, 
-        description="Number of nodes to allocate"
-    )
-    ntasks: int = Field(
-        1, 
-        ge=1, 
-        description="Number of tasks (processes) to run"
-    )
+    nodes: int = Field(1, ge=1, le=100, description="Number of nodes to allocate")
+    ntasks: int = Field(1, ge=1, description="Number of tasks (processes) to run")
     cpus_per_task: int = Field(
-        1, 
-        ge=1, 
-        le=128, 
-        description="Number of CPU cores per task"
+        1, ge=1, le=128, description="Number of CPU cores per task"
     )
-    time_limit: str = Field(
-        "1:00:00", 
-        description="Time limit in format HH:MM:SS"
-    )
+    time_limit: str = Field("1:00:00", description="Time limit in format HH:MM:SS")
     account: Optional[str] = Field(
-        None, 
-        description="Account for billing/resource tracking"
+        None, description="Account for billing/resource tracking"
     )
-    qos: Optional[str] = Field(
-        None, 
-        description="Quality of Service for the job"
-    )
+    qos: Optional[str] = Field(None, description="Quality of Service for the job")
     reservation: Optional[str] = Field(
-        None, 
-        description="Reservation name to run job under"
+        None, description="Reservation name to run job under"
     )
     output_file: Optional[str] = Field(
-        None, 
-        description="Output file path for job output"
+        None, description="Output file path for job output"
     )
     error_file: Optional[str] = Field(
-        None, 
-        description="Error file path for job errors"
+        None, description="Error file path for job errors"
     )
-    job_name: Optional[str] = Field(
-        None, 
-        description="Name for the SLURM job"
-    )
+    job_name: Optional[str] = Field(None, description="Name for the SLURM job")
     mail_type: Optional[str] = Field(
-        None,
-        description="Type of mail to send (BEGIN, END, FAIL, ALL, etc.)"
+        None, description="Type of mail to send (BEGIN, END, FAIL, ALL, etc.)"
     )
     mail_user: Optional[str] = Field(
-        None,
-        description="Email address for notifications"
+        None, description="Email address for notifications"
     )
     additional_options: List[str] = Field(
         default_factory=list,
-        description="Additional SLURM options (e.g., '--gres=gpu:1')"
+        description="Additional SLURM options (e.g., '--gres=gpu:1')",
     )
 
-    @field_validator('time_limit')
+    @field_validator("time_limit")
     @classmethod
     def validate_time_limit(cls, v):
         """Validate time limit format (HH:MM:SS)."""
         import re
-        if not re.match(r'^\d{1,4}:\d{2}:\d{2}$', v):
+
+        if not re.match(r"^\d{1,4}:\d{2}:\d{2}$", v):
             raise ValueError("Time limit must be in format HH:MM:SS")
         return v
 
     def get_backend_class(self):
         """Return the SlurmRunBackend class."""
         from rompy.run.slurm import SlurmRunBackend
+
         return SlurmRunBackend
 
     model_config = ConfigDict(

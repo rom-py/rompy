@@ -7,8 +7,9 @@ This module provides the local run backend implementation.
 import logging
 import os
 import subprocess
+import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional
 
 if TYPE_CHECKING:
     from rompy.backends import LocalConfig
@@ -52,6 +53,7 @@ class LocalRunBackend:
         exec_working_dir = config.working_dir
         exec_env_vars = config.env_vars
         exec_timeout = config.timeout
+        exec_stream_output = getattr(config, "stream_output", False)
 
         logger.debug(
             f"Using LocalConfig: timeout={exec_timeout}, env_vars={list(exec_env_vars.keys())}"
@@ -96,7 +98,7 @@ class LocalRunBackend:
             # Execute command or config.run()
             if exec_command:
                 success = self._execute_command(
-                    exec_command, work_dir, env, exec_timeout
+                    exec_command, work_dir, env, exec_timeout, exec_stream_output
                 )
             else:
                 success = self._execute_config_run(model_run, work_dir, env)
@@ -118,7 +120,12 @@ class LocalRunBackend:
             return False
 
     def _execute_command(
-        self, command: str, work_dir: Path, env: Dict[str, str], timeout: Optional[int]
+        self,
+        command: str,
+        work_dir: Path,
+        env: Dict[str, str],
+        timeout: Optional[int],
+        stream_output: bool = False,
     ) -> bool:
         """Execute a shell command.
 
@@ -127,10 +134,20 @@ class LocalRunBackend:
             work_dir: Working directory
             env: Environment variables
             timeout: Execution timeout
+            stream_output: Whether to stream output in real-time
 
         Returns:
             True if successful, False otherwise
         """
+        if stream_output:
+            return self._execute_command_streaming(command, work_dir, env, timeout)
+        else:
+            return self._execute_command_buffered(command, work_dir, env, timeout)
+
+    def _execute_command_buffered(
+        self, command: str, work_dir: Path, env: Dict[str, str], timeout: Optional[int]
+    ) -> bool:
+        """Execute a shell command with buffered output."""
         logger.info(f"Executing command: {command}")
         logger.debug(f"Working directory: {work_dir}")
 
@@ -146,7 +163,6 @@ class LocalRunBackend:
                 check=False,
             )
 
-            # Log output
             if result.stdout:
                 logger.info(f"Command stdout:\n{result.stdout}")
             if result.stderr:
@@ -165,6 +181,80 @@ class LocalRunBackend:
         except subprocess.TimeoutExpired:
             logger.error(f"Command timed out after {timeout} seconds")
             raise TimeoutError(f"Command execution timed out after {timeout} seconds")
+        except Exception as e:
+            logger.exception(f"Error executing command: {e}")
+            return False
+
+    def _execute_command_streaming(
+        self, command: str, work_dir: Path, env: Dict[str, str], timeout: Optional[int]
+    ) -> bool:
+        """Execute a shell command with streaming output."""
+        logger.info(f"Executing command: {command}")
+        logger.debug(f"Working directory: {work_dir}")
+
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                cwd=work_dir,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+
+            # Capture output while streaming
+            stdout_lines = []
+            stderr_lines = []
+
+            def read_stream(stream, lines, log_func):
+                """Read from a stream and log each line."""
+                for line in stream:
+                    line = line.rstrip()
+                    lines.append(line)
+                    log_func(line)
+
+            # Start threads to read stdout and stderr concurrently
+            stdout_thread = threading.Thread(
+                target=read_stream,
+                args=(process.stdout, stdout_lines, logger.info),
+            )
+            stderr_thread = threading.Thread(
+                target=read_stream,
+                args=(process.stderr, stderr_lines, lambda msg: logger.warning(msg)),
+            )
+
+            stdout_thread.start()
+            stderr_thread.start()
+
+            # Wait for process to complete with timeout
+            try:
+                returncode = process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+                logger.error(f"Command timed out after {timeout} seconds")
+                raise TimeoutError(
+                    f"Command execution timed out after {timeout} seconds"
+                )
+
+            # Wait for reader threads to finish
+            stdout_thread.join()
+            stderr_thread.join()
+
+            # Log remaining stderr if any (after process completed)
+            # (Thread already handled most output, but capture any final lines)
+
+            if returncode == 0:
+                logger.debug("Command completed successfully")
+                return True
+            else:
+                logger.error(f"Command failed with return code: {returncode}")
+                if stderr_lines:
+                    logger.error("Command stderr:\n" + "\n".join(stderr_lines))
+                return False
+
         except Exception as e:
             logger.exception(f"Error executing command: {e}")
             return False
