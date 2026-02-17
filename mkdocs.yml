@@ -26,6 +26,7 @@ nav:
           - Backend Reference: developer/backend_reference.md
           - CLI: cli.md
           - Formatting and Logging: formatting_and_logging.md
+          - Configuration Templating: templating.md
     - Developer Guide:
           - Contributing: contributing.md
           - Development Setup: developer/index.md
