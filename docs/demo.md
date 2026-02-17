@@ -2,25 +2,25 @@
 
 ## Thumbnails Gallery
 
-The following demonstration notebooks showcase various aspects of ROMPY's functionality:
+The following demonstration notebooks showcase various aspects of Rompy's functionality:
 
-* [Demo Notebook](../notebooks/demo.ipynb) - Basic demonstration of ROMPY features
-* [Templates Demo](../notebooks/templates_demo.ipynb) - Using cookiecutter templates for model setup
-* [SWAN Declarative Example](../notebooks/swan/example_declarative.ipynb) - Declarative configuration of SWAN models
-* [SWAN Procedural Example](../notebooks/swan/example_procedural.ipynb) - Procedural configuration of SWAN models
-* [SWAN Sensitivity Example](../notebooks/swan/example_sensitivity.ipynb) - Sensitivity analysis with SWAN models
-* [Oceanum Example](../notebooks/oceanum_example.ipynb) - Using Oceanum data sources
-* [SWAN Config Components](../notebooks/swan-config-components.ipynb) - Detailed configuration components for SWAN
-* [Physics](../notebooks/physics.ipynb) - Physics-based model configurations
-* [SCHISM Procedural](../notebooks/schism_procedural.ipynb) - Procedural configuration of SCHISM models
+* [Rompy Core Features](notebooks/common/rompy_core_features.ipynb) - Basic demonstration of Rompy features
+* [SWAN Basic Demo](notebooks/swan/example_procedural.ipynb) - Procedural configuration of SWAN models
+* [SWAN Sensitivity Demo](notebooks/swan/example_sensitivity.ipynb) - Sensitivity analysis with SWAN models
+* [SWAN Boundnest1](notebooks/swan/boundary/boundnest1.ipynb) - Boundary conditions example using boundnest1
+* [SWAN Boundspec Segment](notebooks/swan/boundary/boundspec_segment.ipynb) - Boundary conditions example using boundspec_segment
+* [SWAN Boundspec Side](notebooks/swan/boundary/boundspec_side.ipynb) - Boundary conditions example using boundspec_side
+* [SCHISM Demo](notebooks/schism/schism_demo.ipynb) - SCHISM model configuration example
+* [XBEACH Basic](notebooks/xbeach/example_procedural.ipynb) - Basic XBEACH configuration
+* [XBEACH Forcing](notebooks/xbeach/forcing-demo.ipynb) - XBEACH forcing example
 
-These notebooks provide practical examples of how to use ROMPY for various ocean modeling tasks. Each notebook demonstrates different aspects of the framework, from basic usage to advanced features.
+These notebooks provide practical examples of how to use Rompy for various ocean modeling tasks. Each notebook demonstrates different aspects of the framework, from basic usage to advanced features.
 
 ## Getting Started
 
 To run these notebooks:
 
-1. Install ROMPY with notebook dependencies:
+1. Install Rompy with notebook dependencies:
    ```bash
    pip install rompy[notebooks]
    ```

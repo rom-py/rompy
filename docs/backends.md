@@ -1,10 +1,10 @@
 # Backend Systems
 
-ROMPY's backend system provides flexible, type-safe execution environments for wave models. Whether you're running simple local simulations or complex containerized workflows, the backend system handles execution, resource management, and result processing.
+Rompy's backend system provides flexible, type-safe execution environments for ocean and coastal models. Whether you're running simple local simulations or complex containerized workflows, the backend system handles execution, resource management, and result processing.
 
 ## Overview
 
-Backend systems in ROMPY control **how** and **where** your models execute. They provide:
+Backend systems in Rompy control **how** and **where** your models execute. They provide:
 
 * **Execution Environments**: Local system, Docker containers, HPC clusters
 * **Resource Management**: CPU, memory, and timeout controls
@@ -171,7 +171,7 @@ For complete parameter documentation, see `rompy.backends.config.DockerConfig`.
 
 ### With ModelRun
 
-Backend configurations integrate directly with ROMPY's model execution via `rompy.model.ModelRun.run`:
+Backend configurations integrate directly with Rompy's model execution via `rompy.model.ModelRun.run`:
 
 ```python
 from rompy.model import ModelRun
@@ -333,16 +333,18 @@ except ValidationError as e:
 Each configuration class validates fields according to execution environment requirements:
 
 **LocalConfig Validation:**
-* Working directory must exist if specified
-* Environment variables must be string key-value pairs
-* Timeout must be between 60 and 86400 seconds
+
+* Working directory must exist if specified.
+* Environment variables must be string key-value pairs.
+* Timeout must be between 60 and 86400 seconds.
 
 **DockerConfig Validation:**
-* Either `image` or `dockerfile` must be provided (not both)
-* CPU count must be between 1 and 128
-* Memory format must match pattern (e.g., "2g", "512m")
-* Volume mounts must use "host:container:mode" format
-* Docker image names must follow valid naming conventions
+
+* Either `image` or `dockerfile` must be provided (not both).
+* CPU count must be between 1 and 128.
+* Memory format must match pattern (e.g., "2g", "512m").
+* Volume mounts must use "host:container:mode" format.
+* Docker image names must follow valid naming conventions.
 
 ## Best Practices
 
@@ -502,17 +504,17 @@ class HPCConfig(BaseBackendConfig):
         return HPCRunBackend
 ```
 
-For detailed implementation guidance, see [backend_reference](backend_reference.md).
+For detailed implementation guidance, see [backend_reference](developer/backend_reference.md).
 
 ### Postprocessors
 
 Handle results after model execution using postprocessor classes:
 
 ```python
-# Basic postprocessing
+# Basic post-processing
 results = model_run.postprocess(processor="archive")
 
-# Custom postprocessing
+# Custom post-processing
 results = model_run.postprocess(
     processor="custom_analyzer",
     output_format="netcdf",
@@ -605,15 +607,22 @@ pipeline = Pipeline([
 results = pipeline.run()
 ```
 
+## Notebook Examples
+
+For a practical, hands-on example of how to use the different backends, please see the following notebook:
+
+- **[Backend Examples](notebooks/backends/backend_examples.ipynb)**: A demonstration of how to use the local and Docker backends.
+
 ## API Reference
+
 
 For complete API documentation, see:
 
 * `rompy.backends.config.BaseBackendConfig` - Base configuration class
 * `rompy.backends.config.LocalConfig` - Local execution configuration
-* `rompy.backends.config.DockeConfig` - Docker execution configuration
+* `rompy.backends.config.DockerConfig` - Docker execution configuration
 * `rompy.run` - Run backend implementations
 * `rompy.backends.postprocessors` - Postprocessor implementations
-* [backend_reference](backend_reference.md) - Comprehensive technical reference
+* [backend_reference](developer/backend_reference.md) - Comprehensive technical reference
 
 The backend system provides a robust, type-safe foundation for model execution while maintaining flexibility for different deployment scenarios. From simple local development to complex containerized production environments, the backend system adapts to your needs while ensuring consistent, reproducible results.

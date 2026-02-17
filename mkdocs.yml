@@ -6,31 +6,42 @@ edit_uri: edit/main/docs/
 
 nav:
     - Home: index.md
-    - Installation: installation.md
-    - Usage: usage.md
-    - Contributing: contributing.md
-    - Quickstart: quickstart.md
-    - Core Concepts: core_concepts.md
-    - Formatting and Logging: formatting_and_logging.md
-    - CLI: cli.md
-    - Backends: backends.md
-    - Models: models.md
-    - Demo: demo.md
-    - API: api.md
-    - Plugin Architecture:
-          - Overview: plugin_architecture.md
-          - Execution: plugin_architecture/execution.md
-    - Developer:
-          - Overview: developer/index.md
-          - Architecture:
-                - Overview: plugin_architecture.md
-                - Execution: plugin_architecture/execution.md
-                - Selection Patterns: developer/architecture/selection_patterns.md
-          - Backend Reference: backend_reference.md
-    - API Reference:
-          - Config: reference/config.md
-          - Source: reference/source.md
-          - CLI: reference/cli.md
+    - Getting Started:
+          - getting_started.md
+          - Core Concepts: core_concepts.md
+    - Tutorials:
+          - Progressive Tutorials: progressive_tutorials.md
+          - Practical Examples: examples.md
+          - Common Workflows: common_workflows.md
+    - Models:
+          - Overview: models.md
+          - SWAN Guide: swan_guide.md
+          - SCHISM Guide: schism_guide.md
+          - XBeach Guide: xbeach_guide.md
+          - WAVEWATCH III Guide: ww3_guide.md
+          - Extending Models: extending_models.md
+
+    - Advanced Topics:
+          - Backends: backends.md
+          - Backend Reference: developer/backend_reference.md
+          - CLI: cli.md
+          - Formatting and Logging: formatting_and_logging.md
+          - Configuration Templating: templating.md
+    - Developer Guide:
+          - Contributing: contributing.md
+          - Development Setup: developer/index.md
+          - Testing: testing_guide.md
+    - Architecture:
+          - Architecture Overview: architecture_overview.md
+          - Plugin Architecture: plugin_architecture.md
+          - Selection Patterns: developer/architecture/selection_patterns.md # Moved for better organization
+          - Schema Advantages: schema_advantages.md
+    - API Reference: api.md
+    - FAQ: faq.md
+    - Examples: notebook_gallery.md
+
+    # - Gallery:
+    #       - Generated Examples: generated/gallery/index.md
 
 theme:
     name: material
@@ -52,7 +63,6 @@ theme:
     features:
         - navigation.tabs
         - navigation.sections
-        - toc.integrate
         - navigation.top
         - search.suggest
         - search.highlight
@@ -62,6 +72,12 @@ theme:
 
 plugins:
     - search
+    - mkdocs-jupyter:
+          execute: false
+          execute_ignore:
+              - "*.ipynb"
+          include_source: True
+
     - mkdocstrings:
           handlers:
               python:
@@ -80,6 +96,14 @@ plugins:
                       show_submodules: false
                       filters:
                           - "!^_" # Hide private members by default
+    # - gallery:
+    #       examples_dirs:
+    #           - examples/notebooks/rompy_notebooks/common
+    #           - examples/notebooks/rompy_notebooks/backends
+    #           - examples/notebooks/rompy_notebooks/swan
+    #           - examples/notebooks/rompy_notebooks/schism
+    #       gallery_dirs:
+    #           - docs/generated/gallery # where to save generated gallery
 
 markdown_extensions:
     - pymdownx.highlight:
@@ -96,5 +120,8 @@ markdown_extensions:
     - pymdownx.mark
     - pymdownx.tilde
     - attr_list
-    - md_in_html
-
+    - pymdownx.superfences:
+          custom_fences:
+              - name: mermaid
+                class: mermaid
+                format: !!python/name:pymdownx.superfences.fence_code_format

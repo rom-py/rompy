@@ -92,8 +92,18 @@ local = "rompy.pipeline:LocalPipelineBackend"
 [project.optional-dependencies]
 test = ["pytest", "envyaml", "coverage"]
 extra = ["gcsfs", "zarr", "cloudpathlib[s3,gs,azure]"]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-gallery",
+    "mkdocs-execute-plugin",
+    "mkdocs-jupyter",
+]
+notebooks = [
+    "rompy-notebooks @ git+https://github.com/rom-py/rompy-notebooks.git@package",
+]
 dev = ["pytest", "envyaml", "coverage", "ruff", "black", "respx"]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

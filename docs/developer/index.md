@@ -1,64 +1,66 @@
 # Developer Guide
 
-Welcome to the rompy developer documentation. This section provides detailed technical information about rompy's architecture, design patterns, and extension mechanisms.
+Welcome to the rompy developer documentation. This section provides detailed technical information about contributing to the Rompy project and understanding the internal architecture.
 
-rompy is designed with extensibility and maintainability in mind, featuring a modular architecture that separates concerns between configuration, execution, and processing. Understanding these architectural decisions will help you contribute effectively to the project or extend it for your specific needs.
+## Getting Started with Development
 
-## Architecture & Design
+To get started developing for Rompy:
 
-rompy's architecture is built around several key principles:
+1. **Fork and clone the repository**
+- **Set up your development environment** - See the [Getting Started Guide](../getting_started.md) for setup instructions
+3. **Run the tests** - Make sure you can run the test suite before making changes
+4. **Read the contribution guidelines** - See the [Contribution Guidelines](../contributing.md) for important information
 
-### Separation of Concerns
-Configuration (what to compute) is separated from execution (how to compute) and processing (what to do with results).
+## Key Architecture Concepts
 
-### Plugin Architecture
-Core functionality can be extended through entry points without modifying the base code.
+For detailed information about Rompy's architecture, see:
 
-### Type Safety
-Pydantic models provide strong validation for configuration while maintaining flexibility for runtime concerns.
+- [**Architecture Overview**](../architecture_overview.md) - High-level system architecture
+- [**Plugin Architecture**](../plugin_architecture.md) - Extension mechanisms and plugin system
+- [Backend Reference](backend_reference.md) - Technical details for backend development
 
-### Reproducibility
-Model configurations are fully serializable and version-controlled, ensuring reproducible science.
+## Development Process
 
-### Environment Agnostic
-The same model configuration can be executed in different environments (local, HPC, cloud, containers).
+### Testing
 
-## Key Architectural Decisions
+Rompy uses pytest for testing. Before submitting changes:
 
-The rompy codebase makes several important architectural decisions that affect how you should approach development:
+```bash
+# Run all tests
+pytest
 
-1. **Dual Extension Patterns**: Different extension mechanisms for different concerns (Pydantic unions for configs, entry points for backends)
+# Run tests with coverage
+pytest --cov=rompy
+```
 
-2. **Configuration Immutability**: Model configurations are treated as immutable scientific artifacts
+### Code Style
 
-3. **Late Binding**: Execution backends are resolved at runtime to support environment-specific deployments
+- Follow PEP 8 guidelines
+- Use type hints for all public functions
+- Write docstrings using Google style
 
-4. **Composable Workflows**: Pipeline architecture allows mixing and matching of different execution and processing strategies
+### Commit Messages
 
-## Quick Start for Developers
+- Use present tense ("Add feature" not "Added feature")
+- Limit first line to 72 characters
+- Reference issues when applicable
 
-If you're new to rompy development, start here:
+## Common Development Tasks
 
-1. **Understanding the Architecture**: Read [Component Selection Patterns](architecture/selection_patterns.md) to understand the core design patterns
+### Adding New Configuration Types
 
-## Design Philosophy
+When adding new configuration types, extend the appropriate base classes and consider using Pydantic discriminated unions for type safety.
 
-rompy is designed around the principle that **configuration should be declarative and execution should be imperative**. This means:
+### Adding New Backends
 
-- **What to compute** (model physics, grids, forcing) is declared in strongly-typed, validated configuration objects
-- **How to compute** (local vs cloud, serial vs parallel) is handled by pluggable execution backends
-- **What to do with results** (analysis, visualization, archiving) is handled by composable processing pipelines
+To add new execution backends, implement the appropriate interface and register via entry points.
 
-This separation allows the same scientific model configuration to be executed in vastly different computational environments while maintaining reproducibility and traceability.
+### Extending Model Support
 
-## Getting Help
+To add support for new ocean models, follow the plugin architecture patterns described in the [Plugin Architecture](../plugin_architecture.md) documentation.
 
-- **Architecture Questions**: Check the architecture guides in this developer section
-- **Community**: Join discussions in the project's issue tracker or mailing list
+## Need Help?
 
-The developer documentation is continuously evolving. If you find gaps or have suggestions for improvement, please contribute back to help other developers.
-
-## Table of Contents
-
-### Architecture & Design
-- [Component Selection Patterns](architecture/selection_patterns.md)
+- Check the [FAQ](../faq.md) for common developer questions
+- Join the discussion on GitHub issues
+- For complex architectural questions, review the [Architecture Overview](../architecture_overview.md)

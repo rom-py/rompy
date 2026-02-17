@@ -2,14 +2,39 @@
 
 ## Overview
 
-ROMPY provides model-specific implementations for various ocean, wave, and hydrodynamic models. Each model implementation includes configuration classes, grid definitions, data handling, and execution backends.
+Rompy provides model-specific implementations for various ocean, wave, and hydrodynamic models. Each model implementation includes configuration classes, grid definitions, data handling, and execution backends. For basic concepts about models, see the [Getting Started Guide](getting_started.md).
 
 ## Supported Models
 
-ROMPY currently supports the following models:
+Rompy currently supports the following models, each with a varying level of maturity:
 
-* [SWAN](swan/index.md) - Spectral Wave Nearshore model
-* [SCHISM](schism/index.md) - Semi-implicit Cross-scale Hydroscience Integrated Modeling System
+- **SWAN**: Spectral Wave Nearshore model (install with `pip install rompy-swan`)
+- **SCHISM**: Semi-implicit Cross-scale Hydroscience Integrated Modeling System (install with `pip install rompy-schism`)
+- **XBeach**: A numerical model for the simulation of nearshore and coastal processes (install with `pip install rompy-xbeach`)
+- **WAVEWATCH III**: A third-generation wave model developed at NOAA/NCEP (install with `pip install rompy-ww3`)
+
+## Model Maturity
+
+The integration of each model into the Rompy framework is at a different stage of development. Here is a summary of the current status:
+
+- **SWAN**: Full implementation. The SWAN integration is the most mature and has the most features.
+- **SCHISM**: Full implementation. Less well tested and still under active development.
+- **XBeach**: Under active development
+- **WAVEWATCH III**: Under active development.
+
+For more detailed information on each model, please refer to their specific guides:
+
+- [SWAN Guide](swan_guide.md)
+- [SCHISM Guide](schism_guide.md)
+- [XBeach Guide](xbeach_guide.md)
+- [WAVEWATCH III Guide](ww3_guide.md)
+
+## Model-Specific Documentation
+
+- **SWAN**: [https://rom-py.github.io/rompy-swan](https://rom-py.github.io/rompy-swan)
+- **SCHISM**: [https://rom-py.github.io/rompy-schism](https://rom-py.github.io/rompy-schism)
+- **XBeach**: [https://rom-py.github.io/rompy-xbeach](https://rom-py.github.io/rompy-xbeach)
+- **WAVEWATCH III**: [https://rom-py.github.io/rompy-ww3](https://rom-py.github.io/rompy-ww3)
 
 ## Model Architecture
 
@@ -35,28 +60,15 @@ Backend configurations for running the model in different environments (local, D
 
 Classes for analyzing and visualizing model output.
 
-## Extending ROMPY
-
-To add support for a new model:
-
-1. Create a new model package in the `rompy` namespace
-2. Implement the required base classes:
-   * `BaseModel` - Model configuration and execution
-   * `BaseGrid` - Grid definition and handling
-   * `DataSource` - Data input handling
-3. Add backend support for execution environments
-4. Implement postprocessing capabilities
-5. Add documentation and examples
-
 ## Model Integration
 
-Models integrate with ROMPY's core framework through:
+Models integrate with Rompy's core framework through:
 
-* Pydantic-based configuration classes for type safety
-* XArray accessors for data manipulation
-* Intake drivers for data catalog integration
-* Cookiecutter templates for model setup
-* Unified execution backends for consistent deployment
+- Pydantic-based configuration classes for type safety
+- XArray accessors for data manipulation
+- Intake drivers for data catalog integration
+- Cookiecutter templates for model setup
+- Unified execution backends for consistent deployment
 
 ## Best Practices
 
@@ -68,9 +80,17 @@ When working with models:
 4. **Testing**: Include comprehensive tests for model implementations
 5. **Examples**: Provide clear examples for common use cases
 
-## Model-Specific Documentation
+## Extending Model Support
 
-For detailed information about each supported model, see:
+To add support for a new model, see the [Extending Models](extending_models.md) guide which provides detailed information about creating new model implementations.
 
-* [SWAN Model](swan/index.md) - Spectral Wave Nearshore model documentation
-* [SCHISM Model](schism/index.md) - Semi-implicit Cross-scale Hydroscience Integrated Modeling System documentation
+## Next Steps
+
+For further information on working with models in Rompy:
+
+- Check the [Extending Models](extending_models.md) guide to add new model support
+- Follow the [Progressive Tutorials](progressive_tutorials.md) for hands-on examples
+- Review [Configuration Deep Dive](configuration_deep_dive.md) for advanced configuration techniques
+- Understand the [Architecture Overview](architecture_overview.md) for component integration
+- Explore [Common Workflows](common_workflows.md) for practical implementation patterns
+

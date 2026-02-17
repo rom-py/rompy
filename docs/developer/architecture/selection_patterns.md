@@ -1,6 +1,6 @@
 # Component Selection Patterns
 
-One of the most important architectural decisions in rompy is the use of two different selection patterns for different types of functionality. Both patterns use entry points for discovery, but differ in when and how selection occurs. Understanding when and why to use each pattern is crucial for effective rompy development.
+A noteable architectural decisions in rompy is the use of two different selection patterns for different types of functionality. Both patterns use entry points for discovery, but differ in when and how selection occurs. Understanding when and why to use each pattern is crucial for effective rompy development.
 
 ## Overview
 
@@ -476,7 +476,6 @@ The pattern demonstrates that **the same plugin discovery mechanism can serve di
 
 ## Further Reading
 
-- [Custom Backends](../extending/custom_backends.md) - Practical guide to creating new backends
-- [Custom Models](../extending/custom_models.md) - Guide to adding new model configurations
-- [Entry Points](../api_design/entry_points.md) - Technical details on the entry point system
-- [Configuration Patterns](configuration_patterns.md) - Deep dive into configuration design patterns
+- [Custom Backends](../../extending_models.md#1-model-specific-backends) - Practical guide to creating new backends
+- [Custom Models](../../extending_models.md#creating-a-new-model-configuration) - Guide to adding new model configurations
+- [Entry Points](../../plugin_architecture.md#entry-point-registration) - Technical details on the entry point system
