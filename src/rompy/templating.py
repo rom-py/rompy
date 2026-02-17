@@ -286,6 +286,8 @@ def render_string(template: str, context: TemplateContext, strict: bool = True) 
                         f"Filter error in '${{{var_name}|{filter_chain}}}': {e}"
                     )
                 return template  # Keep unresolved
+            # Return filtered value as-is (no type conversion for filtered values)
+            return value
 
         # Type conversion for string values (mimics bash-like behavior)
         if isinstance(value, str):
