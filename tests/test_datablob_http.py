@@ -117,16 +117,15 @@ def test_http_size_limit(tmp_download_dir):
 
 @pytest.mark.skipif(respx is None, reason="respx not installed")
 def test_datablob_accepts_http_url():
-    """Test that DataBlob accepts HTTP URLs."""
+    """Test that DataBlob accepts HTTP URLs as plain strings."""
     from rompy.core.data import DataBlob
-    from pydantic import HttpUrl
 
     url = "https://example.com/data.nc"
 
     blob = DataBlob(source=url)
 
-    assert isinstance(blob.source, HttpUrl)
-    assert str(blob.source) == url
+    assert isinstance(blob.source, str)
+    assert blob.source == url
     assert blob.link is False
 
 
@@ -138,7 +137,7 @@ def test_datablob_http_link_error():
 
     url = "https://example.com/data.nc"
 
-    with pytest.raises(ValidationError, match="Cannot use link=True with HTTP URLs"):
+    with pytest.raises(ValidationError, match="Cannot use link=True with https://"):
         DataBlob(source=url, link=True)
 
 

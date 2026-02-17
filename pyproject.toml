@@ -89,6 +89,12 @@ noop = "rompy.postprocess:NoopPostprocessor"
 [project.entry-points."rompy.pipeline"]
 local = "rompy.pipeline:LocalPipelineBackend"
 
+[project.entry-points."rompy.transfer"]
+file = "rompy.transfer.file:FileTransfer"
+http = "rompy.transfer.http:HttpTransfer"
+https = "rompy.transfer.http:HttpTransfer"
+oceanum = "rompy.transfer.oceanum:OceanumTransfer"
+
 [project.optional-dependencies]
 test = ["pytest", "envyaml", "coverage"]
 extra = ["gcsfs", "zarr", "cloudpathlib[s3,gs,azure]"]
