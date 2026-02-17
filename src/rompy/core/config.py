@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Literal, Optional, Any
+from typing import Literal, Optional
 
 from pydantic import Field
 

@@ -19,8 +19,7 @@ Examples:
 import os
 import re
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from rompy.logging import get_logger
 
@@ -204,7 +203,7 @@ def apply_filter(value: Any, filter_spec: str) -> Any:
         # Format datetime
         if not filter_arg:
             raise TemplateError(
-                f"Filter 'strftime' requires format argument (e.g., strftime:%Y%m%d)"
+                "Filter 'strftime' requires format argument (e.g., strftime:%Y%m%d)"
             )
 
         # Ensure value is datetime
@@ -217,7 +216,7 @@ def apply_filter(value: Any, filter_spec: str) -> Any:
         # Shift datetime by delta
         if not filter_arg:
             raise TemplateError(
-                f"Filter 'shift' requires delta argument (e.g., shift:-1d)"
+                "Filter 'shift' requires delta argument (e.g., shift:-1d)"
             )
 
         # Ensure value is datetime

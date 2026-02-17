@@ -8,7 +8,6 @@ import hashlib
 import json
 import logging
 import pathlib
-import subprocess
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -289,7 +288,7 @@ class DockerRunBackend:
             # Note: When remove=True, client.containers.run() returns None
             # If you need to capture output, you'd need to set remove=False and manually remove
             client.containers.run(**container_config)
-            
+
             logger.info("Model run completed successfully")
             return True
 

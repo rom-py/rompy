@@ -5,12 +5,10 @@ Tests verify that the SLURM backend configuration class works correctly,
 provides proper validation, and integrates with the SLURM execution backend.
 """
 
-import shutil
 import subprocess
-import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 import os
 import tempfile
 import pytest
@@ -23,10 +21,7 @@ def is_slurm_available():
     """Check if SLURM is available on the system."""
     try:
         result = subprocess.run(
-            ["which", "sbatch"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["which", "sbatch"], capture_output=True, text=True, timeout=5
         )
         return result.returncode == 0 and bool(result.stdout.strip())
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
@@ -35,8 +30,7 @@ def is_slurm_available():
 
 # Skip tests that require SLURM if it's not available
 requires_slurm = pytest.mark.skipif(
-    not is_slurm_available(),
-    reason="SLURM is not available on this system"
+    not is_slurm_available(), reason="SLURM is not available on this system"
 )
 
 
@@ -122,24 +116,28 @@ class TestSlurmConfig:
         ]
 
         for time_limit in valid_time_limits:
-            config = SlurmConfig(queue="test", command="python run_model.py", time_limit=time_limit)
+            config = SlurmConfig(
+                queue="test", command="python run_model.py", time_limit=time_limit
+            )
             assert config.time_limit == time_limit
 
         # Invalid time limits (format-based validation)
         invalid_time_limits = [
-            "00:00",      # Missing seconds
-            "invalid",    # Not matching format
-            "1:1:1",      # Not in HH:MM:SS format (only 1 digit for each part)
-            "25-00-00",   # Wrong separator
-            "12345:00:00", # Too many digits for hours (5 digits instead of max 4)
-            "23:5",       # Missing seconds part
-            ":23:59",     # Missing hours
-            "23::59",     # Missing minutes
+            "00:00",  # Missing seconds
+            "invalid",  # Not matching format
+            "1:1:1",  # Not in HH:MM:SS format (only 1 digit for each part)
+            "25-00-00",  # Wrong separator
+            "12345:00:00",  # Too many digits for hours (5 digits instead of max 4)
+            "23:5",  # Missing seconds part
+            ":23:59",  # Missing hours
+            "23::59",  # Missing minutes
         ]
 
         for time_limit in invalid_time_limits:
             with pytest.raises(ValidationError):
-                SlurmConfig(queue="test", command="python run_model.py", time_limit=time_limit)
+                SlurmConfig(
+                    queue="test", command="python run_model.py", time_limit=time_limit
+                )
 
     def test_additional_options_validation(self):
         """Test additional options validation."""
@@ -147,12 +145,18 @@ class TestSlurmConfig:
         config = SlurmConfig(
             queue="test",
             command="python run_model.py",
-            additional_options=["--gres=gpu:1", "--exclusive", "--mem-per-cpu=2048"]
+            additional_options=["--gres=gpu:1", "--exclusive", "--mem-per-cpu=2048"],
         )
-        assert config.additional_options == ["--gres=gpu:1", "--exclusive", "--mem-per-cpu=2048"]
+        assert config.additional_options == [
+            "--gres=gpu:1",
+            "--exclusive",
+            "--mem-per-cpu=2048",
+        ]
 
         # Empty list should be valid
-        config = SlurmConfig(queue="test", command="python run_model.py", additional_options=[])
+        config = SlurmConfig(
+            queue="test", command="python run_model.py", additional_options=[]
+        )
         assert config.additional_options == []
 
     def test_get_backend_class(self):
@@ -209,16 +213,24 @@ class TestSlurmConfig:
 
         # Test out of bounds
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", command="python run_model.py", nodes=0)  # Min nodes is 1
+            SlurmConfig(
+                queue="test", command="python run_model.py", nodes=0
+            )  # Min nodes is 1
 
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", command="python run_model.py", nodes=101)  # Max nodes is 100
+            SlurmConfig(
+                queue="test", command="python run_model.py", nodes=101
+            )  # Max nodes is 100
 
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", command="python run_model.py", cpus_per_task=0)  # Min cpus_per_task is 1
+            SlurmConfig(
+                queue="test", command="python run_model.py", cpus_per_task=0
+            )  # Min cpus_per_task is 1
 
         with pytest.raises(ValidationError):
-            SlurmConfig(queue="test", command="python run_model.py", cpus_per_task=129)  # Max cpus_per_task is 128
+            SlurmConfig(
+                queue="test", command="python run_model.py", cpus_per_task=129
+            )  # Max cpus_per_task is 128
 
     def test_command_field(self):
         """Test the command field validation and functionality."""
@@ -270,20 +282,22 @@ class TestSlurmRunBackend:
     def test_create_job_script(self, mock_model_run, basic_config):
         """Test the _create_job_script method."""
         from rompy.run.slurm import SlurmRunBackend
-        
+
         backend = SlurmRunBackend()
-        
+
         with TemporaryDirectory() as staging_dir:
             # Create the job script
-            script_path = backend._create_job_script(mock_model_run, basic_config, staging_dir)
-            
+            script_path = backend._create_job_script(
+                mock_model_run, basic_config, staging_dir
+            )
+
             # Verify the file was created
             assert os.path.exists(script_path)
-            
+
             # Read and check the contents
-            with open(script_path, 'r') as f:
+            with open(script_path, "r") as f:
                 content = f.read()
-            
+
             # Check for SLURM directives
             assert "#!/bin/bash" in content
             assert "#SBATCH --partition=general" in content
@@ -291,7 +305,7 @@ class TestSlurmRunBackend:
             assert "#SBATCH --ntasks=1" in content
             assert "#SBATCH --cpus-per-task=2" in content
             assert "#SBATCH --time=01:00:00" in content
-            
+
             # Clean up
             if os.path.exists(script_path):
                 os.remove(script_path)
@@ -299,7 +313,7 @@ class TestSlurmRunBackend:
     def test_create_job_script_with_all_options(self, mock_model_run):
         """Test the _create_job_script method with all options."""
         from rompy.run.slurm import SlurmRunBackend
-        
+
         config = SlurmConfig(
             queue="priority",
             nodes=2,
@@ -319,15 +333,17 @@ class TestSlurmRunBackend:
             timeout=86400,
             env_vars={"OMP_NUM_THREADS": "8", "MY_VAR": "value"},
         )
-        
+
         backend = SlurmRunBackend()
-        
+
         with TemporaryDirectory() as staging_dir:
-            script_path = backend._create_job_script(mock_model_run, config, staging_dir)
-            
-            with open(script_path, 'r') as f:
+            script_path = backend._create_job_script(
+                mock_model_run, config, staging_dir
+            )
+
+            with open(script_path, "r") as f:
                 content = f.read()
-            
+
             # Check for all SBATCH directives
             assert "#SBATCH --partition=priority" in content
             assert "#SBATCH --nodes=2" in content
@@ -344,11 +360,11 @@ class TestSlurmRunBackend:
             assert "#SBATCH --mail-user=test@example.com" in content
             assert "#SBATCH --gres=gpu:1" in content
             assert "#SBATCH --exclusive" in content
-            
+
             # Check for environment variables
             assert "export OMP_NUM_THREADS=8" in content
             assert "export MY_VAR=value" in content
-            
+
             # Clean up
             if os.path.exists(script_path):
                 os.remove(script_path)
@@ -370,9 +386,11 @@ class TestSlurmRunBackend:
         backend = SlurmRunBackend()
 
         with TemporaryDirectory() as staging_dir:
-            script_path = backend._create_job_script(mock_model_run, config, staging_dir)
+            script_path = backend._create_job_script(
+                mock_model_run, config, staging_dir
+            )
 
-            with open(script_path, 'r') as f:
+            with open(script_path, "r") as f:
                 content = f.read()
 
             # Check that the command is in the script
@@ -386,7 +404,6 @@ class TestSlurmRunBackend:
             if os.path.exists(script_path):
                 os.remove(script_path)
 
-
     def test_submit_job(self, basic_config):
         """Test the _submit_job method."""
         from rompy.run.slurm import SlurmRunBackend
@@ -394,7 +411,7 @@ class TestSlurmRunBackend:
         backend = SlurmRunBackend()
 
         # Create a simple job script
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
             f.write("#!/bin/bash\n#SBATCH --job-name=test\n")
             script_path = f.name
 
@@ -409,7 +426,9 @@ class TestSlurmRunBackend:
                     # Second call: scontrol --help - return success
                     MagicMock(returncode=0, stdout="scontrol help text"),
                     # Third call: sbatch command - return success
-                    MagicMock(returncode=0, stdout="Submitted batch job 12345", stderr="")
+                    MagicMock(
+                        returncode=0, stdout="Submitted batch job 12345", stderr=""
+                    ),
                 ]
 
                 job_id = backend._submit_job(script_path)
@@ -430,7 +449,7 @@ class TestSlurmRunBackend:
         backend = SlurmRunBackend()
 
         # Create a simple job script
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
             f.write("#!/bin/bash\n#SBATCH --job-name=test\n")
             script_path = f.name
 
@@ -444,7 +463,9 @@ class TestSlurmRunBackend:
                     # Second call: scontrol --help - return success
                     MagicMock(returncode=0, stdout="scontrol help text"),
                     # Third call: sbatch command - return failure
-                    subprocess.CalledProcessError(1, "sbatch", stderr="SLURM submission failed")
+                    subprocess.CalledProcessError(
+                        1, "sbatch", stderr="SLURM submission failed"
+                    ),
                 ]
 
                 job_id = backend._submit_job(script_path)
@@ -469,16 +490,12 @@ class TestSlurmRunBackend:
             mock_run.side_effect = [
                 # Running state from scontrol
                 MagicMock(
-                    stdout="JobState=RUNNING\nOtherInfo=...",
-                    stderr="",
-                    returncode=0
+                    stdout="JobState=RUNNING\nOtherInfo=...", stderr="", returncode=0
                 ),
                 # Completed state from scontrol
                 MagicMock(
-                    stdout="JobState=COMPLETED\nOtherInfo=...",
-                    stderr="",
-                    returncode=0
-                )
+                    stdout="JobState=COMPLETED\nOtherInfo=...", stderr="", returncode=0
+                ),
             ]
 
             result = backend._wait_for_completion("12345", basic_config)
@@ -495,9 +512,7 @@ class TestSlurmRunBackend:
         # Mock subprocess.run for scontrol to return failed state
         with patch("subprocess.run") as mock_run:
             mock_result = MagicMock(
-                stdout="JobState=FAILED\nOtherInfo=...",
-                stderr="",
-                returncode=0
+                stdout="JobState=FAILED\nOtherInfo=...", stderr="", returncode=0
             )
             mock_run.return_value = mock_result
 
@@ -512,7 +527,7 @@ class TestSlurmRunBackend:
 
         config = SlurmConfig(
             queue="test",
-            command="python run_model.py", # Added required command field
+            command="python run_model.py",  # Added required command field
             timeout=60,  # Minimum valid timeout value
             nodes=1,
             ntasks=1,
@@ -540,7 +555,7 @@ class TestSlurmRunBackend:
                         return MagicMock(
                             stdout="JobState=RUNNING\nOtherInfo=...",
                             stderr="",
-                            returncode=0
+                            returncode=0,
                         )
 
                     mock_run.side_effect = scontrol_side_effect
@@ -561,9 +576,11 @@ class TestSlurmRunBackend:
 
         with TemporaryDirectory() as staging_dir:
             # Mock the internal methods
-            with patch.object(backend, '_create_job_script') as mock_create_script, \
-                 patch.object(backend, '_submit_job') as mock_submit, \
-                 patch.object(backend, '_wait_for_completion') as mock_wait:
+            with (
+                patch.object(backend, "_create_job_script") as mock_create_script,
+                patch.object(backend, "_submit_job") as mock_submit,
+                patch.object(backend, "_wait_for_completion") as mock_wait,
+            ):
 
                 # Mock the methods to return expected values
                 mock_create_script.return_value = "/tmp/job_script.sh"
@@ -588,8 +605,10 @@ class TestSlurmRunBackend:
 
         with TemporaryDirectory() as staging_dir:
             # Mock the internal methods
-            with patch.object(backend, '_create_job_script') as mock_create_script, \
-                 patch.object(backend, '_submit_job') as mock_submit:
+            with (
+                patch.object(backend, "_create_job_script") as mock_create_script,
+                patch.object(backend, "_submit_job") as mock_submit,
+            ):
 
                 # Mock the methods
                 mock_create_script.return_value = "/tmp/job_script.sh"

@@ -9,8 +9,7 @@ import os
 import subprocess
 import tempfile
 import time
-from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from rompy.backends import SlurmConfig
@@ -86,7 +85,7 @@ class SlurmRunBackend:
         """
         # Determine the working directory for the job
         work_dir = config.working_dir if config.working_dir else staging_dir
-        
+
         # Create the job script content
         script_lines = [
             "#!/bin/bash",
@@ -96,13 +95,13 @@ class SlurmRunBackend:
         # Add SBATCH directives from configuration
         if config.job_name:
             script_lines.append(f"#SBATCH --job-name={config.job_name}")
-        
+
         if config.output_file:
             script_lines.append(f"#SBATCH --output={config.output_file}")
         else:
             # Default output file with job ID
             script_lines.append(f"#SBATCH --output={work_dir}/slurm-%j.out")
-        
+
         if config.error_file:
             script_lines.append(f"#SBATCH --error={config.error_file}")
         else:
@@ -111,21 +110,21 @@ class SlurmRunBackend:
 
         if config.queue:
             script_lines.append(f"#SBATCH --partition={config.queue}")
-        
+
         script_lines.append(f"#SBATCH --nodes={config.nodes}")
         script_lines.append(f"#SBATCH --ntasks={config.ntasks}")
         script_lines.append(f"#SBATCH --cpus-per-task={config.cpus_per_task}")
         script_lines.append(f"#SBATCH --time={config.time_limit}")
-        
+
         if config.account:
             script_lines.append(f"#SBATCH --account={config.account}")
-        
+
         if config.qos:
             script_lines.append(f"#SBATCH --qos={config.qos}")
-        
+
         if config.reservation:
             script_lines.append(f"#SBATCH --reservation={config.reservation}")
-        
+
         if config.mail_type and config.mail_user:
             script_lines.append(f"#SBATCH --mail-type={config.mail_type}")
             script_lines.append(f"#SBATCH --mail-user={config.mail_user}")
@@ -134,28 +133,32 @@ class SlurmRunBackend:
         for option in config.additional_options:
             script_lines.append(f"#SBATCH {option}")
 
-        script_lines.extend([
-            "",
-            "# Change to working directory",
-            f"cd {work_dir}",
-            "",
-            "# Set environment variables",
-        ])
+        script_lines.extend(
+            [
+                "",
+                "# Change to working directory",
+                f"cd {work_dir}",
+                "",
+                "# Set environment variables",
+            ]
+        )
 
         # Add environment variables
         for key, value in config.env_vars.items():
             script_lines.append(f"export {key}={value}")
 
         # Add the actual command to run the model
-        script_lines.extend([
-            "",
-            "# Execute command in the workspace",
-            config.command,
-        ])
+        script_lines.extend(
+            [
+                "",
+                "# Execute command in the workspace",
+                config.command,
+            ]
+        )
 
         # Create temporary job script file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
-            f.write('\n'.join(script_lines))
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+            f.write("\n".join(script_lines))
             script_path = f.name
 
         logger.debug(f"SLURM job script created at: {script_path}")
@@ -174,13 +177,11 @@ class SlurmRunBackend:
         """
         try:
             # Check if sbatch command is available
-            result = subprocess.run(
-                ["which", "sbatch"],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["which", "sbatch"], capture_output=True, text=True)
             if result.returncode != 0 or not result.stdout.strip():
-                logger.error("sbatch command not found. SLURM may not be installed or in PATH.")
+                logger.error(
+                    "sbatch command not found. SLURM may not be installed or in PATH."
+                )
                 return None
 
             # Check if SLURM controller is responsive
@@ -188,18 +189,17 @@ class SlurmRunBackend:
                 ["scontrol", "--help"],
                 capture_output=True,
                 text=True,
-                timeout=10  # Don't wait too long
+                timeout=10,  # Don't wait too long
             )
             if result.returncode != 0:
-                logger.error("SLURM controller is not responsive. scontrol command failed.")
+                logger.error(
+                    "SLURM controller is not responsive. scontrol command failed."
+                )
                 return None
 
             # Submit the job using sbatch
             result = subprocess.run(
-                ["sbatch", job_script],
-                capture_output=True,
-                text=True,
-                check=True
+                ["sbatch", job_script], capture_output=True, text=True, check=True
             )
 
             # Extract job ID from sbatch output (format: "Submitted batch job <ID>")
@@ -213,7 +213,9 @@ class SlurmRunBackend:
                 return None
 
         except subprocess.TimeoutExpired:
-            logger.error("SLURM controller check timed out. SLURM may not be properly configured.")
+            logger.error(
+                "SLURM controller check timed out. SLURM may not be properly configured."
+            )
             return None
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to submit SLURM job: {e.stderr}")
@@ -243,8 +245,17 @@ class SlurmRunBackend:
 
         # Terminal states that indicate job completion (successful or failed)
         # Using SLURM job states: https://slurm.schedmd.com/squeue.html#SECTION_JOB-STATE-CODES
-        terminal_states = {'BOOT_FAIL', 'CANCELLED', 'COMPLETED', 'DEADLINE', 'FAILED', 
-                          'NODE_FAIL', 'OUT_OF_MEMORY', 'PREEMPTED', 'TIMEOUT'}
+        terminal_states = {
+            "BOOT_FAIL",
+            "CANCELLED",
+            "COMPLETED",
+            "DEADLINE",
+            "FAILED",
+            "NODE_FAIL",
+            "OUT_OF_MEMORY",
+            "PREEMPTED",
+            "TIMEOUT",
+        }
 
         # Start time for timeout check
         start_time = time.time()
@@ -253,57 +264,68 @@ class SlurmRunBackend:
             # Check if we've exceeded the timeout
             elapsed_time = time.time() - start_time
             if elapsed_time > config.timeout:
-                logger.error(f"Timeout waiting for job {job_id} after {config.timeout} seconds")
-                
+                logger.error(
+                    f"Timeout waiting for job {job_id} after {config.timeout} seconds"
+                )
+
                 # Let SLURM handle job cancellation according to its configured policies
                 return False
 
             # Get job status using scontrol for more reliable detection
             try:
                 result = subprocess.run(
-                    ['scontrol', 'show', 'job', job_id],
+                    ["scontrol", "show", "job", job_id],
                     capture_output=True,
                     text=True,
-                    check=True
+                    check=True,
                 )
-                
+
                 # Parse the output to get the job state
                 output = result.stdout
-                if 'JobState=' in output:
-                    state = output.split('JobState=')[1].split()[0].split('_')[0]  # Extract state like 'RUNNING', 'COMPLETED', etc.
+                if "JobState=" in output:
+                    state = (
+                        output.split("JobState=")[1].split()[0].split("_")[0]
+                    )  # Extract state like 'RUNNING', 'COMPLETED', etc.
                 else:
                     # If JobState is not found, we might have an issue with parsing
-                    logger.warning(f"Could not determine job state from output for job {job_id}")
+                    logger.warning(
+                        f"Could not determine job state from output for job {job_id}"
+                    )
                     state = None
-                
-                if state is None:  # If job state can't be determined, check if job is not found
-                    if 'slurm_load_jobs error' in output or 'Invalid job id' in output.lower():
+
+                if (
+                    state is None
+                ):  # If job state can't be determined, check if job is not found
+                    if (
+                        "slurm_load_jobs error" in output
+                        or "Invalid job id" in output.lower()
+                    ):
                         logger.info(f"Job {job_id} not found - likely completed")
                         return True  # Assume successful completion if job ID is invalid
-                
+
                 if state in terminal_states:
-                    if state == 'COMPLETED':  # Completed successfully
+                    if state == "COMPLETED":  # Completed successfully
                         logger.info(f"SLURM job {job_id} completed successfully")
                         return True
-                    elif state == 'CANCELLED':  # Cancelled
+                    elif state == "CANCELLED":  # Cancelled
                         logger.warning(f"SLURM job {job_id} was cancelled")
                         return False
-                    elif state == 'FAILED':  # Failed
+                    elif state == "FAILED":  # Failed
                         logger.error(f"SLURM job {job_id} failed")
                         return False
-                    elif state == 'TIMEOUT':  # Timeout
+                    elif state == "TIMEOUT":  # Timeout
                         logger.error(f"SLURM job {job_id} timed out")
                         return False
-                    elif state == 'BOOT_FAIL':  # Boot failure
+                    elif state == "BOOT_FAIL":  # Boot failure
                         logger.error(f"SLURM job {job_id} failed to boot")
                         return False
-                    elif state == 'NODE_FAIL':  # Node failure
+                    elif state == "NODE_FAIL":  # Node failure
                         logger.error(f"SLURM job {job_id} failed due to node failure")
                         return False
-                    elif state == 'OUT_OF_MEMORY':  # Out of memory
+                    elif state == "OUT_OF_MEMORY":  # Out of memory
                         logger.error(f"SLURM job {job_id} ran out of memory")
                         return False
-                    elif state == 'PREEMPTED':  # Preempted
+                    elif state == "PREEMPTED":  # Preempted
                         logger.error(f"SLURM job {job_id} was preempted")
                         return False
                     else:
