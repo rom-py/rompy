@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from rompy.backends import DockerConfig, LocalConfig
-from rompy.core.config import BaseConfig
+from tests.test_helpers import DemoConfig
 from rompy.core.time import TimeRange
 from rompy.model import ModelRun
 
@@ -28,14 +28,14 @@ def model_run(tmp_path):
             interval="15M",
         ),
         output_dir=str(tmp_path),
-        config=BaseConfig(arg1="foo", arg2="bar"),
+        config=DemoConfig(arg1="foo", arg2="bar"),
     )
 
 
 @pytest.fixture
 def model_run_with_run_method(tmp_path):
     """Create a ModelRun with a config that has a run method."""
-    config = BaseConfig(arg1="foo", arg2="bar")
+    config = DemoConfig(arg1="foo", arg2="bar")
     config.run = MagicMock(return_value=True)
 
     return ModelRun(

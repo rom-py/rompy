@@ -46,6 +46,7 @@ dependencies = [
     "scipy",
     "tqdm",
     "xarray",
+    "httpx",
     "wavespectra",
     "isodate",
     "appdirs",
@@ -80,6 +81,7 @@ rompy_data = "rompy:cat"
 [project.entry-points."rompy.run"]
 local = "rompy.run:LocalRunBackend"
 docker = "rompy.run.docker:DockerRunBackend"
+slurm = "rompy.run.slurm:SlurmRunBackend"
 
 [project.entry-points."rompy.postprocess"]
 noop = "rompy.postprocess:NoopPostprocessor"
@@ -90,7 +92,6 @@ local = "rompy.pipeline:LocalPipelineBackend"
 [project.optional-dependencies]
 test = ["pytest", "envyaml", "coverage"]
 extra = ["gcsfs", "zarr", "cloudpathlib[s3,gs,azure]"]
-dev = ["pytest", "envyaml", "coverage", "ruff", "black"]
 docs = [
     "mkdocs",
     "mkdocs-material",
@@ -102,6 +103,7 @@ docs = [
 notebooks = [
     "rompy-notebooks @ git+https://github.com/rom-py/rompy-notebooks.git@package",
 ]
+dev = ["pytest", "envyaml", "coverage", "ruff", "black", "respx"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

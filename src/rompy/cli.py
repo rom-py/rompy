@@ -18,9 +18,10 @@ import click
 import yaml
 
 import rompy
-from rompy.backends import DockerConfig, LocalConfig
+from rompy.backends import DockerConfig, LocalConfig, SlurmConfig
 from rompy.logging import LogFormat, LoggingConfig, LogLevel, get_logger
 from rompy.model import PIPELINE_BACKENDS, POSTPROCESSORS, RUN_BACKENDS, ModelRun
+from rompy.templating import render_templates
 
 # Initialize the logger
 logger = get_logger(__name__)
@@ -165,10 +166,19 @@ def load_config(
     try:
         config = yaml.safe_load(content)
         logger.info("Parsed config as YAML")
-        return config
     except yaml.YAMLError as e:
         logger.error(f"Failed to parse config as JSON or YAML: {e}")
         raise click.UsageError("Config file is not valid JSON or YAML")
+
+    # Render template variables in config
+    try:
+        config = render_templates(config, context=dict(os.environ), strict=True)
+        logger.debug("Template variables rendered successfully")
+    except Exception as e:
+        logger.error(f"Failed to render template variables: {e}")
+        raise click.UsageError(f"Template rendering error: {e}")
+
+    return config
 
 
 def print_version(ctx, param, value):
@@ -213,11 +223,17 @@ def cli(ctx):
     help="YAML/JSON file with backend configuration",
 )
 @click.option("--dry-run", is_flag=True, help="Generate inputs only, don't run")
+@click.option(
+    "--skip-generate",
+    is_flag=True,
+    help="Skip generation step, use existing workspace (must already exist)",
+)
 @add_common_options
 def run(
     config,
     backend_config,
     dry_run,
+    skip_generate,
     verbose,
     log_dir,
     show_warnings,
@@ -236,36 +252,54 @@ def run(
 
         # Run with config from environment variable
         rompy run --config-from-env --backend-config unified_local_single.yml
+
+        # Use pre-generated workspace (two-step workflow)
+        rompy generate config.yml
+        rompy run config.yml --backend-config backend.yml --skip-generate
     """
     configure_logging(verbose, log_dir, simple_logs, ascii_only, show_warnings)
 
-    # Validate config source
+    if skip_generate and dry_run:
+        raise click.UsageError("Cannot use --skip-generate with --dry-run")
+
     if config_from_env and config:
         raise click.UsageError("Cannot specify both config file and --config-from-env")
     if not config_from_env and not config:
         raise click.UsageError("Must specify either config file or --config-from-env")
 
     try:
-        # Load model configuration
         config_data = load_config(config, from_env=config_from_env)
         model_run = ModelRun(**config_data)
 
         logger.info(f"Running model: {model_run.config.model_type}")
         logger.info(f"Run ID: {model_run.run_id}")
 
-        # Load backend configuration
         backend_cfg = _load_backend_config(backend_config)
 
-        # Generate inputs
         start_time = datetime.now()
-        staging_dir = model_run.generate()
-        logger.info(f"Inputs generated in: {staging_dir}")
+
+        if skip_generate:
+            staging_dir = str(model_run.staging_dir)
+            staging_path = Path(staging_dir)
+            if not staging_path.exists():
+                raise click.UsageError(
+                    f"Workspace does not exist: {staging_dir}\n"
+                    f"Run 'rompy generate {config or '<config>'}' first or remove --skip-generate"
+                )
+            if not list(staging_path.glob("*")):
+                raise click.UsageError(
+                    f"Workspace exists but is empty: {staging_dir}\n"
+                    f"Run 'rompy generate {config or '<config>'}' first or remove --skip-generate"
+                )
+            logger.info(f"Using existing workspace: {staging_dir}")
+        else:
+            staging_dir = model_run.generate()
+            logger.info(f"Inputs generated in: {staging_dir}")
 
         if dry_run:
             logger.info("Dry run mode - skipping model execution")
             return
 
-        # Execute model with workspace directory to avoid double generation
         success = model_run.run(backend=backend_cfg, workspace_dir=staging_dir)
 
         elapsed = datetime.now() - start_time
@@ -291,31 +325,12 @@ def _get_backend_config_registry():
     Build a registry of backend config classes from entry points and built-ins.
     Returns: dict mapping backend type name to config class
     """
+    # TODO Remove hardcoding
     registry = {
         "local": LocalConfig,
         "docker": DockerConfig,
+        "slurm": SlurmConfig,  # Add SLURM backend config
     }
-    # Try to load from entry points (rompy.config and rompy.backend_config)
-    try:
-        eps = importlib.metadata.entry_points()
-        # Support both 'rompy.config' and 'rompy.backend_config' for flexibility
-        for group in ["rompy.config", "rompy.backend_config"]:
-            if hasattr(eps, "select"):  # Python 3.10+
-                entries = eps.select(group=group)
-            elif hasattr(eps, "get"):  # Python 3.8-3.9
-                entries = eps.get(group, [])
-            else:
-                entries = []
-            for ep in entries:
-                try:
-                    cls = ep.load()
-                    registry[ep.name] = cls
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to load backend config entry point {ep.name}: {e}"
-                    )
-    except Exception as e:
-        logger.warning(f"Could not load backend config entry points: {e}")
     return registry
 
 

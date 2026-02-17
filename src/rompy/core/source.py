@@ -1,6 +1,5 @@
 """Rompy source objects."""
 
-import logging
 from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path

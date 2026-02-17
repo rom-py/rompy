@@ -8,7 +8,6 @@ import hashlib
 import json
 import logging
 import pathlib
-import subprocess
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -268,6 +267,7 @@ class DockerRunBackend:
                     volumes[host_path] = {"bind": container_path, "mode": mode}
 
             # Prepare container configuration
+            # Note: We can't capture output when remove=True, so we'll handle that case
             container_config = {
                 "image": image_name,
                 "command": ["bash", "-c", run_command],
@@ -285,15 +285,12 @@ class DockerRunBackend:
             logger.debug(f"Environment: {env_vars}")
 
             # Run the container
-            container = client.containers.run(**container_config)
+            # Note: When remove=True, client.containers.run() returns None
+            # If you need to capture output, you'd need to set remove=False and manually remove
+            client.containers.run(**container_config)
 
-            # Log output
-            if container:
-                logger.info("Model run completed successfully")
-                return True
-            else:
-                logger.error("Model run failed - no output from container")
-                return False
+            logger.info("Model run completed successfully")
+            return True
 
         except ContainerError as e:
             logger.error(f"Container error: {e}")

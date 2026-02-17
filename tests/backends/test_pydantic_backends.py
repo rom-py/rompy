@@ -406,7 +406,6 @@ class TestBackendIntegration:
     def test_docker_config_integration(self, mock_model_run):
         """Test DockerConfig integration with DockerRunBackend."""
         import tempfile
-        import docker
 
         config = DockerConfig(
             image="test:latest",

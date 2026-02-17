@@ -21,17 +21,19 @@ except (ImportError, ValueError):
         # Create mock objects for documentation purposes
         class LogFormat:
             pass
-            
+
         class LoggingConfig:
             def configure_logging(self):
                 pass
-                
+
         class LogLevel:
             pass
-            
+
         def get_logger(name):
             import logging
+
             return logging.getLogger(name)
+
 
 # Initialize the logger with default configuration
 logger = get_logger(__name__)
@@ -47,7 +49,7 @@ warnings.filterwarnings(
 )
 
 # __version__ = _version.get_versions()["version"]
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 # Import and re-export formatting utilities
 from .formatting import get_formatted_box, get_formatted_header_footer

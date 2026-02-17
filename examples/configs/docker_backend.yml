@@ -1,20 +1,17 @@
 # Docker Backend Configuration
 # Configuration for executing models in Docker containers
 
-backend_type: docker
+type: docker
 image: "python:3.9-slim"
 timeout: 7200 # 2 hours
 cpu: 4
 memory: "2g"
-executable: "python"
+executable: 'bash -c "echo ''Hello from Docker!''"'
 mpiexec: ""
 volumes:
-  - "/tmp:/tmp:rw"
-  - ".:/app/workspace:ro"
+    - "/tmp:/tmp:rw"
 env_vars:
-  PYTHONUNBUFFERED: "1"
-  MODEL_THREADS: "4"
-  DATA_DIR: "/app/data"
-  RESULTS_DIR: "/app/results"
+    MODEL_THREADS: "4"
+    DATA_DIR: "/app/data"
 remove_container: true
 user: "root"
