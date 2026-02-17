@@ -1,3 +1,6 @@
+# OhMyOpenCode / Sisyphus work artifacts
+.sisyphus/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
