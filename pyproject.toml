@@ -86,6 +86,9 @@ slurm = "rompy.run.slurm:SlurmRunBackend"
 [project.entry-points."rompy.postprocess"]
 noop = "rompy.postprocess:NoopPostprocessor"
 
+[project.entry-points."rompy.postprocess.config"]
+noop = "rompy.postprocess.config:NoopPostprocessorConfig"
+
 [project.entry-points."rompy.pipeline"]
 local = "rompy.pipeline:LocalPipelineBackend"
 

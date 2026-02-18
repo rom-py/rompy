@@ -18,6 +18,7 @@ Key Features:
 - Templated, reproducible model configuration using pydantic and xarray
 - Unified interfaces for grids, data, boundaries, and spectra
 - Extensible plugin system for models, data sources, backends, and postprocessors
+- Pydantic-based postprocessor configuration with CLI support
 - Robust logging and formatting for consistent output and diagnostics
 - Example notebooks and comprehensive documentation for rapid onboarding
 - Support for local, Docker, and HPC execution backends
@@ -27,6 +28,42 @@ rompy is under active development—features, model support, and documentation a
 # Documentation
 
 See <https://rom-py.github.io/rompy/>
+
+# Postprocessor Configuration
+
+ROMPY now supports Pydantic-based postprocessor configuration via YAML/JSON files.
+
+## Usage
+
+### Postprocess with a config file
+
+```bash
+rompy postprocess model_config.yml --processor-config processor.yml
+```
+
+### Pipeline with postprocessor config
+
+```bash
+rompy pipeline model_config.yml --processor-config processor.yml
+```
+
+### Validate a postprocessor config
+
+```bash
+rompy backends validate --processor-type noop processor.yml
+```
+
+## Example Configuration
+
+```yaml
+type: noop
+validate_outputs: true
+timeout: 3600
+env_vars:
+  DEBUG: "1"
+```
+
+See `examples/backends/postprocessor_configs/` for more examples.
 
 # Code Formatting and Pre-commit Hooks
 

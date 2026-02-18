@@ -1,0 +1,5 @@
+# Basic Noop Postprocessor Configuration
+# This is the simplest possible postprocessor config - just validate outputs exist
+
+type: noop
+validate_outputs: true

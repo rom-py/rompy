@@ -33,6 +33,24 @@ are continually evolving. Contributions and feedback are welcome!
 Releases
 ********
 
+0.6.0 (2026-02-18)
+___________________
+
+Breaking Changes
+----------------
+* CLI: Replaced `--processor` option with `--processor-config` (required) in `rompy postprocess` and `rompy pipeline` commands.
+* API: `ModelRun.postprocess()` now requires a `BasePostprocessorConfig` instance instead of a string processor name.
+* Pipeline: `LocalPipelineBackend.execute()` now accepts a `BasePostprocessorConfig` instance for the `processor` parameter.
+
+New Features
+------------
+* Added Pydantic-based postprocessor configuration framework (`BasePostprocessorConfig`, `NoopPostprocessorConfig`).
+* Added `--processor-config` CLI option for specifying postprocessor configuration files (YAML/JSON).
+* Added `rompy.postprocess.config` entry point group for registering postprocessor configurations.
+* Added `rompy backends validate --processor-type` for validating postprocessor configurations.
+* Added comprehensive test suite for postprocessor configuration framework.
+* Added example postprocessor configuration files.
+
 0.5.0 (2025-07-13)
 ___________________
 

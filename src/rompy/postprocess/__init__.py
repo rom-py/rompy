@@ -1,14 +1,28 @@
 """
-No-op postprocessor for model outputs.
+Postprocessor module for ROMPY.
 
-This module provides a basic postprocessor that does nothing.
+This module provides postprocessor classes and their configurations for
+processing model outputs after execution.
 """
 
 import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+from .config import (
+    BasePostprocessorConfig,
+    NoopPostprocessorConfig,
+    ProcessorConfig,
+)
+
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "NoopPostprocessor",
+    "NoopPostprocessorConfig",
+    "BasePostprocessorConfig",
+    "ProcessorConfig",
+]
 
 
 class NoopPostprocessor:
