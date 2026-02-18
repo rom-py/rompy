@@ -7,6 +7,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+from .registry import get_transfer
+from .utils import join_prefix
+
 
 class TransferFailurePolicy(Enum):
     """Policy for handling transfer failures when uploading to multiple destinations.
@@ -115,4 +118,51 @@ class TransferManager:
         Raises:
             Exception: On first failure if policy is FAIL_FAST
         """
-        raise NotImplementedError("Will be implemented in Task 4")
+        items: list[TransferItemResult] = []
+        succeeded = 0
+        failed = 0
+
+        for local_path in files:
+            target_name = name_map[local_path]
+
+            for dest_prefix in destinations:
+                dest_uri = join_prefix(dest_prefix, target_name)
+
+                try:
+                    transfer = get_transfer(dest_prefix)
+                    transfer.put(local_path, dest_uri)
+
+                    items.append(
+                        TransferItemResult(
+                            local_path=local_path,
+                            dest_prefix=dest_prefix,
+                            target_name=target_name,
+                            dest_uri=dest_uri,
+                            ok=True,
+                            error=None,
+                        )
+                    )
+                    succeeded += 1
+
+                except Exception as e:
+                    error_msg = f"{type(e).__name__}: {str(e)}"
+
+                    items.append(
+                        TransferItemResult(
+                            local_path=local_path,
+                            dest_prefix=dest_prefix,
+                            target_name=target_name,
+                            dest_uri=dest_uri,
+                            ok=False,
+                            error=error_msg,
+                        )
+                    )
+                    failed += 1
+
+                    if policy == TransferFailurePolicy.FAIL_FAST:
+                        raise
+
+        total = succeeded + failed
+        return TransferBatchResult(
+            total=total, succeeded=succeeded, failed=failed, items=items
+        )
