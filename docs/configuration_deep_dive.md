@@ -168,6 +168,91 @@ class MultiSourceConfig(BaseModel):
 
 Different ocean models have specific configuration requirements. See the [Model-Specific Guides](models.md) for detailed information about configuring SWAN, SCHISM, and other supported models.
 
+## Postprocessor Configuration
+
+Postprocessors use Pydantic-based configuration classes for type-safe, validated parameter handling. All postprocessor configurations inherit from `BasePostprocessorConfig`.
+
+### Basic Postprocessor Configuration
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+# Create configuration programmatically
+config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600,
+    env_vars={"DEBUG": "1"}
+)
+
+# Use with model
+results = model_run.postprocess(processor=config)
+```
+
+### Loading from Files
+
+```python
+from rompy.postprocess.config import _load_processor_config
+
+# Load from YAML file
+config = _load_processor_config("processor.yml")
+
+# Use loaded configuration
+results = model_run.postprocess(processor=config)
+```
+
+### Configuration Validation
+
+Pydantic provides comprehensive validation:
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+from pydantic import ValidationError
+
+try:
+    # This will raise ValidationError if validation fails
+    config = NoopPostprocessorConfig(
+        timeout=30  # Invalid: below minimum of 60
+    )
+except ValidationError as e:
+    print(f"Configuration validation error: {e}")
+```
+
+### Serialization and Reproducibility
+
+Save and load configurations for reproducibility:
+
+```python
+import json
+from pathlib import Path
+
+# Save configuration
+config = NoopPostprocessorConfig(validate_outputs=True, timeout=7200)
+config_dict = config.model_dump()
+
+with open("processor_config.json", "w") as f:
+    json.dump(config_dict, f, indent=2)
+
+# Load configuration
+with open("processor_config.json", "r") as f:
+    config_data = json.load(f)
+
+# Reconstruct configuration
+reconstructed = NoopPostprocessorConfig(**config_data)
+```
+
+### Entry Point-Based Loading
+
+Postprocessor configurations are dynamically loaded via entry points:
+
+```toml
+# In pyproject.toml
+[project.entry-points."rompy.postprocess.config"]
+noop = "rompy.postprocess.config:NoopPostprocessorConfig"
+analysis = "mypackage.config:AnalysisPostprocessorConfig"
+```
+
+The `_load_processor_config` function automatically discovers and loads the appropriate configuration class based on the `type` field.
+
 ## Next Steps
 
 - Review the [Model-Specific Guides](models.md) for configuration details for specific models

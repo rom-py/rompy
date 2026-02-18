@@ -389,69 +389,420 @@ For complete backend discovery implementation, see `rompy.backends`.
 
 ## Postprocessor System
 
-Postprocessors handle model outputs after execution. The system supports built-in and custom postprocessors.
+Postprocessors handle model outputs after execution using Pydantic-based configuration classes for type-safe parameter handling.
 
-### Built-in Postprocessors
+### Postprocessor Configuration Architecture
 
-Available postprocessors include:
+```
+BasePostprocessorConfig
+├── NoopPostprocessorConfig          # Validation-only processor
+└── CustomPostprocessorConfig        # User-defined configurations
+```
 
-* **noop**: No-operation processor (default)
-* **archive**: Archive outputs to compressed files
-* **analyze**: Analyze model results
-* **visualize**: Generate visualization outputs
+### Configuration Loading
 
-For complete postprocessor documentation, see `rompy.backends.postprocessors`.
+Configurations are loaded from files using entry point discovery:
+
+```python
+from rompy.postprocess.config import _load_processor_config
+
+# Load from YAML/JSON file
+config = _load_processor_config("processor.yml")
+
+# The loader discovers the config class via entry points
+# based on the 'type' field in the file
+```
+
+**Configuration File Format:**
+
+```yaml
+# processor.yml
+type: noop
+validate_outputs: true
+timeout: 3600
+env_vars:
+  DEBUG: "1"
+  LOG_LEVEL: "INFO"
+```
+
+For complete postprocessor configuration documentation, see `rompy.postprocess.config`.
+
+### Built-in Postprocessor Configurations
+
+**NoopPostprocessorConfig:**
+
+The no-operation processor validates outputs without additional processing:
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600,
+    env_vars={"DEBUG": "1"}
+)
+
+results = model_run.postprocess(processor=config)
+```
+
+**Key Parameters:**
+
+* `validate_outputs`: Validate model outputs (default: False)
+* `timeout`: Maximum processing time in seconds (60-86400)
+* `env_vars`: Environment variables as string key-value pairs
+* `working_dir`: Working directory for processing operations
 
 ### Usage Patterns
 
-```python
-# Basic postprocessing
-results = model_run.postprocess(processor="archive")
+**Programmatic Usage:**
 
-# Custom postprocessing with options
-results = model_run.postprocess(
-    processor="analyze",
-    output_format="netcdf",
-    compress=True,
-    analysis_type="spectral"
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+# Create configuration
+config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=7200
 )
+
+# Use in postprocessing
+results = model_run.postprocess(processor=config)
+
+if results["success"]:
+    print("Post-processing completed")
+else:
+    print(f"Post-processing failed: {results.get('error')}")
 ```
 
-### Custom Postprocessors
-
-Create custom postprocessors by implementing the processor interface:
+**From Configuration Files:**
 
 ```python
+from rompy.postprocess.config import _load_processor_config
+
+# Load configuration
+config = _load_processor_config("processor.yml")
+
+# Use configuration
+results = model_run.postprocess(processor=config)
+```
+
+**CLI Usage:**
+
+```bash
+# Post-process with configuration file
+rompy postprocess model.yml --processor-config processor.yml
+
+# Run complete pipeline with postprocessor
+rompy pipeline model.yml \
+  --run-backend local \
+  --processor-config processor.yml
+
+# Validate postprocessor configuration
+rompy backends validate processor.yml --processor-type noop
+```
+
+### Custom Postprocessor Configurations
+
+Create custom postprocessor configurations by inheriting from `BasePostprocessorConfig`:
+
+```python
+from rompy.postprocess.config import BasePostprocessorConfig
+from pydantic import Field
+from typing import Optional, List
+
+class AnalysisPostprocessorConfig(BasePostprocessorConfig):
+    """Configuration for analysis postprocessor."""
+    
+    type: str = Field("analysis", const=True)
+    
+    # Analysis-specific fields
+    metrics: List[str] = Field(
+        default_factory=list,
+        description="Metrics to calculate"
+    )
+    output_format: str = Field(
+        "netcdf",
+        description="Output format for results"
+    )
+    compress: bool = Field(
+        True,
+        description="Compress output files"
+    )
+    plot_config: Optional[dict] = Field(
+        None,
+        description="Configuration for plot generation"
+    )
+    
+    def get_postprocessor_class(self):
+        """Return the postprocessor implementation class.
+        
+        This method is called to instantiate the actual postprocessor
+        that will handle the processing logic.
+        """
+        from mypackage.postprocess import AnalysisPostprocessor
+        return AnalysisPostprocessor
+```
+
+### Custom Postprocessor Implementation
+
+Implement the postprocessor class that uses your configuration:
+
+```python
+from pathlib import Path
 from typing import Dict, Any
+import logging
 
-class CustomPostprocessor:
-    """Custom postprocessor example."""
-
-    def process(self, model_run, **kwargs) -> Dict[str, Any]:
-        """Process model outputs."""
+class AnalysisPostprocessor:
+    """Analysis postprocessor implementation."""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+    
+    def process(
+        self,
+        model_run,
+        config: AnalysisPostprocessorConfig,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Process model outputs using configuration.
+        
+        Args:
+            model_run: The ModelRun instance
+            config: The AnalysisPostprocessorConfig instance
+            **kwargs: Additional processor-specific parameters
+            
+        Returns:
+            dict: Processing results with success status
+        """
         try:
-            # Custom processing logic here
             output_dir = Path(model_run.output_dir) / model_run.run_id
-
-            # Process files in output_dir
-            processed_files = self._process_outputs(output_dir, **kwargs)
-
+            
+            # Validate outputs if requested
+            if config.validate_outputs:
+                self._validate_outputs(output_dir)
+            
+            # Calculate metrics from configuration
+            metrics = self._calculate_metrics(
+                output_dir,
+                metrics=config.metrics,
+                output_format=config.output_format
+            )
+            
+            # Generate plots if configured
+            plots = []
+            if config.plot_config:
+                plots = self._generate_plots(output_dir, config.plot_config)
+            
+            # Compress outputs if requested
+            if config.compress:
+                compressed_files = self._compress_outputs(output_dir)
+            else:
+                compressed_files = []
+            
             return {
                 "success": True,
-                "processed_files": processed_files,
-                "message": "Custom processing completed"
+                "metrics": metrics,
+                "plots": plots,
+                "compressed_files": compressed_files,
+                "message": "Analysis completed successfully"
             }
-
+            
         except Exception as e:
+            self.logger.exception(f"Analysis failed: {e}")
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "message": f"Analysis failed: {e}"
             }
-
-    def _process_outputs(self, output_dir, **kwargs):
-        """Implementation-specific processing."""
-        # Custom processing logic
+    
+    def _validate_outputs(self, output_dir):
+        """Validate that expected outputs exist."""
+        # Implementation details
         pass
+    
+    def _calculate_metrics(self, output_dir, metrics, output_format):
+        """Calculate requested metrics."""
+        # Implementation details
+        pass
+    
+    def _generate_plots(self, output_dir, plot_config):
+        """Generate plots based on configuration."""
+        # Implementation details
+        pass
+    
+    def _compress_outputs(self, output_dir):
+        """Compress output files."""
+        # Implementation details
+        pass
+```
+
+### Entry Points Registration
+
+Register custom postprocessor configurations and implementations in `pyproject.toml`:
+
+```toml
+[project.entry-points."rompy.postprocess.config"]
+analysis = "mypackage.postprocess.config:AnalysisPostprocessorConfig"
+
+[project.entry-points."rompy.postprocess"]
+analysis = "mypackage.postprocess:AnalysisPostprocessor"
+```
+
+### Configuration Discovery
+
+The system automatically discovers registered postprocessor configurations:
+
+```python
+from importlib.metadata import entry_points
+
+# Get all available postprocessor configurations
+eps = entry_points(group="rompy.postprocess.config")
+available_configs = {ep.name: ep.load() for ep in eps}
+
+print("Available postprocessor configurations:", list(available_configs.keys()))
+
+# Use custom configuration
+from mypackage.postprocess.config import AnalysisPostprocessorConfig
+
+config = AnalysisPostprocessorConfig(
+    validate_outputs=True,
+    metrics=["mean", "variance", "peak"],
+    output_format="netcdf",
+    compress=True,
+    plot_config={"figsize": (10, 8), "dpi": 300}
+)
+
+success = model_run.postprocess(processor=config)
+```
+
+### Configuration Validation
+
+Pydantic provides comprehensive validation for postprocessor configurations:
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+from pydantic import ValidationError
+
+try:
+    # Invalid timeout (too short)
+    config = NoopPostprocessorConfig(timeout=30)
+except ValidationError as e:
+    for error in e.errors():
+        print(f"Field {error['loc']}: {error['msg']}")
+
+try:
+    # Invalid env_vars type
+    config = NoopPostprocessorConfig(env_vars=["invalid"])
+except ValidationError as e:
+    print(f"Validation error: {e}")
+```
+
+**Common Validation Rules:**
+
+* `timeout`: Must be between 60 and 86400 seconds
+* `env_vars`: Must be string key-value pairs
+* `working_dir`: Must exist if specified
+* `validate_outputs`: Must be boolean
+* Custom fields: Validated according to field definitions
+
+### Configuration Serialization
+
+Save and load configurations for reproducibility:
+
+```python
+import json
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+# Create configuration
+config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=7200,
+    env_vars={"DEBUG": "1"}
+)
+
+# Serialize to dict
+config_dict = config.model_dump()
+
+# Save to file
+with open("processor_config.json", "w") as f:
+    json.dump(config_dict, f, indent=2)
+
+# Load from file
+with open("processor_config.json") as f:
+    loaded_data = json.load(f)
+
+# Reconstruct configuration
+reconstructed = NoopPostprocessorConfig(**loaded_data)
+```
+
+### Schema Generation
+
+Generate JSON schemas for validation and documentation:
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+import json
+
+# Generate JSON schema
+schema = NoopPostprocessorConfig.model_json_schema()
+
+# Save for external validation
+with open("noop_schema.json", "w") as f:
+    json.dump(schema, f, indent=2)
+
+# Use schema for validation
+import jsonschema
+
+config_data = {
+    "validate_outputs": True,
+    "timeout": 3600
+}
+
+try:
+    jsonschema.validate(config_data, schema)
+    print("Configuration is valid")
+except jsonschema.ValidationError as e:
+    print(f"Validation error: {e.message}")
+```
+
+### Integration with Pipeline
+
+Postprocessor configurations integrate seamlessly with pipeline backends:
+
+```python
+from rompy.pipeline import LocalPipelineBackend
+from rompy.backends import DockerConfig
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+# Create pipeline backend
+pipeline = LocalPipelineBackend()
+
+# Configure run backend
+run_config = DockerConfig(
+    image="swan:latest",
+    cpu=8,
+    memory="16g",
+    timeout=7200
+)
+
+# Configure postprocessor
+processor_config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600
+)
+
+# Execute pipeline
+results = pipeline.execute(
+    model_run=model_run,
+    run_backend=run_config,
+    processor_config=processor_config,
+    cleanup_on_failure=False
+)
+
+if results["success"]:
+    print(f"Pipeline completed: {results['stages_completed']}")
+else:
+    print(f"Pipeline failed: {results.get('error')}")
 ```
 
 ## Best Practices

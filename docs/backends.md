@@ -508,21 +508,25 @@ For detailed implementation guidance, see [backend_reference](developer/backend_
 
 ### Postprocessors
 
-Handle results after model execution using postprocessor classes:
+Handle results after model execution using postprocessor configuration classes:
 
 ```python
-# Basic post-processing
-results = model_run.postprocess(processor="archive")
+from rompy.postprocess.config import NoopPostprocessorConfig
 
-# Custom post-processing
-results = model_run.postprocess(
-    processor="custom_analyzer",
-    output_format="netcdf",
-    compress=True
+# Basic post-processing with configuration
+processor_config = NoopPostprocessorConfig(validate_outputs=True)
+results = model_run.postprocess(processor=processor_config)
+
+# Custom post-processing with advanced options
+processor_config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=7200,
+    env_vars={"DEBUG": "1"}
 )
+results = model_run.postprocess(processor=processor_config)
 ```
 
-For available postprocessors, see `rompy.backends.postprocessors`.
+For postprocessor configuration details, see [Postprocessor Configuration](#postprocessor-configuration).
 
 ### Schema Generation
 
@@ -539,6 +543,259 @@ docker_schema = DockerConfig.model_json_schema()
 # Save schema for external validation
 with open("local_schema.json", "w") as f:
     json.dump(local_schema, f, indent=2)
+```
+
+## Postprocessor Configuration
+
+Postprocessors handle model output analysis and transformation using Pydantic-based configuration classes.
+
+### Configuration Types
+
+All postprocessor configurations inherit from `rompy.postprocess.config.BasePostprocessorConfig`.
+
+#### NoopPostprocessorConfig - Validation Only
+
+Validate model outputs without additional processing using `rompy.postprocess.config.NoopPostprocessorConfig`:
+
+**Basic Usage:**
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600
+)
+```
+
+**Advanced Configuration:**
+
+```yaml
+# noop_advanced.yml
+type: noop
+validate_outputs: true
+timeout: 7200
+env_vars:
+  DEBUG: "1"
+  LOG_LEVEL: "INFO"
+working_dir: "./processing"
+```
+
+**Key Parameters:**
+
+* `validate_outputs`: Validate model outputs before processing (default: False)
+* `timeout`: Maximum processing time in seconds (60-86400)
+* `env_vars`: Environment variables for processing context
+* `working_dir`: Working directory for processing operations
+
+For complete parameter documentation, see `rompy.postprocess.config.NoopPostprocessorConfig`.
+
+### Using Postprocessor Configurations
+
+#### With ModelRun
+
+Postprocessor configurations integrate directly with Rompy's model execution:
+
+```python
+from rompy.model import ModelRun
+from rompy.postprocess.config import NoopPostprocessorConfig
+
+# Load your model
+model_run = ModelRun.from_file("model_config.yml")
+
+# Execute model
+model_run.run(backend=backend_config)
+
+# Post-process with configuration
+processor_config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600
+)
+results = model_run.postprocess(processor=processor_config)
+
+if results["success"]:
+    print("Post-processing completed successfully")
+else:
+    print(f"Post-processing failed: {results.get('error')}")
+```
+
+#### From Configuration Files
+
+Load postprocessor configurations from YAML or JSON files:
+
+```python
+from rompy.postprocess.config import _load_processor_config
+
+# Load configuration from file
+processor_config = _load_processor_config("processor.yml")
+
+# Use configuration
+results = model_run.postprocess(processor=processor_config)
+```
+
+### Configuration File Format
+
+Postprocessor configurations use YAML or JSON with a `type` field:
+
+**YAML Format:**
+
+```yaml
+# Basic configuration
+type: noop
+validate_outputs: true
+timeout: 3600
+
+---
+# Advanced configuration
+type: noop
+validate_outputs: true
+timeout: 7200
+env_vars:
+  DEBUG: "1"
+  LOG_LEVEL: "INFO"
+  PROCESSING_MODE: "detailed"
+working_dir: "./processing"
+```
+
+**JSON Format:**
+
+```json
+{
+  "type": "noop",
+  "validate_outputs": true,
+  "timeout": 3600,
+  "env_vars": {
+    "DEBUG": "1"
+  }
+}
+```
+
+### CLI Integration
+
+Use postprocessor configurations with CLI commands:
+
+```bash
+# Post-process existing outputs
+rompy postprocess model_config.yml --processor-config processor.yml
+
+# Run complete pipeline with postprocessor
+rompy pipeline model_config.yml \
+  --run-backend local \
+  --processor-config processor.yml
+
+# Validate postprocessor configuration
+rompy backends validate processor.yml --processor-type noop
+```
+
+### Validation and Error Handling
+
+#### Type Safety
+
+Pydantic provides comprehensive validation:
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+from pydantic import ValidationError
+
+try:
+    # Invalid timeout (too short)
+    config = NoopPostprocessorConfig(timeout=30)
+except ValidationError as e:
+    print(f"Validation error: {e}")
+
+try:
+    # Invalid env_vars type
+    config = NoopPostprocessorConfig(env_vars=["invalid"])
+except ValidationError as e:
+    print(f"Configuration error: {e}")
+```
+
+#### Configuration Validation
+
+Each configuration class validates fields according to processing requirements:
+
+**BasePostprocessorConfig Validation:**
+
+* `timeout` must be between 60 and 86400 seconds
+* `env_vars` must be string key-value pairs
+* `working_dir` must exist if specified
+* `validate_outputs` must be boolean
+
+### Custom Postprocessor Configurations
+
+Create custom postprocessor configurations by inheriting from `BasePostprocessorConfig`:
+
+```python
+from rompy.postprocess.config import BasePostprocessorConfig
+from pydantic import Field
+from typing import Optional
+
+class AnalysisPostprocessorConfig(BasePostprocessorConfig):
+    """Configuration for analysis postprocessor."""
+    
+    type: str = Field("analysis", const=True)
+    metrics: list[str] = Field(default_factory=list, description="Metrics to calculate")
+    output_format: str = Field("netcdf", description="Output format")
+    compress: bool = Field(True, description="Compress output files")
+    plot_config: Optional[dict] = Field(None, description="Plotting configuration")
+    
+    def get_postprocessor_class(self):
+        """Return the postprocessor class for this configuration."""
+        from mypackage.postprocess import AnalysisPostprocessor
+        return AnalysisPostprocessor
+```
+
+Register custom configurations in `pyproject.toml`:
+
+```toml
+[project.entry-points."rompy.postprocess.config"]
+analysis = "mypackage.postprocess.config:AnalysisPostprocessorConfig"
+```
+
+### Best Practices
+
+1. **Version Control**: Keep postprocessor configurations in version control alongside model configurations
+
+2. **Environment Variables**: Use environment variables for environment-specific settings:
+
+```python
+import os
+config = NoopPostprocessorConfig(
+    env_vars={"DATA_DIR": os.environ["DATA_DIR"]}
+)
+```
+
+3. **Validation**: Always validate configurations before production use:
+
+```bash
+rompy backends validate processor.yml --processor-type noop
+```
+
+4. **Documentation**: Document postprocessor configurations with comments:
+
+```yaml
+# Production post-processing configuration
+type: noop
+validate_outputs: true  # Ensure all expected outputs exist
+timeout: 7200  # 2 hours for large model outputs
+env_vars:
+  DEBUG: "0"  # Disable debug mode in production
+```
+
+### Schema Generation
+
+Generate configuration schemas for validation and documentation:
+
+```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+import json
+
+# Generate JSON schema
+schema = NoopPostprocessorConfig.model_json_schema()
+
+# Save for external validation
+with open("noop_schema.json", "w") as f:
+    json.dump(schema, f, indent=2)
 ```
 
 ## Integration Examples
@@ -577,34 +834,39 @@ else:
 ### Pipeline Integration
 
 ```python
-from rompy.pipeline import Pipeline
+from rompy.pipeline import LocalPipelineBackend
 from rompy.backends import LocalConfig, DockerConfig
+from rompy.postprocess.config import NoopPostprocessorConfig
 
 # Create pipeline with different backends for different stages
-pipeline = Pipeline([
-    {
-        "name": "preprocessing",
-        "backend": LocalConfig(timeout=1800),
-        "command": "python preprocess.py"
-    },
-    {
-        "name": "simulation",
-        "backend": DockerConfig(
-            image="swan:latest",
-            cpu=16,
-            memory="32g",
-            timeout=14400
-        )
-    },
-    {
-        "name": "postprocessing",
-        "backend": LocalConfig(timeout=3600),
-        "command": "python postprocess.py"
-    }
-])
+backend = LocalPipelineBackend()
+
+# Configure run backend
+run_config = DockerConfig(
+    image="swan:latest",
+    cpu=16,
+    memory="32g",
+    timeout=14400
+)
+
+# Configure postprocessor
+processor_config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600
+)
 
 # Execute pipeline
-results = pipeline.run()
+results = backend.execute(
+    model_run=model_run,
+    run_backend=run_config,
+    processor_config=processor_config,
+    cleanup_on_failure=False
+)
+
+if results["success"]:
+    print(f"Pipeline completed. Stages: {results['stages_completed']}")
+else:
+    print(f"Pipeline failed at stage: {results['stages_completed'][-1]}")
 ```
 
 ## Notebook Examples
@@ -621,8 +883,10 @@ For complete API documentation, see:
 * `rompy.backends.config.BaseBackendConfig` - Base configuration class
 * `rompy.backends.config.LocalConfig` - Local execution configuration
 * `rompy.backends.config.DockerConfig` - Docker execution configuration
+* `rompy.postprocess.config.BasePostprocessorConfig` - Base postprocessor configuration
+* `rompy.postprocess.config.NoopPostprocessorConfig` - No-op postprocessor configuration
 * `rompy.run` - Run backend implementations
-* `rompy.backends.postprocessors` - Postprocessor implementations
+* `rompy.postprocess` - Postprocessor implementations
 * [backend_reference](developer/backend_reference.md) - Comprehensive technical reference
 
 The backend system provides a robust, type-safe foundation for model execution while maintaining flexibility for different deployment scenarios. From simple local development to complex containerized production environments, the backend system adapts to your needs while ensuring consistent, reproducible results.

@@ -64,7 +64,7 @@ list
 : List available backends and configuration types
 
 validate
-: Validate a backend configuration file
+: Validate a backend or postprocessor configuration file
 
 schema
 : Generate JSON schema for backend configurations
@@ -78,8 +78,11 @@ create
 # List available backends
 rompy backends list
 
-# Validate configuration
+# Validate backend configuration
 rompy backends validate my_config.yml --backend-type local
+
+# Validate postprocessor configuration
+rompy backends validate processor.yml --processor-type noop
 
 # Generate schema
 rompy backends schema --backend-type docker --format json
@@ -101,8 +104,8 @@ rompy pipeline [<config-file>] [OPTIONS]
 `--run-backend TEXT`
 : Execution backend for run stage (default: local)
 
-`--processor TEXT`
-: Postprocessor to use (default: noop)
+`--processor-config PATH`
+: **Required.** YAML/JSON file with postprocessor configuration
 
 `--cleanup-on-failure, --no-cleanup`
 : Clean up outputs on pipeline failure (default: False)
@@ -113,10 +116,41 @@ rompy pipeline [<config-file>] [OPTIONS]
 `--config-from-env`
 : Load configuration from ROMPY_CONFIG environment variable instead of file
 
-**Example:**
+**Examples:**
 
 ```bash
-rompy pipeline config.yaml --run-backend docker --processor analysis
+# Run pipeline with postprocessor configuration
+rompy pipeline config.yaml --processor-config processor.yml
+
+# Run pipeline with Docker backend and custom postprocessor config
+rompy pipeline config.yaml --run-backend docker --processor-config noop.yml
+```
+
+### postprocess
+
+Run postprocessing on existing model outputs.
+
+```bash
+rompy postprocess [<config-file>] --processor-config <processor-config-file> [OPTIONS]
+```
+
+**Options:**
+
+`--processor-config PATH`
+: **Required.** YAML/JSON file with postprocessor configuration
+
+`--config-from-env`
+: Load configuration from ROMPY_CONFIG environment variable instead of file
+
+**Examples:**
+
+```bash
+# Run postprocessing with config file
+rompy postprocess model_config.yml --processor-config processor.yml
+
+# Use environment variable for model config
+export ROMPY_CONFIG="$(cat model_config.yml)"
+rompy postprocess --config-from-env --processor-config processor.yml
 ```
 
 ### generate
@@ -244,6 +278,48 @@ executable: "/usr/local/bin/swan"
 
 For complete configuration options, see [backend_reference](developer/backend_reference.md).
 
+## Postprocessor Configuration Files
+
+Postprocessor configurations are defined in YAML or JSON files with a `type` field indicating the processor type:
+
+**No-op Postprocessor Configuration:**
+
+```yaml
+type: noop
+validate_outputs: true
+timeout: 3600
+env_vars:
+  DEBUG: "1"
+  LOG_LEVEL: "INFO"
+```
+
+**Common Configuration Fields:**
+
+All postprocessor configurations inherit from `BasePostprocessorConfig` and support:
+
+* `validate_outputs` - Validate model outputs before processing (default: False)
+* `timeout` - Maximum processing time in seconds (60-86400)
+* `env_vars` - Environment variables as string key-value pairs
+* `working_dir` - Working directory for processing operations
+
+**Loading Postprocessor Configurations:**
+
+Postprocessors are dynamically loaded via entry points defined in `pyproject.toml`:
+
+```toml
+[project.entry-points."rompy.postprocess.config"]
+noop = "rompy.postprocess.config:NoopPostprocessorConfig"
+```
+
+**Validation:**
+
+```bash
+# Validate postprocessor configuration
+rompy backends validate processor.yml --processor-type noop
+```
+
+For programmatic usage and custom postprocessor development, see [developer/backend_reference](developer/backend_reference.md).
+
 ## Global Options
 
 All commands support these common options:
@@ -291,6 +367,21 @@ Handle model output analysis and transformation:
 - **visualization**: Generate plots and animations
 - **netcdf**: NetCDF output processing and compression
 
+**Configuration:**
+
+Postprocessors are configured using YAML/JSON files with a `type` field:
+
+```yaml
+# noop_processor.yml
+type: noop
+validate_outputs: true
+timeout: 3600
+env_vars:
+  DEBUG: "1"
+```
+
+For complete postprocessor configuration options, see [Postprocessor Configuration](#postprocessor-configuration-files).
+
 ### Pipeline Backends
 
 Orchestrate complete workflows:
@@ -314,7 +405,7 @@ Complete pipeline with analysis:
 ```bash
 rompy pipeline ocean_model.yaml \
     --run-backend local \
-    --processor analysis \
+    --processor-config analysis.yml \
     --validate-stages
 ```
 
@@ -363,7 +454,10 @@ pipeline:
   backend: local
   local:
     run_backend: docker
-    processor: analysis
+    processor_config:
+      type: analysis
+      validate_outputs: true
+      timeout: 3600
     cleanup_on_failure: false
 ```
 

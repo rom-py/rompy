@@ -10,7 +10,8 @@ ROMPY implements three main plugin categories using Python entry points:
 2.  **Data Source Plugins (`rompy.source`)**: Custom data acquisition implementations.
 3.  **Execution Plugins**: Three subcategories:
     - **Run Backends (`rompy.run`)**: Model execution environments.
-    - **Postprocessors (`rompy.postprocess`)**: Output analysis and transformation.
+    - **Postprocessors (`rompy.postprocess`)**: Output analysis and transformation implementations.
+    - **Postprocessor Configurations (`rompy.postprocess.config`)**: Pydantic-based postprocessor configurations.
     - **Pipeline Backends (`rompy.pipeline`)**: Workflow orchestration.
 
 ## Dual Selection Pattern
@@ -43,6 +44,9 @@ intake = "rompy.core.source:SourceIntake"
 [project.entry-points."rompy.run"]
 local = "rompy.run:LocalRunBackend"
 docker = "rompy.run.docker:DockerRunBackend"
+
+[project.entry-points."rompy.postprocess.config"]
+noop = "rompy.postprocess.config:NoopPostprocessorConfig"
 ```
 
 For basic plugin usage, please see the [Getting Started Guide](getting_started.md) and [Advanced Topics](backends.md).
@@ -136,55 +140,142 @@ custom = "mypackage.backends:CustomRunBackend"
 
 ## Postprocessors
 
-Postprocessors handle analysis and transformation of model outputs. They implement a `process()` method that returns a dictionary with results.
+Postprocessors handle analysis and transformation of model outputs. They use Pydantic configuration classes for type-safe parameter handling.
 
-### Built-in Postprocessors
+### Postprocessor Configuration
 
-#### No-op Processor
+All postprocessor configurations inherit from `BasePostprocessorConfig` and are registered via entry points:
+
+```toml
+[project.entry-points."rompy.postprocess.config"]
+noop = "rompy.postprocess.config:NoopPostprocessorConfig"
+analysis = "mypackage.config:AnalysisPostprocessorConfig"
+```
+
+### Built-in Postprocessor Configurations
+
+#### No-op Processor Configuration
 
 The `noop` processor provides basic validation without processing:
 
 ```python
-# Basic validation
-results = model.postprocess(processor="noop")
+from rompy.postprocess.config import NoopPostprocessorConfig
 
-# With custom validation
-results = model.postprocess(
-    processor="noop",
+# Basic validation
+config = NoopPostprocessorConfig(validate_outputs=True)
+results = model.postprocess(processor=config)
+
+# With custom configuration
+config = NoopPostprocessorConfig(
     validate_outputs=True,
-    output_dir="./custom_output"
+    timeout=3600,
+    env_vars={"DEBUG": "1"}
 )
+results = model.postprocess(processor=config)
 ```
 
-### Custom Postprocessors
+**From Configuration File:**
 
-Create custom postprocessors by implementing the process interface:
+```yaml
+# processor.yml
+type: noop
+validate_outputs: true
+timeout: 3600
+env_vars:
+  DEBUG: "1"
+  LOG_LEVEL: "INFO"
+```
 
 ```python
+from rompy.postprocess.config import _load_processor_config
+
+# Load from file
+config = _load_processor_config("processor.yml")
+results = model.postprocess(processor=config)
+```
+
+### Custom Postprocessor Configurations
+
+Create custom postprocessor configurations by inheriting from `BasePostprocessorConfig`:
+
+```python
+from rompy.postprocess.config import BasePostprocessorConfig
+from pydantic import Field
+from typing import Optional
+
+class AnalysisPostprocessorConfig(BasePostprocessorConfig):
+    """Configuration for analysis postprocessor."""
+    
+    type: str = Field("analysis", const=True)
+    metrics: list[str] = Field(
+        default_factory=list,
+        description="Metrics to calculate"
+    )
+    output_format: str = Field(
+        "netcdf",
+        description="Output format for results"
+    )
+    compress: bool = Field(
+        True,
+        description="Compress output files"
+    )
+    plot_config: Optional[dict] = Field(
+        None,
+        description="Configuration for plotting"
+    )
+    
+    def get_postprocessor_class(self):
+        """Return the postprocessor implementation class."""
+        from mypackage.postprocess import AnalysisPostprocessor
+        return AnalysisPostprocessor
+```
+
+### Custom Postprocessor Implementation
+
+Create the postprocessor implementation class:
+
+```python
+from pathlib import Path
+from typing import Dict, Any
+
 class AnalysisPostprocessor:
     """Custom postprocessor for model analysis."""
 
-    def process(self, model_run, **kwargs):
-        """Process model outputs.
+    def process(self, model_run, config: AnalysisPostprocessorConfig, **kwargs) -> Dict[str, Any]:
+        """Process model outputs with configuration.
 
         Args:
             model_run: The ModelRun instance
-            **kwargs: Processor-specific parameters
+            config: The AnalysisPostprocessorConfig instance
+            **kwargs: Additional processor-specific parameters
 
         Returns:
-            dict: Processing results
+            dict: Processing results with success status
         """
         try:
             output_dir = Path(model_run.output_dir) / model_run.run_id
 
-            # Custom analysis logic
-            metrics = self._calculate_metrics(output_dir)
-            plots = self._generate_plots(output_dir)
+            # Use configuration parameters
+            metrics = self._calculate_metrics(
+                output_dir,
+                metrics=config.metrics,
+                output_format=config.output_format
+            )
+            
+            if config.plot_config:
+                plots = self._generate_plots(output_dir, config.plot_config)
+            else:
+                plots = []
+            
+            # Optionally compress outputs
+            if config.compress:
+                self._compress_outputs(output_dir)
 
             return {
                 "success": True,
                 "metrics": metrics,
                 "plots": plots,
+                "compressed": config.compress,
                 "message": "Analysis completed successfully"
             }
 
@@ -194,13 +285,79 @@ class AnalysisPostprocessor:
                 "error": str(e),
                 "message": f"Analysis failed: {e}"
             }
+
+    def _calculate_metrics(self, output_dir, metrics, output_format):
+        """Calculate requested metrics."""
+        # Implementation details
+        pass
+
+    def _generate_plots(self, output_dir, plot_config):
+        """Generate plots based on configuration."""
+        # Implementation details
+        pass
+
+    def _compress_outputs(self, output_dir):
+        """Compress output files."""
+        # Implementation details
+        pass
 ```
 
-Register via entry points:
+Register via entry points in `pyproject.toml`:
 
 ```toml
+[project.entry-points."rompy.postprocess.config"]
+analysis = "mypackage.postprocess.config:AnalysisPostprocessorConfig"
+
 [project.entry-points."rompy.postprocess"]
-analysis = "mypackage.processors:AnalysisPostprocessor"
+analysis = "mypackage.postprocess:AnalysisPostprocessor"
+```
+
+### Usage Example
+
+```python
+from mypackage.postprocess.config import AnalysisPostprocessorConfig
+
+# Create configuration
+config = AnalysisPostprocessorConfig(
+    validate_outputs=True,
+    metrics=["mean", "variance", "peak"],
+    output_format="netcdf",
+    compress=True,
+    plot_config={
+        "figsize": (10, 8),
+        "dpi": 300
+    }
+)
+
+# Use in model workflow
+model = ModelRun.from_file("model.yml")
+model.run(backend=backend_config)
+results = model.postprocess(processor=config)
+
+if results["success"]:
+    print(f"Calculated metrics: {results['metrics']}")
+    print(f"Generated plots: {results['plots']}")
+```
+
+**CLI Usage:**
+
+```yaml
+# analysis_processor.yml
+type: analysis
+validate_outputs: true
+metrics:
+  - mean
+  - variance
+  - peak
+output_format: netcdf
+compress: true
+plot_config:
+  figsize: [10, 8]
+  dpi: 300
+```
+
+```bash
+rompy postprocess model.yml --processor-config analysis_processor.yml
 ```
 
 ## Pipeline Backends
@@ -214,16 +371,22 @@ Pipeline backends orchestrate the complete model workflow from input generation 
 The `local` pipeline executes all stages locally:
 
 ```python
+from rompy.postprocess.config import NoopPostprocessorConfig
+
 # Basic pipeline
 results = model.pipeline(pipeline_backend="local")
 
-# With custom backends
+# With custom configurations
+processor_config = NoopPostprocessorConfig(
+    validate_outputs=True,
+    timeout=3600
+)
+
 results = model.pipeline(
     pipeline_backend="local",
     run_backend="docker",
-    processor="analysis",
+    processor_config=processor_config,
     run_kwargs={"image": "rompy/model:latest", "cpu": 4},
-    process_kwargs={"create_plots": True},
     cleanup_on_failure=True
 )
 ```
@@ -236,11 +399,13 @@ Create custom pipeline backends for distributed or cloud execution:
 class CloudPipelineBackend:
     """Pipeline backend for cloud execution."""
 
-    def execute(self, model_run, **kwargs):
+    def execute(self, model_run, run_backend, processor_config, **kwargs):
         """Execute the complete pipeline.
 
         Args:
             model_run: The ModelRun instance
+            run_backend: Backend configuration for model execution
+            processor_config: BasePostprocessorConfig instance for postprocessing
             **kwargs: Pipeline-specific parameters
 
         Returns:
@@ -258,7 +423,7 @@ class CloudPipelineBackend:
             results["stages_completed"].append("generate")
 
             # Stage 2: Submit to cloud
-            job_id = self._submit_cloud_job(model_run, **kwargs)
+            job_id = self._submit_cloud_job(model_run, run_backend, **kwargs)
             results["job_id"] = job_id
             results["stages_completed"].append("submit")
 
@@ -266,9 +431,9 @@ class CloudPipelineBackend:
             self._wait_for_completion(job_id)
             results["stages_completed"].append("execute")
 
-            # Stage 4: Download and process results
+            # Stage 4: Download and process results with configuration
             outputs = self._download_results(job_id)
-            processed = self._process_outputs(outputs, **kwargs)
+            processed = self._process_outputs(outputs, processor_config)
             results["outputs"] = processed
             results["stages_completed"].append("postprocess")
 
