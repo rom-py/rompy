@@ -11,13 +11,13 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from cloudpathlib import AnyPath
-from pydantic import Field, HttpUrl, PrivateAttr, field_validator, model_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid
-from rompy.core.http_handler import download_http_file
 from rompy.core.time import TimeRange
 from rompy.core.types import DatasetCoords, RompyBaseModel, Slice
+from rompy.transfer import get_transfer
 from rompy.utils import load_entry_points
 
 logger = logging.getLogger(__name__)
@@ -44,17 +44,17 @@ class DataBlob(DataBase):
     """Data source for model ingestion.
 
     Generic data source for files that either need to be copied to the model directory
-    or linked if `link` is set to True. Supports both local/cloud paths and remote
-    HTTP/HTTPS URLs.
+    or linked if `link` is set to True. Supports local/cloud paths, remote HTTP/HTTPS URLs,
+    and oceanum:// storage URIs via the transfer registry.
 
     Parameters
     ----------
-    source : Path | HttpUrl
-        URI of the data source, either a local file path, cloud storage URI (s3://, gs://),
-        or a remote HTTP/HTTPS URL.
+    source : str | Path | AnyPath
+        URI of the data source: local file path, cloud storage URI (s3://, gs://),
+        remote HTTP/HTTPS URL, or oceanum:// storage URI.
     link : bool
         Whether to create a symbolic link instead of copying the file.
-        Note: Cannot be used with HTTP URLs (link=True with HTTP will raise ValueError).
+        Note: Only works with local file paths (file:// scheme).
 
     Examples
     --------
@@ -85,48 +85,47 @@ class DataBlob(DataBase):
         default="data_blob",
         description="Model type discriminator",
     )
-    source: Union[AnyPath, HttpUrl] = Field(
+    source: Union[str, Path, AnyPath] = Field(
         description=(
             "URI of the data source: local file path, cloud storage URI (s3://, gs://), "
-            "or remote HTTP/HTTPS URL. HTTP/HTTPS URLs are automatically downloaded."
+            "remote HTTP/HTTPS URL, or oceanum:// URL. Sources are handled via the transfer registry."
         ),
     )
     link: bool = Field(
         default=False,
         description="Whether to create a symbolic link instead of copying the file",
     )
-    _copied: str = PrivateAttr(default=None)
-
-    @field_validator("source", mode="before")
-    @classmethod
-    def validate_source(cls, v):
-        if isinstance(v, str) and (v.startswith("http://") or v.startswith("https://")):
-            return HttpUrl(v)
-        return v
+    _copied: Optional[str] = PrivateAttr(default=None)
 
     @model_validator(mode="after")
-    def validate_http_link_mode(self):
-        """Validate that HTTP URLs cannot be used with link=True."""
-        if isinstance(self.source, HttpUrl) and self.link:
-            raise ValueError(
-                "Cannot use link=True with HTTP URLs. "
-                "HTTP sources must be downloaded (link=False)."
-            )
+    def validate_link_scheme_compat(self):
+        """Validate that link=True only works with file:// scheme."""
+        if self.link:
+            from rompy.transfer import parse_scheme
+
+            scheme = parse_scheme(str(self.source))
+            if scheme != "file":
+                raise ValueError(
+                    f"Cannot use link=True with {scheme}:// URIs. "
+                    f"Only local file paths support symbolic links."
+                )
         return self
 
-    def get(self, destdir: Union[str, Path], name: str = None, *args, **kwargs) -> Path:
+    def get(
+        self, destdir: Union[str, Path], name: Optional[str] = None, *args, **kwargs
+    ) -> Path:
         """Copy, download, or link the data source to a new directory.
 
-        For HTTP/HTTPS URLs, the file is automatically downloaded with retry logic.
-        For local/cloud paths, the file is either copied or symlinked based on the `link` attribute.
+        Uses the transfer registry to dispatch based on URI scheme (file://, http://, https://, oceanum://).
+        For local files, respects the `link` attribute (symlink vs copy).
+        For remote sources (HTTP, oceanum), always downloads (ignores link flag).
 
         Parameters
         ----------
         destdir : str | Path
             The destination directory to copy/download/link the data source to.
         name : str, optional
-            Override the output filename. For HTTP downloads, this overrides the filename
-            extracted from the URL.
+            Override the output filename.
 
         Returns
         -------
@@ -144,55 +143,19 @@ class DataBlob(DataBase):
         Raises
         ------
         ValueError
-            If link=True is used with an HTTP URL.
+            If link=True is used with a non-file:// URI.
+        UnsupportedOperation
+            If the transfer scheme does not support required operations.
         """
         destdir = Path(destdir).resolve()
 
-        # Handle HTTP URLs
-        if isinstance(self.source, HttpUrl):
-            outfile = download_http_file(
-                url=str(self.source), dest_dir=destdir, name=name
-            )
-            self._copied = str(outfile)
-            return outfile
+        transfer = get_transfer(self.source)
+        outfile = transfer.get(
+            uri=str(self.source), destdir=destdir, name=name, link=self.link
+        )
 
-        # Handle local/cloud paths
-        if self.link:
-            # Create a symbolic link
-            if name:
-                symlink_path = destdir / name
-            else:
-                symlink_path = destdir / self.source.name
-
-            # Ensure the destination directory exists
-            destdir.mkdir(parents=True, exist_ok=True)
-
-            # Remove existing symlink/file if it exists
-            if symlink_path.exists():
-                symlink_path.unlink()
-
-            # Compute the relative path from destdir to self.source
-            relative_source_path = os.path.relpath(self.source.resolve(), destdir)
-
-            # Create symlink
-            os.symlink(relative_source_path, symlink_path)
-            self._copied = symlink_path
-
-            return symlink_path
-        else:
-            # Copy the data source
-            if self.source.is_dir():
-                # Copy directory
-                outfile = copytree(self.source, destdir)
-            else:
-                if name:
-                    outfile = destdir / name
-                else:
-                    outfile = destdir / self.source.name
-                if outfile.resolve() != self.source.resolve():
-                    outfile.write_bytes(self.source.read_bytes())
-            self._copied = outfile
-            return outfile
+        self._copied = str(outfile)
+        return outfile
 
 
 GRID_TYPES = Union[BaseGrid, RegularGrid]
