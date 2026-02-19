@@ -3,7 +3,6 @@ from typing import Literal, Optional
 
 import numpy as np
 from pydantic import Field, model_validator
-from pydantic_numpy.typing import Np1DArray
 
 from rompy.core.types import RompyBaseModel
 
@@ -16,19 +15,19 @@ class Frequency(RompyBaseModel):
     model_type: Literal["frequency", "FREQUENCY"] = Field(
         default="frequency", description="Model type discriminator"
     )
-    freq: Np1DArray = Field(description="Frequency array")
+    freq: list[float] = Field(description="Frequency array")
 
     @property
     def f0(self):
-        return self.freq.min()
+        return np.array(self.freq).min()
 
     @property
     def f1(self):
-        return self.freq.max()
+        return np.array(self.freq).max()
 
     @property
     def nf(self):
-        return self.freq.size
+        return len(self.freq)
 
     @property
     def flen(self):
@@ -109,7 +108,7 @@ class LogFrequency(RompyBaseModel):
 
         return self
 
-    def __call__(self) -> Np1DArray:
+    def __call__(self):
         """Frequency array."""
         return np.geomspace(self.f0, self.f1, self.nf)
 
