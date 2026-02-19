@@ -12,24 +12,22 @@ logger = logging.getLogger(__name__)
 class Frequency(RompyBaseModel):
     """Wave frequency."""
 
-    model_config = {"arbitrary_types_allowed": True}
-
     model_type: Literal["frequency", "FREQUENCY"] = Field(
         default="frequency", description="Model type discriminator"
     )
-    freq: np.ndarray = Field(description="Frequency array")
+    freq: list = Field(description="Frequency array")
 
     @property
     def f0(self):
-        return self.freq.min()
+        return np.array(self.freq).min()
 
     @property
     def f1(self):
-        return self.freq.max()
+        return np.array(self.freq).max()
 
     @property
     def nf(self):
-        return self.freq.size
+        return len(self.freq)
 
     @property
     def flen(self):
@@ -110,7 +108,7 @@ class LogFrequency(RompyBaseModel):
 
         return self
 
-    def __call__(self) -> np.ndarray:
+    def __call__(self):
         """Frequency array."""
         return np.geomspace(self.f0, self.f1, self.nf)
 
