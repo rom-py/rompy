@@ -15,7 +15,7 @@ class Frequency(RompyBaseModel):
     model_type: Literal["frequency", "FREQUENCY"] = Field(
         default="frequency", description="Model type discriminator"
     )
-    freq: list = Field(description="Frequency array")
+    freq: list[float] = Field(description="Frequency array")
 
     @property
     def f0(self):
