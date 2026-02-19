@@ -366,38 +366,48 @@ class ModelRun(RompyBaseModel):
         # Pass the config object and workspace_dir to the backend
         return backend_instance.run(self, config=backend, workspace_dir=workspace_dir)
 
-    def postprocess(self, processor: str = "noop", **kwargs) -> Dict[str, Any]:
+    def postprocess(
+        self, processor: "BasePostprocessorConfig", **kwargs
+    ) -> Dict[str, Any]:
         """
-        Postprocess the model outputs using the specified processor.
+        Postprocess the model outputs using the specified processor configuration.
 
-        This method uses entry points to load and execute the appropriate postprocessor.
-        Available processors are automatically discovered from the rompy.postprocess entry point group.
-
-        Built-in processors:
-        - "noop": A placeholder processor that does nothing but returns success
+        This method uses the provided configuration to instantiate and execute
+        the appropriate postprocessor. The processor type is determined by the
+        configuration object.
 
         Args:
-            processor: Name of the postprocessor to use (default: "noop")
-            **kwargs: Additional processor-specific parameters
+            processor: Configuration object for the postprocessor to use
+            **kwargs: Additional processor-specific parameters (override config values)
 
         Returns:
             Dictionary with results from the postprocessing
 
         Raises:
-            ValueError: If the specified processor is not available
+            TypeError: If processor is not a BasePostprocessorConfig instance
         """
-        # Get the requested postprocessor class from entry points
-        if processor not in POSTPROCESSORS:
-            available = list(POSTPROCESSORS.keys())
-            raise ValueError(
-                f"Unknown postprocessor: {processor}. "
-                f"Available processors: {', '.join(available)}"
+        from rompy.postprocess.config import BasePostprocessorConfig
+
+        if not isinstance(processor, BasePostprocessorConfig):
+            raise TypeError(
+                f"processor must be a BasePostprocessorConfig instance, "
+                f"got {type(processor).__name__}"
             )
 
-        # Create an instance and process the outputs
-        processor_class = POSTPROCESSORS[processor]
+        # Get processor class from config
+        processor_class = processor.get_postprocessor_class()
         processor_instance = processor_class()
-        return processor_instance.process(self, **kwargs)
+
+        # Extract processor-specific fields (exclude common base fields)
+        base_fields = {"timeout", "env_vars", "working_dir", "type"}
+        processor_fields = {
+            k: v for k, v in processor.model_dump().items() if k not in base_fields
+        }
+
+        # Merge with any user-provided kwargs (kwargs take precedence)
+        processor_fields.update(kwargs)
+
+        return processor_instance.process(self, **processor_fields)
 
     def pipeline(self, pipeline_backend: str = "local", **kwargs) -> Dict[str, Any]:
         """

@@ -1,0 +1,23 @@
+# Advanced Noop Postprocessor Configuration
+# Shows all available options for the noop postprocessor
+
+# Required: specifies this is a noop postprocessor
+type: noop
+
+# Whether to validate that expected output files exist
+# Default: true
+validate_outputs: true
+
+# Maximum execution time in seconds (60-86400)
+# Default: 3600 (1 hour)
+timeout: 3600
+
+# Additional environment variables to set during execution
+# Default: {}
+env_vars:
+  DEBUG: "1"
+  LOG_LEVEL: "INFO"
+
+# Working directory for execution
+# If not specified, uses model output directory
+# working_dir: /path/to/output

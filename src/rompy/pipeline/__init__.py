@@ -24,7 +24,7 @@ class LocalPipelineBackend:
         self,
         model_run,
         run_backend: str = "local",
-        processor: str = "noop",
+        processor: "BasePostprocessorConfig" = None,
         run_kwargs: Optional[Dict[str, Any]] = None,
         process_kwargs: Optional[Dict[str, Any]] = None,
         cleanup_on_failure: bool = False,
@@ -36,7 +36,7 @@ class LocalPipelineBackend:
         Args:
             model_run: The ModelRun instance to execute
             run_backend: Backend to use for the run stage ("local" or "docker")
-            processor: Processor to use for the postprocess stage
+            processor: Processor configuration for the postprocess stage
             run_kwargs: Additional parameters for the run stage
             process_kwargs: Additional parameters for the postprocess stage
             cleanup_on_failure: Whether to cleanup outputs on pipeline failure
@@ -48,7 +48,10 @@ class LocalPipelineBackend:
 
         Raises:
             ValueError: If model_run is invalid or parameters are invalid
+            TypeError: If processor is not a BasePostprocessorConfig instance
         """
+        from rompy.postprocess.config import BasePostprocessorConfig
+
         # Validate input parameters
         if not model_run:
             raise ValueError("model_run cannot be None")
@@ -59,8 +62,14 @@ class LocalPipelineBackend:
         if not isinstance(run_backend, str) or not run_backend.strip():
             raise ValueError("run_backend must be a non-empty string")
 
-        if not isinstance(processor, str) or not processor.strip():
-            raise ValueError("processor must be a non-empty string")
+        if processor is None:
+            raise ValueError("processor configuration is required")
+
+        if not isinstance(processor, BasePostprocessorConfig):
+            raise TypeError(
+                f"processor must be a BasePostprocessorConfig instance, "
+                f"got {type(processor).__name__}"
+            )
 
         # Initialize parameters
         run_kwargs = run_kwargs or {}
@@ -68,7 +77,7 @@ class LocalPipelineBackend:
 
         logger.info(f"Starting pipeline execution for run_id: {model_run.run_id}")
         logger.info(
-            f"Pipeline configuration: run_backend='{run_backend}', processor='{processor}'"
+            f"Pipeline configuration: run_backend='{run_backend}', processor='{processor.type}'"
         )
 
         pipeline_results = {
@@ -76,7 +85,7 @@ class LocalPipelineBackend:
             "run_id": model_run.run_id,
             "stages_completed": [],
             "run_backend": run_backend,
-            "processor": processor,
+            "processor": processor.type,
         }
 
         try:
@@ -148,7 +157,7 @@ class LocalPipelineBackend:
                 }
 
             # Stage 3: Postprocess outputs
-            logger.info(f"Stage 3: Postprocessing with {processor}")
+            logger.info(f"Stage 3: Postprocessing with {processor.type}")
 
             try:
                 postprocess_results = model_run.postprocess(

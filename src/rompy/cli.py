@@ -364,7 +364,12 @@ def _load_backend_config(backend_config_file):
 @cli.command()
 @click.argument("config", type=click.Path(exists=True), required=False)
 @click.option("--run-backend", default="local", help="Execution backend for run stage")
-@click.option("--processor", default="noop", help="Postprocessor to use")
+@click.option(
+    "--processor-config",
+    type=click.Path(exists=True),
+    required=True,
+    help="YAML/JSON file with postprocessor configuration (required)",
+)
 @click.option(
     "--cleanup-on-failure/--no-cleanup", default=False, help="Clean up on failure"
 )
@@ -375,7 +380,7 @@ def _load_backend_config(backend_config_file):
 def pipeline(
     config,
     run_backend,
-    processor,
+    processor_config,
     cleanup_on_failure,
     validate_stages,
     verbose,
@@ -399,10 +404,15 @@ def pipeline(
         config_data = load_config(config, from_env=config_from_env)
         model_run = ModelRun(**config_data)
 
+        # Load processor configuration
+        from rompy.postprocess.config import _load_processor_config
+
+        processor_cfg = _load_processor_config(processor_config)
+
         logger.info(f"Running pipeline for: {model_run.config.model_type}")
         logger.info(f"Run ID: {model_run.run_id}")
         logger.info(
-            f"Pipeline: generate → run({run_backend}) → postprocess({processor})"
+            f"Pipeline: generate → run({run_backend}) → postprocess({processor_cfg.type})"
         )
 
         start_time = datetime.now()
@@ -411,7 +421,7 @@ def pipeline(
         results = model_run.pipeline(
             pipeline_backend="local",
             run_backend=run_backend,
-            processor=processor,
+            processor=processor_cfg,
             cleanup_on_failure=cleanup_on_failure,
             validate_stages=validate_stages,
         )
@@ -496,7 +506,10 @@ def generate(
 @cli.command()
 @click.argument("config", type=click.Path(exists=True), required=False)
 @click.option(
-    "--processor", default="noop", help="Postprocessor to use (default: noop)"
+    "--processor-config",
+    type=click.Path(exists=True),
+    required=True,
+    help="YAML/JSON file with postprocessor configuration (required)",
 )
 @click.option("--output-dir", help="Override output directory for postprocessing")
 @click.option(
@@ -507,7 +520,7 @@ def generate(
 @add_common_options
 def postprocess(
     config,
-    processor,
+    processor_config,
     output_dir,
     validate_outputs,
     verbose,
@@ -517,7 +530,15 @@ def postprocess(
     simple_logs,
     config_from_env,
 ):
-    """Run postprocessing on model outputs using the specified postprocessor."""
+    """Run postprocessing on model outputs using the specified postprocessor.
+
+    Examples:
+        # Run with processor configuration file
+        rompy postprocess config.yml --processor-config processor.yml
+
+        # Run with config from environment variable
+        rompy postprocess --config-from-env --processor-config processor.yml
+    """
     configure_logging(verbose, log_dir, simple_logs, ascii_only, show_warnings)
 
     # Validate config source
@@ -531,14 +552,19 @@ def postprocess(
         config_data = load_config(config, from_env=config_from_env)
         model_run = ModelRun(**config_data)
 
+        # Load processor configuration
+        from rompy.postprocess.config import _load_processor_config
+
+        processor_cfg = _load_processor_config(processor_config)
+
         logger.info(f"Running postprocessing for: {model_run.config.model_type}")
         logger.info(f"Run ID: {model_run.run_id}")
-        logger.info(f"Postprocessor: {processor}")
+        logger.info(f"Postprocessor: {processor_cfg.type}")
 
         # Run postprocessing
         start_time = datetime.now()
         results = model_run.postprocess(
-            processor=processor,
+            processor=processor_cfg,
             output_dir=output_dir,
             validate_outputs=validate_outputs,
         )
@@ -637,10 +663,16 @@ def list_backends(
     type=click.Choice(["local", "docker"]),
     help="Backend type to validate as",
 )
+@click.option(
+    "--processor-type",
+    type=click.Choice(["noop"]),
+    help="Postprocessor type to validate as (alternative to --backend-type)",
+)
 @add_common_options
 def validate_backend_config(
     config_file,
     backend_type,
+    processor_type,
     verbose,
     log_dir,
     show_warnings,
@@ -648,60 +680,91 @@ def validate_backend_config(
     simple_logs,
     config_from_env,
 ):
-    """Validate a backend configuration file."""
+    """Validate a backend or postprocessor configuration file."""
     configure_logging(verbose, log_dir, simple_logs, ascii_only, show_warnings)
 
-    try:
-        # Load configuration
-        config_data = load_config(config_file)
+    # Check that only one type is specified
+    if backend_type and processor_type:
+        raise click.UsageError(
+            "Cannot specify both --backend-type and --processor-type. Choose one."
+        )
 
-        # Determine backend type and extract config parameters
-        if backend_type:
-            config_type = backend_type
-        elif "backend_type" in config_data:
-            config_type = config_data.pop("backend_type")
-        elif "type" in config_data:
-            config_type = config_data.pop("type")
-        else:
-            raise click.UsageError(
-                "Backend type must be specified via --backend-type or 'type' field in config"
+    try:
+        if processor_type:
+            # Validate postprocessor configuration
+            from rompy.postprocess.config import (
+                _load_processor_config,
+                validate_postprocessor_config,
             )
 
-        # Validate configuration
-        if config_type == "local":
-            config = LocalConfig(**config_data)
-            logger.info("✅ Local backend configuration is valid")
-        elif config_type == "docker":
-            config = DockerConfig(**config_data)
-            logger.info("✅ Docker backend configuration is valid")
+            is_valid, message, config = validate_postprocessor_config(
+                config_file, processor_type
+            )
+
+            if not is_valid:
+                raise click.UsageError(message)
+
+            logger.info(f"✅ Postprocessor configuration is valid")
+            logger.info(f"Processor type: {config.type}")
+            logger.info(f"Timeout: {config.timeout}s")
+            if hasattr(config, "validate_outputs"):
+                logger.info(f"Validate outputs: {config.validate_outputs}")
+            if config.env_vars:
+                logger.info(f"Environment variables: {list(config.env_vars.keys())}")
+            if config.working_dir:
+                logger.info(f"Working directory: {config.working_dir}")
+
         else:
-            raise click.UsageError(f"Unknown backend type: {config_type}")
+            # Load configuration
+            config_data = load_config(config_file)
 
-        # Show configuration details
-        logger.info(f"Backend type: {config_type}")
-        logger.info(f"Timeout: {config.timeout}s")
-        if config.env_vars:
-            logger.info(f"Environment variables: {list(config.env_vars.keys())}")
-        if config.working_dir:
-            logger.info(f"Working directory: {config.working_dir}")
+            # Determine backend type and extract config parameters
+            if backend_type:
+                config_type = backend_type
+            elif "backend_type" in config_data:
+                config_type = config_data.pop("backend_type")
+            elif "type" in config_data:
+                config_type = config_data.pop("type")
+            else:
+                raise click.UsageError(
+                    "Backend type must be specified via --backend-type or 'type' field in config"
+                )
 
-        # Type-specific details
-        if isinstance(config, LocalConfig):
-            if config.command:
-                logger.info(f"Command: {config.command}")
-        elif isinstance(config, DockerConfig):
-            if config.image:
-                logger.info(f"Image: {config.image}")
-            if config.dockerfile:
-                logger.info(f"Dockerfile: {config.dockerfile}")
-            logger.info(f"CPU: {config.cpu}")
-            if config.memory:
-                logger.info(f"Memory: {config.memory}")
-            if config.volumes:
-                logger.info(f"Volumes: {len(config.volumes)} mounts")
+            # Validate configuration
+            if config_type == "local":
+                config = LocalConfig(**config_data)
+                logger.info("✅ Local backend configuration is valid")
+            elif config_type == "docker":
+                config = DockerConfig(**config_data)
+                logger.info("✅ Docker backend configuration is valid")
+            else:
+                raise click.UsageError(f"Unknown backend type: {config_type}")
+
+            # Show configuration details
+            logger.info(f"Backend type: {config_type}")
+            logger.info(f"Timeout: {config.timeout}s")
+            if config.env_vars:
+                logger.info(f"Environment variables: {list(config.env_vars.keys())}")
+            if config.working_dir:
+                logger.info(f"Working directory: {config.working_dir}")
+
+            # Type-specific details
+            if isinstance(config, LocalConfig):
+                if config.command:
+                    logger.info(f"Command: {config.command}")
+            elif isinstance(config, DockerConfig):
+                if config.image:
+                    logger.info(f"Image: {config.image}")
+                if config.dockerfile:
+                    logger.info(f"Dockerfile: {config.dockerfile}")
+                logger.info(f"CPU: {config.cpu}")
+                if config.memory:
+                    logger.info(f"Memory: {config.memory}")
+                if config.volumes:
+                    logger.info(f"Volumes: {len(config.volumes)} mounts")
 
     except Exception as e:
-        logger.error(f"❌ Backend configuration validation failed: {e}")
+        logger.error(f"❌ Configuration validation failed: {e}")
         if verbose > 0:
             logger.exception("Full traceback:")
         sys.exit(1)
