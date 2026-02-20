@@ -1,5 +1,6 @@
 """Rompy types."""
 
+import difflib
 import json
 from datetime import datetime
 from typing import Any, Optional, Union
@@ -10,6 +11,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class RompyBaseModel(BaseModel):
     # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
     model_config = ConfigDict(protected_namespaces=(), extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_for_typos(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            fields = cls.model_fields.keys()
+            for key in data.keys():
+                if key not in fields:
+                    matches = difflib.get_close_matches(key, fields, n=1, cutoff=0.6)
+                    if matches:
+                        raise ValueError(
+                            f"Unknown field '{key}'. Did you mean '{matches[0]}'?"
+                        )
+        return data
 
     def __init__(self, **data: Any):
         super().__init__(**data)
