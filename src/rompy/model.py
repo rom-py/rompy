@@ -423,8 +423,8 @@ class ModelRun(RompyBaseModel):
         Args:
             pipeline_backend: Name of the pipeline backend to use (default: "local")
             **kwargs: Additional backend-specific parameters. Common parameters include:
-                - run_backend: Backend to use for the run stage (for local pipeline)
-                - processor: Processor to use for postprocessing (for local pipeline)
+                - backend_config: BackendConfig instance for the run stage (for local pipeline)
+                - processor: ProcessorConfig instance for postprocessing (for local pipeline)
                 - run_kwargs: Additional parameters for the run stage
                 - process_kwargs: Additional parameters for postprocessing
 

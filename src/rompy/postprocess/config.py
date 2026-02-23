@@ -192,6 +192,54 @@ def _load_processor_config(config_file):
         )
 
 
+def _load_processor_config_from_dict(config_data: dict) -> BasePostprocessorConfig:
+    """Load processor configuration from a dictionary.
+
+    This function is used internally to instantiate processor configs from
+    dictionary data (e.g., from inline config or already-parsed YAML).
+
+    Args:
+        config_data: Dictionary containing processor configuration with 'type' field
+
+    Returns:
+        An instance of the appropriate postprocessor config class
+
+    Raises:
+        ValueError: If the processor type is not found or config_data is invalid
+    """
+    from importlib.metadata import entry_points
+
+    if not isinstance(config_data, dict):
+        raise ValueError(f"Config data must be a dictionary, got {type(config_data)}")
+
+    # Make a copy to avoid modifying the original
+    config_data = config_data.copy()
+
+    processor_type = config_data.pop("type", None)
+
+    if processor_type is None:
+        raise ValueError("Config must contain a 'type' field")
+
+    # Load from entry point
+    eps = entry_points(group="rompy.postprocess.config")
+    for ep in eps:
+        if ep.name == processor_type:
+            config_class = ep.load()
+            return config_class(**config_data)
+
+    # If we get here, type wasn't found
+    available = [ep.name for ep in eps]
+    if available:
+        available_str = ", ".join(available)
+        raise ValueError(
+            f"Unknown processor type: '{processor_type}'. Available types: {available_str}"
+        )
+    else:
+        raise ValueError(
+            f"Unknown processor type: '{processor_type}'. No postprocessor types are registered."
+        )
+
+
 def validate_postprocessor_config(config_file, processor_type=None):
     """Validate a postprocessor configuration file.
 
