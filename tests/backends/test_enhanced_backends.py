@@ -60,6 +60,12 @@ def processor_config():
     return NoopPostprocessorConfig(validate_outputs=False)
 
 
+@pytest.fixture
+def backend_config():
+    """Create a LocalConfig for testing."""
+    return LocalConfig()
+
+
 class TestEnhancedLocalRunBackend:
     """Test the enhanced LocalRunBackend with validation and error handling."""
 
@@ -340,37 +346,45 @@ class TestEnhancedLocalPipelineBackend:
         with pytest.raises(ValueError, match="model_run must have a run_id attribute"):
             backend.execute(invalid_model)
 
-    def test_execute_validation_invalid_run_backend(self, model_run):
-        """Test that execute raises ValueError for invalid run_backend."""
+    def test_execute_validation_invalid_run_backend(self, model_run, processor_config):
+        """Test that execute raises ValueError for invalid backend_config."""
         backend = LocalPipelineBackend()
 
-        with pytest.raises(ValueError, match="run_backend must be a non-empty string"):
-            backend.execute(model_run, run_backend="")
+        with pytest.raises(TypeError, match="must be a BaseBackendConfig instance"):
+            backend.execute(
+                model_run, backend_config="invalid", processor=processor_config
+            )
 
-    def test_execute_validation_invalid_processor(self, model_run):
+    def test_execute_validation_invalid_processor(self, model_run, backend_config):
         """Test that execute raises TypeError for invalid processor type."""
         backend = LocalPipelineBackend()
 
         with pytest.raises(
             TypeError, match="must be a BasePostprocessorConfig instance"
         ):
-            backend.execute(model_run, processor="noop")
+            backend.execute(model_run, backend_config=backend_config, processor="noop")
 
-    def test_execute_generate_failure(self, model_run, processor_config):
+    def test_execute_generate_failure(
+        self, model_run, backend_config, processor_config
+    ):
         """Test pipeline failure during generate stage."""
         backend = LocalPipelineBackend()
 
         with patch(
             "rompy.model.ModelRun.generate", side_effect=Exception("Generate failed")
         ):
-            result = backend.execute(model_run, processor=processor_config)
+            result = backend.execute(
+                model_run, backend_config=backend_config, processor=processor_config
+            )
 
         assert result["success"] is False
         assert result["stage"] == "generate"
         assert "Generate failed" in result["message"]
         assert "generate" not in result["stages_completed"]
 
-    def test_execute_run_failure(self, model_run, tmp_path, processor_config):
+    def test_execute_run_failure(
+        self, model_run, tmp_path, backend_config, processor_config
+    ):
         """Test pipeline failure during run stage."""
         backend = LocalPipelineBackend()
 
@@ -379,14 +393,18 @@ class TestEnhancedLocalPipelineBackend:
 
         with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
             with patch("rompy.model.ModelRun.run", return_value=False):
-                result = backend.execute(model_run, processor=processor_config)
+                result = backend.execute(
+                    model_run, backend_config=backend_config, processor=processor_config
+                )
 
         assert result["success"] is False
         assert result["stage"] == "run"
         assert "generate" in result["stages_completed"]
         assert "run" not in result["stages_completed"]
 
-    def test_execute_run_exception(self, model_run, tmp_path, processor_config):
+    def test_execute_run_exception(
+        self, model_run, tmp_path, backend_config, processor_config
+    ):
         """Test pipeline failure during run stage with exception."""
         backend = LocalPipelineBackend()
 
@@ -395,13 +413,17 @@ class TestEnhancedLocalPipelineBackend:
 
         with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
             with patch("rompy.model.ModelRun.run", side_effect=Exception("Run failed")):
-                result = backend.execute(model_run, processor=processor_config)
+                result = backend.execute(
+                    model_run, backend_config=backend_config, processor=processor_config
+                )
 
         assert result["success"] is False
         assert result["stage"] == "run"
         assert "Run failed" in result["message"]
 
-    def test_execute_postprocess_failure(self, model_run, tmp_path, processor_config):
+    def test_execute_postprocess_failure(
+        self, model_run, tmp_path, backend_config, processor_config
+    ):
         """Test pipeline failure during postprocess stage."""
         backend = LocalPipelineBackend()
 
@@ -414,7 +436,11 @@ class TestEnhancedLocalPipelineBackend:
                     "rompy.model.ModelRun.postprocess",
                     side_effect=Exception("Postprocess failed"),
                 ):
-                    result = backend.execute(model_run, processor=processor_config)
+                    result = backend.execute(
+                        model_run,
+                        backend_config=backend_config,
+                        processor=processor_config,
+                    )
 
         assert result["success"] is False
         assert result["stage"] == "postprocess"
@@ -454,7 +480,7 @@ class TestEnhancedLocalPipelineBackend:
         assert result["message"] == "Pipeline completed successfully"
 
     def test_execute_with_validation_failure(
-        self, model_run, tmp_path, processor_config
+        self, model_run, tmp_path, backend_config, processor_config
     ):
         """Test pipeline with stage validation failure."""
         backend = LocalPipelineBackend()
@@ -464,7 +490,10 @@ class TestEnhancedLocalPipelineBackend:
             "rompy.model.ModelRun.generate", return_value=str(tmp_path / "nonexistent")
         ):
             result = backend.execute(
-                model_run, processor=processor_config, validate_stages=True
+                model_run,
+                backend_config=backend_config,
+                processor=processor_config,
+                validate_stages=True,
             )
 
         assert result["success"] is False
@@ -472,7 +501,7 @@ class TestEnhancedLocalPipelineBackend:
         assert "not found after generation" in result["message"]
 
     def test_execute_with_cleanup_on_failure(
-        self, model_run, tmp_path, processor_config
+        self, model_run, tmp_path, backend_config, processor_config
     ):
         """Test pipeline with cleanup on failure."""
         backend = LocalPipelineBackend()
@@ -485,7 +514,10 @@ class TestEnhancedLocalPipelineBackend:
         with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
             with patch("rompy.model.ModelRun.run", return_value=False):
                 result = backend.execute(
-                    model_run, processor=processor_config, cleanup_on_failure=True
+                    model_run,
+                    backend_config=backend_config,
+                    processor=processor_config,
+                    cleanup_on_failure=True,
                 )
 
         assert result["success"] is False
@@ -520,7 +552,7 @@ class TestEnhancedLocalPipelineBackend:
             backend._cleanup_outputs(model_run)
 
     def test_execute_postprocess_warning_on_failure(
-        self, model_run, tmp_path, processor_config
+        self, model_run, tmp_path, backend_config, processor_config
     ):
         """Test pipeline continues when postprocessing reports failure but doesn't raise."""
         backend = LocalPipelineBackend()
@@ -540,7 +572,11 @@ class TestEnhancedLocalPipelineBackend:
                     "rompy.model.ModelRun.postprocess",
                     return_value=mock_postprocess_result,
                 ):
-                    result = backend.execute(model_run, processor=processor_config)
+                    result = backend.execute(
+                        model_run,
+                        backend_config=backend_config,
+                        processor=processor_config,
+                    )
 
         # Pipeline should still succeed
         assert result["success"] is True

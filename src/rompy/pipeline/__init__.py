@@ -6,9 +6,13 @@ This module provides the local pipeline backend implementation.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from rompy.backends import DockerConfig, LocalConfig
+
+if TYPE_CHECKING:
+    from rompy.backends.config import SlurmConfig
+    from rompy.postprocess.config import BasePostprocessorConfig
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +27,7 @@ class LocalPipelineBackend:
     def execute(
         self,
         model_run,
-        run_backend: str = "local",
+        backend_config: Union[LocalConfig, DockerConfig, "SlurmConfig"] = None,
         processor: "BasePostprocessorConfig" = None,
         run_kwargs: Optional[Dict[str, Any]] = None,
         process_kwargs: Optional[Dict[str, Any]] = None,
@@ -35,13 +39,13 @@ class LocalPipelineBackend:
 
         Args:
             model_run: The ModelRun instance to execute
-            run_backend: Backend to use for the run stage ("local" or "docker")
+            backend_config: Backend configuration object (LocalConfig, DockerConfig, etc.)
             processor: Processor configuration for the postprocess stage
-            run_kwargs: Additional parameters for the run stage
+            run_kwargs: Additional parameters for the run stage (deprecated, use backend_config)
             process_kwargs: Additional parameters for the postprocess stage
             cleanup_on_failure: Whether to cleanup outputs on pipeline failure
             validate_stages: Whether to validate each stage before proceeding
-            **kwargs: Additional parameters (unused)
+            **kwargs: Additional parameters (for backward compatibility)
 
         Returns:
             Combined results from the pipeline execution
@@ -51,6 +55,7 @@ class LocalPipelineBackend:
             TypeError: If processor is not a BasePostprocessorConfig instance
         """
         from rompy.postprocess.config import BasePostprocessorConfig
+        from rompy.backends.config import BaseBackendConfig
 
         # Validate input parameters
         if not model_run:
@@ -59,8 +64,26 @@ class LocalPipelineBackend:
         if not hasattr(model_run, "run_id"):
             raise ValueError("model_run must have a run_id attribute")
 
-        if not isinstance(run_backend, str) or not run_backend.strip():
-            raise ValueError("run_backend must be a non-empty string")
+        # Handle backward compatibility: accept run_backend string from kwargs
+        if backend_config is None:
+            run_backend = kwargs.get("run_backend")
+            if run_backend:
+                logger.warning(
+                    "Passing run_backend as string is deprecated. "
+                    "Use backend_config parameter instead."
+                )
+                run_kwargs = run_kwargs or {}
+                backend_config = self._create_backend_config(run_backend, run_kwargs)
+            else:
+                raise ValueError(
+                    "backend_config is required. Provide a BackendConfig instance."
+                )
+
+        if not isinstance(backend_config, BaseBackendConfig):
+            raise TypeError(
+                f"backend_config must be a BaseBackendConfig instance, "
+                f"got {type(backend_config).__name__}"
+            )
 
         if processor is None:
             raise ValueError("processor configuration is required")
@@ -72,19 +95,19 @@ class LocalPipelineBackend:
             )
 
         # Initialize parameters
-        run_kwargs = run_kwargs or {}
         process_kwargs = process_kwargs or {}
 
+        backend_type = backend_config.__class__.__name__.replace("Config", "").lower()
         logger.info(f"Starting pipeline execution for run_id: {model_run.run_id}")
         logger.info(
-            f"Pipeline configuration: run_backend='{run_backend}', processor='{processor.type}'"
+            f"Pipeline configuration: backend='{backend_type}', processor='{processor.type}'"
         )
 
         pipeline_results = {
             "success": False,
             "run_id": model_run.run_id,
             "stages_completed": [],
-            "run_backend": run_backend,
+            "backend": backend_type,
             "processor": processor.type,
         }
 
@@ -120,12 +143,9 @@ class LocalPipelineBackend:
                     }
 
             # Stage 2: Run the model
-            logger.info(f"Stage 2: Running model using {run_backend} backend")
+            logger.info(f"Stage 2: Running model using {backend_type} backend")
 
             try:
-                # Create appropriate backend configuration
-                backend_config = self._create_backend_config(run_backend, run_kwargs)
-
                 # Pass the generated workspace directory to avoid duplicate generation
                 run_success = model_run.run(
                     backend=backend_config, workspace_dir=staging_dir

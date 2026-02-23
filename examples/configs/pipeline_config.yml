@@ -1,12 +1,14 @@
 # Pipeline Configuration Example
-# This file demonstrates how to configure complete model pipelines for ROMPY models.
+# This file demonstrates the new unified pipeline configuration structure for ROMPY models.
 # Use this file with CLI commands like: rompy pipeline --config pipeline_config.yml
+#
+# New structure:
+# - config: ModelRun configuration (required)
+# - backend: Backend configuration (optional, can be overridden with --backend-config)
+# - postprocessor: Postprocessor configuration (optional, can be overridden with --processor-config)
 
-# Pipeline backend type - determines how the pipeline is executed
-pipeline_backend: local
-
-# Model run configuration
-model_run:
+# Example 1: Basic local pipeline
+config:
   run_id: "example_pipeline_run"
   output_dir: "./simulations"
   delete_existing: true
@@ -23,36 +25,23 @@ model_run:
     model_type: "swan" # or other supported model types
     # Add model-specific configuration here
 
-# Run backend configuration
-run_backend:
-  backend_type: local
+# Backend configuration
+backend:
+  type: local
   timeout: 7200 # 2 hours
   command: "python run_model.py"
   env_vars:
     OMP_NUM_THREADS: "4"
     MODEL_CONFIG: "production"
 
-# Postprocessing configuration
-postprocessing:
-  processor: "noop" # or other available processors
+# Postprocessor configuration
+postprocessor:
+  type: noop # or other available processors
   # Add processor-specific parameters here
 
-# Pipeline-specific settings
-pipeline_settings:
-  # Whether to continue if individual steps fail
-  continue_on_error: false
-
-  # Whether to clean up intermediate files
-  cleanup_intermediate: true
-
-  # Maximum time for entire pipeline
-  max_pipeline_time: 14400 # 4 hours
-
 ---
-# Alternative configuration using Docker
-pipeline_backend: local
-
-model_run:
+# Example 2: Docker-based pipeline
+config:
   run_id: "docker_pipeline_run"
   output_dir: "./docker_simulations"
   delete_existing: true
@@ -65,9 +54,9 @@ model_run:
   config:
     model_type: "swan"
 
-# Run backend configuration
-run_backend:
-  backend_type: docker
+# Docker backend configuration
+backend:
+  type: docker
   image: "swan:latest"
   timeout: 10800 # 3 hours
   cpu: 8
@@ -81,19 +70,12 @@ run_backend:
     MODEL_PARALLEL: "true"
     DATA_DIR: "/app/data"
 
-postprocessing:
-  processor: "noop"
-
-pipeline_settings:
-  continue_on_error: false
-  cleanup_intermediate: false # Keep files for debugging
-  max_pipeline_time: 21600 # 6 hours
+postprocessor:
+  type: noop
 
 ---
-# Multi-stage pipeline configuration
-pipeline_backend: local
-
-model_run:
+# Example 3: High-performance Docker pipeline with custom postprocessing
+config:
   run_id: "multi_stage_pipeline"
   output_dir: "./multi_stage_output"
   delete_existing: true
@@ -106,10 +88,9 @@ model_run:
   config:
     model_type: "schism"
 
-# Run configuration for computationally intensive model
-# Run backend configuration
-run_backend:
-  backend_type: docker
+# HPC Docker backend configuration
+backend:
+  type: docker
   dockerfile: "./docker/Dockerfile.hpc"
   build_context: "./docker"
   build_args:
@@ -130,36 +111,18 @@ run_backend:
     SLURM_NTASKS: "32"
     SCHISM_NPROC: "32"
 
-# Custom postprocessing
-postprocessing:
-  processor: "custom_analysis"
+# Custom postprocessor configuration
+postprocessor:
+  type: custom_analysis
   # Custom processor parameters
   analysis_type: "wave_statistics"
   output_format: "netcdf"
   generate_plots: true
   statistics_window: "24H"
 
-pipeline_settings:
-  continue_on_error: false
-  cleanup_intermediate: true
-  max_pipeline_time: 108000 # 30 hours
-
-  # Additional pipeline-specific settings
-  notification:
-    email: "user@example.com"
-    on_success: true
-    on_failure: true
-
-  monitoring:
-    log_level: "INFO"
-    progress_updates: true
-    resource_monitoring: true
-
 ---
-# Development/Testing pipeline configuration
-pipeline_backend: local
-
-model_run:
+# Example 4: Development/Testing pipeline
+config:
   run_id: "test_pipeline"
   output_dir: "./test_output"
   delete_existing: true
@@ -173,10 +136,9 @@ model_run:
   config:
     model_type: "swan"
 
-# Fast local execution for testing
-# Run backend configuration
-run_backend:
-  backend_type: local
+# Fast local backend for testing
+backend:
+  type: local
   timeout: 1800 # 30 minutes
   command: "echo 'Test run' && python -m pytest tests/"
   capture_output: true
@@ -184,15 +146,45 @@ run_backend:
     ENV: "testing"
     LOG_LEVEL: "DEBUG"
 
-postprocessing:
-  processor: "noop"
+postprocessor:
+  type: noop
 
-pipeline_settings:
-  continue_on_error: true # Continue for testing
-  cleanup_intermediate: false # Keep files for inspection
-  max_pipeline_time: 3600 # 1 hour max
+---
+# Example 5: Pipeline using YAML includes for composition
+config:
+  run_id: "modular_pipeline"
+  output_dir: "./modular_output"
+  delete_existing: true
 
-  # Testing-specific settings
-  dry_run: false
-  validate_only: false
-  debug_mode: true
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+
+  # Include model config from external file
+  config: !include ./model_configs/swan_config.yml
+
+# Include backend config from external file
+backend: !include ./backend_configs/docker_backend.yml
+
+# Include postprocessor config from external file
+postprocessor: !include ./processor_configs/ww3_transfer.yml
+
+---
+# Example 6: Minimal pipeline (backend and postprocessor optional)
+# Backend and postprocessor can be omitted from config and provided via CLI flags
+config:
+  run_id: "minimal_pipeline"
+  output_dir: "./minimal_output"
+  delete_existing: true
+
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-01T12:00:00"
+    interval: "1H"
+
+  config:
+    model_type: "swan"
+
+# No backend or postprocessor defined - must be provided via CLI:
+# rompy pipeline --config this_file.yml --backend-config my_backend.yml --processor-config my_processor.yml

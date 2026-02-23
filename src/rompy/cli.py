@@ -129,6 +129,9 @@ def load_config(
 ) -> Dict[str, Any]:
     """Load configuration from file, string, or environment variable.
 
+    Supports YAML files with !include directives for composing configs from
+    multiple files.
+
     Args:
         config_path: Path to config file or raw config string
         from_env: If True, load from environment variable instead of config_path
@@ -140,35 +143,68 @@ def load_config(
     Raises:
         click.UsageError: If config cannot be loaded or parsed
     """
+    from rompy.core.yaml_loader import load_yaml_with_includes, safe_load_with_includes
+    from pathlib import Path
+
     if from_env:
         content = os.environ.get(env_var)
         if content is None:
             raise click.UsageError(f"Environment variable {env_var} is not set")
         logger.info(f"Loading config from environment variable: {env_var}")
-    else:
+
+        # Try JSON first
         try:
-            with open(config_path, "r") as f:
-                content = f.read()
-        except (FileNotFoundError, IsADirectoryError, OSError):
-            # Not a file, treat as raw string
+            config = json.loads(content)
+            logger.info("Parsed config as JSON")
+            return config
+        except json.JSONDecodeError:
+            pass
+
+        # Try YAML with includes (use cwd as root dir)
+        try:
+            config = safe_load_with_includes(content, root_dir=Path.cwd())
+            logger.info("Parsed config as YAML")
+        except yaml.YAMLError as e:
+            logger.error(f"Failed to parse config as JSON or YAML: {e}")
+            raise click.UsageError("Config is not valid JSON or YAML")
+    else:
+        # Check if it's a file path
+        config_file = Path(config_path)
+        if config_file.exists() and config_file.is_file():
+            logger.info(f"Loading config from: {config_path}")
+
+            # Try YAML with includes support first (most common case)
+            try:
+                config = load_yaml_with_includes(config_file)
+                logger.info("Parsed config as YAML")
+            except yaml.YAMLError:
+                # If YAML fails, try JSON
+                try:
+                    with open(config_file, "r") as f:
+                        config = json.load(f)
+                    logger.info("Parsed config as JSON")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse config as JSON or YAML: {e}")
+                    raise click.UsageError("Config file is not valid JSON or YAML")
+        else:
+            # Not a file, treat as raw string content
             content = config_path
-        logger.info(f"Loading config from: {config_path}")
 
-    # Try JSON first
-    try:
-        config = json.loads(content)
-        logger.info("Parsed config as JSON")
-        return config
-    except json.JSONDecodeError:
-        pass
+            # Try JSON first
+            try:
+                config = json.loads(content)
+                logger.info("Parsed config as JSON")
+                return config
+            except json.JSONDecodeError:
+                pass
 
-    # If JSON failed, try YAML
-    try:
-        config = yaml.safe_load(content)
-        logger.info("Parsed config as YAML")
-    except yaml.YAMLError as e:
-        logger.error(f"Failed to parse config as JSON or YAML: {e}")
-        raise click.UsageError("Config file is not valid JSON or YAML")
+            # Try YAML
+            try:
+                config = yaml.safe_load(content)
+                logger.info("Parsed config as YAML")
+            except yaml.YAMLError as e:
+                logger.error(f"Failed to parse config as JSON or YAML: {e}")
+                raise click.UsageError("Config is not valid JSON or YAML")
 
     # Render template variables in config
     try:
@@ -363,12 +399,17 @@ def _load_backend_config(backend_config_file):
 
 @cli.command()
 @click.argument("config", type=click.Path(exists=True), required=False)
-@click.option("--run-backend", default="local", help="Execution backend for run stage")
+@click.option(
+    "--backend-config",
+    type=click.Path(exists=True),
+    required=False,
+    help="YAML/JSON file with backend configuration (optional, can be inline in config)",
+)
 @click.option(
     "--processor-config",
     type=click.Path(exists=True),
-    required=True,
-    help="YAML/JSON file with postprocessor configuration (required)",
+    required=False,
+    help="YAML/JSON file with postprocessor configuration (optional, can be inline in config)",
 )
 @click.option(
     "--cleanup-on-failure/--no-cleanup", default=False, help="Clean up on failure"
@@ -379,7 +420,7 @@ def _load_backend_config(backend_config_file):
 @add_common_options
 def pipeline(
     config,
-    run_backend,
+    backend_config,
     processor_config,
     cleanup_on_failure,
     validate_stages,
@@ -390,7 +431,31 @@ def pipeline(
     simple_logs,
     config_from_env,
 ):
-    """Run full model pipeline: generate → run → postprocess."""
+    """Run full model pipeline: generate → run → postprocess.
+
+    The pipeline config should have the following structure:
+
+    \b
+    config:           # ModelRun configuration
+      run_id: ...
+      period: ...
+      config: ...
+    backend:          # Backend configuration (or use --backend-config)
+      type: local
+      timeout: 7200
+    postprocessor:    # Postprocessor configuration (or use --processor-config)
+      type: ww3_transfer
+      destinations: [...]
+
+    Sections can use !include to reference external files:
+
+    \b
+    config: !include model_config.yaml
+    backend: !include backends/local.yaml
+    postprocessor: !include postprocessors/transfer.yaml
+
+    CLI flags override inline configurations.
+    """
     configure_logging(verbose, log_dir, simple_logs, ascii_only, show_warnings)
 
     # Validate config source
@@ -400,27 +465,76 @@ def pipeline(
         raise click.UsageError("Must specify either config file or --config-from-env")
 
     try:
-        # Load configuration
-        config_data = load_config(config, from_env=config_from_env)
-        model_run = ModelRun(**config_data)
+        # Load pipeline configuration (supports !include directives)
+        pipeline_data = load_config(config, from_env=config_from_env)
+
+        # Extract sections from pipeline config
+        model_config_data = pipeline_data.get("config")
+        backend_data = pipeline_data.get("backend")
+        processor_data = pipeline_data.get("postprocessor")
+
+        # Apply CLI overrides
+        if backend_config:
+            logger.info(f"Overriding backend config with: {backend_config}")
+            backend_data = load_config(backend_config)
+
+        if processor_config:
+            logger.info(f"Overriding processor config with: {processor_config}")
+            processor_data = load_config(processor_config)
+
+        # Validate required sections
+        if not model_config_data:
+            raise click.UsageError(
+                "Pipeline config must contain 'config' section with ModelRun configuration.\n"
+                "See 'rompy pipeline --help' for expected structure."
+            )
+
+        if not backend_data:
+            raise click.UsageError(
+                "Backend configuration required. Provide either:\n"
+                "  - 'backend' section in pipeline config, or\n"
+                "  - --backend-config flag"
+            )
+
+        if not processor_data:
+            raise click.UsageError(
+                "Postprocessor configuration required. Provide either:\n"
+                "  - 'postprocessor' section in pipeline config, or\n"
+                "  - --processor-config flag"
+            )
+
+        # Instantiate configurations
+        model_run = ModelRun(**model_config_data)
+
+        # Instantiate backend config
+        if "type" not in backend_data:
+            raise click.UsageError("Backend configuration must include a 'type' field")
+        backend_type = backend_data.pop("type")
+        registry = _get_backend_config_registry()
+        if backend_type not in registry:
+            available = ", ".join(registry.keys())
+            raise click.UsageError(
+                f"Unknown backend type: {backend_type}. Available: {available}"
+            )
+        backend_cfg = registry[backend_type](**backend_data)
 
         # Load processor configuration
-        from rompy.postprocess.config import _load_processor_config
+        from rompy.postprocess.config import _load_processor_config_from_dict
 
-        processor_cfg = _load_processor_config(processor_config)
+        processor_cfg = _load_processor_config_from_dict(processor_data)
 
         logger.info(f"Running pipeline for: {model_run.config.model_type}")
         logger.info(f"Run ID: {model_run.run_id}")
         logger.info(
-            f"Pipeline: generate → run({run_backend}) → postprocess({processor_cfg.type})"
+            f"Pipeline: generate → run({backend_type}) → postprocess({processor_cfg.type})"
         )
 
         start_time = datetime.now()
 
-        # Execute pipeline
+        # Execute pipeline with backend config instead of string
         results = model_run.pipeline(
             pipeline_backend="local",
-            run_backend=run_backend,
+            backend_config=backend_cfg,
             processor=processor_cfg,
             cleanup_on_failure=cleanup_on_failure,
             validate_stages=validate_stages,
