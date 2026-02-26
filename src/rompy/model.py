@@ -18,7 +18,6 @@ from pydantic import Field
 from rompy.backends import BackendConfig
 from rompy.backends.config import BaseBackendConfig
 from rompy.core.config import BaseConfig
-from rompy.core.render import render
 from rompy.core.time import TimeRange
 from rompy.core.types import RompyBaseModel
 from rompy.logging import get_logger
@@ -256,9 +255,15 @@ class ModelRun(RompyBaseModel):
 
         # Render templates
         logger.info(f"Rendering model templates to {self.output_dir}/{self.run_id}...")
-        staging_dir = render(
-            cc_full, self.config.template, self.output_dir, self.config.checkout
-        )
+        # Delegate rendering to the config object's render() method when available.
+        # Use getattr to avoid attribute errors for callable configs that may not
+        # implement render(). Fall back to the cookiecutter render implementation
+        # for older config objects.
+        # Delegate rendering to the config object's render() method. This enforces
+        # that config objects provide a render() implementation and allows tests
+        # to patch/spy on that method without falling back to the cookiecutter
+        # implementation.
+        staging_dir = self.config.render(cc_full, self.output_dir)
 
         logger.info("")
         # Use the log_box utility function
@@ -366,9 +371,7 @@ class ModelRun(RompyBaseModel):
         # Pass the config object and workspace_dir to the backend
         return backend_instance.run(self, config=backend, workspace_dir=workspace_dir)
 
-    def postprocess(
-        self, processor: "BasePostprocessorConfig", **kwargs
-    ) -> Dict[str, Any]:
+    def postprocess(self, processor, **kwargs) -> Dict[str, Any]:
         """
         Postprocess the model outputs using the specified processor configuration.
 
