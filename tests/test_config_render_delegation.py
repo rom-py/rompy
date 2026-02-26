@@ -11,7 +11,7 @@ def test_modelrun_delegates_to_config_render(tmp_path):
     class TestConfig(BaseConfig):
         def render(self, context: dict, output_dir):
             # real implementation replaced by mock in the test
-            return str(tmp_path / "staging")
+            pass
 
     config = TestConfig(template="../rompy/templates/base", checkout=None)
     model_run = ModelRun(run_id="test", output_dir=str(tmp_path), config=config)
@@ -21,7 +21,7 @@ def test_modelrun_delegates_to_config_render(tmp_path):
     # the mock was bound to the instance or the class.
     # Patch by import path to avoid binding issues with Pydantic-generated classes
     with unittest.mock.patch.object(
-        TestConfig, "render", return_value=str(tmp_path / "staging")
+        TestConfig, "render", return_value=None
     ) as mock_render:
         # Execute
         result = model_run.generate()
@@ -43,4 +43,4 @@ def test_modelrun_delegates_to_config_render(tmp_path):
         assert "runtime" in context_arg
         assert "config" in context_arg
         assert output_dir_arg == model_run.output_dir
-        assert result == str(tmp_path / "staging")
+        assert str(result) == str(tmp_path / "test")

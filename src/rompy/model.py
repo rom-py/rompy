@@ -254,10 +254,8 @@ class ModelRun(RompyBaseModel):
             cc_full["config"] = self.config
 
         # Render templates
-        logger.info(
-            f"Rendering model configurations to {self.output_dir}/{self.run_id}..."
-        )
-        staging_dir = self.config.render(cc_full, self.output_dir)
+        logger.info(f"Rendering model configurations to {self.staging_dir}...")
+        self.config.render(cc_full, self.output_dir)
 
         logger.info("")
         # Use the log_box utility function
@@ -268,8 +266,8 @@ class ModelRun(RompyBaseModel):
             logger=logger,
             add_empty_line=False,
         )
-        logger.info(f"Model files generated at: {staging_dir}")
-        return staging_dir
+        logger.info(f"Model files generated at: {self.staging_dir}")
+        return self.staging_dir
 
     def zip(self) -> str:
         """Zip the input files for the model run

@@ -45,7 +45,7 @@ class BaseConfig(RompyBaseModel):
     def __call__(self, *args, **kwargs):
         return self
 
-    def render(self, context: dict, output_dir: Path | str) -> str:
+    def render(self, context: dict, output_dir: Path | str):
         """Render the configuration template to the output directory.
 
         This method orchestrates the template rendering process. The default implementation
@@ -63,4 +63,4 @@ class BaseConfig(RompyBaseModel):
         # Import locally to avoid potential circular imports at module import time
         from rompy.core.render import render as cookiecutter_render
 
-        return cookiecutter_render(context, self.template, output_dir, self.checkout)
+        cookiecutter_render(context, self.template, output_dir, self.checkout)
