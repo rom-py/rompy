@@ -254,15 +254,9 @@ class ModelRun(RompyBaseModel):
             cc_full["config"] = self.config
 
         # Render templates
-        logger.info(f"Rendering model templates to {self.output_dir}/{self.run_id}...")
-        # Delegate rendering to the config object's render() method when available.
-        # Use getattr to avoid attribute errors for callable configs that may not
-        # implement render(). Fall back to the cookiecutter render implementation
-        # for older config objects.
-        # Delegate rendering to the config object's render() method. This enforces
-        # that config objects provide a render() implementation and allows tests
-        # to patch/spy on that method without falling back to the cookiecutter
-        # implementation.
+        logger.info(
+            f"Rendering model configurations to {self.output_dir}/{self.run_id}..."
+        )
         staging_dir = self.config.render(cc_full, self.output_dir)
 
         logger.info("")
