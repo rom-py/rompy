@@ -44,3 +44,23 @@ class BaseConfig(RompyBaseModel):
     # noop call for config objects
     def __call__(self, *args, **kwargs):
         return self
+
+    def render(self, context: dict, output_dir: Path | str) -> str:
+        """Render the configuration template to the output directory.
+
+        This method orchestrates the template rendering process. The default implementation
+        uses cookiecutter rendering with the template and checkout defined on this config.
+        Subclasses can override this method to implement alternative rendering strategies
+        (e.g., direct file writing, Jinja2, custom logic).
+
+        Args:
+            context: Full context dictionary. Expected to contain at least 'runtime' and 'config' keys.
+            output_dir: Target directory for rendered output.
+
+        Returns:
+            str: Path to the staging directory (workspace) containing rendered files.
+        """
+        # Import locally to avoid potential circular imports at module import time
+        from rompy.core.render import render as cookiecutter_render
+
+        return cookiecutter_render(context, self.template, output_dir, self.checkout)
