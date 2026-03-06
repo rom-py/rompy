@@ -112,9 +112,6 @@ docs = [
     "mkdocs-execute-plugin",
     "mkdocs-jupyter",
 ]
-notebooks = [
-    "rompy-notebooks @ git+https://github.com/rom-py/rompy-notebooks.git@package",
-]
 dev = ["pytest", "envyaml", "coverage", "ruff", "black", "respx"]
 
 [tool.setuptools.packages.find]
