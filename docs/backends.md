@@ -242,7 +242,7 @@ rompy backends create --backend-type local --output template.yml
 rompy run model_config.yml --backend-config my_backend.yml
 
 # Run pipeline with configuration
-rompy pipeline --config pipeline_config.yml
+rompy pipeline examples/configs/basic_pipeline.yml
 ```
 
 ## Configuration Examples
@@ -679,8 +679,7 @@ Use postprocessor configurations with CLI commands:
 rompy postprocess model_config.yml --processor-config processor.yml
 
 # Run complete pipeline with postprocessor
-rompy pipeline model_config.yml \
-  --run-backend local \
+rompy pipeline examples/configs/basic_pipeline.yml \
   --processor-config processor.yml
 
 # Validate postprocessor configuration
@@ -833,41 +832,97 @@ else:
 
 ### Pipeline Integration
 
+The pipeline workflow combines three pieces:
+
+* A `ModelRun` configuration under `config:`
+* A typed run backend configuration under `backend:`
+* A postprocessor configuration under `postprocessor:`
+
+At the CLI level, `rompy pipeline` loads those three sections, builds the matching configuration objects, and executes the built-in local pipeline backend. That pipeline backend then runs the stages in order: generate, run, and postprocess.
+
+For most users, the CLI is the simplest way to use pipeline integration:
+
+```bash
+# All sections defined inline
+rompy pipeline examples/configs/basic_pipeline.yml
+
+# Reuse the same pipeline but override the backend from a separate file
+rompy pipeline examples/configs/basic_pipeline.yml \
+  --backend-config examples/configs/local_backend.yml
+
+# Reuse all sections from separate files via !include
+rompy pipeline examples/configs/basic_pipeline_with_includes.yml
+```
+
+The pipeline config structure is:
+
+```yaml
+config:
+  run_id: my_pipeline_run
+  output_dir: ./outputs
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+  config:
+    model_type: base
+
+backend:
+  type: local
+  timeout: 3600
+
+postprocessor:
+  type: noop
+  validate_outputs: true
+```
+
+Use inline sections when a workflow is small and self-contained. Use `!include` when you want to reuse backend or postprocessor settings across multiple pipeline files.
+
+Programmatic usage follows the same structure, but you pass typed configuration objects directly:
+
 ```python
 from rompy.pipeline import LocalPipelineBackend
-from rompy.backends import LocalConfig, DockerConfig
+from rompy.backends import DockerConfig
 from rompy.postprocess.config import NoopPostprocessorConfig
 
-# Create pipeline with different backends for different stages
-backend = LocalPipelineBackend()
+# Create the pipeline backend
+pipeline = LocalPipelineBackend()
 
-# Configure run backend
+# Configure the run stage
 run_config = DockerConfig(
     image="swan:latest",
     cpu=16,
     memory="32g",
-    timeout=14400
+    timeout=14400,
 )
 
-# Configure postprocessor
+# Configure the postprocess stage
 processor_config = NoopPostprocessorConfig(
     validate_outputs=True,
-    timeout=3600
+    timeout=3600,
 )
 
 # Execute pipeline
-results = backend.execute(
+results = pipeline.execute(
     model_run=model_run,
-    run_backend=run_config,
-    processor_config=processor_config,
-    cleanup_on_failure=False
+    backend_config=run_config,
+    processor=processor_config,
+    cleanup_on_failure=False,
+    validate_stages=True,
 )
 
 if results["success"]:
     print(f"Pipeline completed. Stages: {results['stages_completed']}")
 else:
-    print(f"Pipeline failed at stage: {results['stages_completed'][-1]}")
+    print(f"Pipeline failed during: {results['stage']}")
 ```
+
+Notes:
+
+* `backend_config` must be a backend config object such as `LocalConfig`, `DockerConfig`, or `SlurmConfig`
+* `processor` must be a postprocessor config object such as `NoopPostprocessorConfig`
+* CLI `--backend-config` and `--processor-config` override any inline `backend:` and `postprocessor:` sections
+* `!include` paths are resolved relative to the file that contains the include
 
 ## Notebook Examples
 

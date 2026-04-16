@@ -1,13 +1,13 @@
-# Complete Pipeline Configuration for CLI Testing
-# This demonstrates the new unified pipeline configuration structure
+# Complete pipeline configuration using only core rompy types
 #
 # Usage:
-#   rompy pipeline --config basic_pipeline.yml
+#   rompy pipeline examples/configs/basic_pipeline.yml
 #
-# Or with external configs:
-#   rompy pipeline --config basic_pipeline.yml --backend-config my_backend.yml --processor-config my_processor.yml
+# Override either section from the CLI if needed:
+#   rompy pipeline examples/configs/basic_pipeline.yml \
+#     --backend-config examples/configs/local_backend.yml
 
-# Model run configuration (required)
+# ModelRun configuration
 config:
   run_id: "cli_test_backend_run"
   output_dir: "./output/cli_test"
@@ -16,20 +16,19 @@ config:
     start: "2023-01-01T00:00:00"
     end: "2023-01-02T00:00:00"
     interval: "1H"
-  # Add your model-specific configuration here
-  # config:
-  #   model_type: "swan"
-  #   ...
+  config:
+    model_type: base
 
-# Backend configuration (optional - can be overridden with --backend-config)
+# Run backend configuration
 backend:
   type: local
   timeout: 3600
-  command: "echo 'Running basic model test'"
+  command: "ls -l"
   env_vars:
-    MODEL_TYPE: "test"
-    ENVIRONMENT: "cli"
+    MODEL_CONFIG: "example"
+    LOG_LEVEL: "INFO"
 
-# Postprocessor configuration (optional - can be overridden with --processor-config)
+# Postprocessor configuration
 postprocessor:
   type: noop
+  validate_outputs: true
