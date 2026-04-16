@@ -8,3 +8,5 @@ period:
   interval: "1H"
 output_dir: "./output/cli_test"
 delete_existing: true
+config:
+  model_type: base

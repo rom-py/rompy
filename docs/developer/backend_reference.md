@@ -493,8 +493,7 @@ results = model_run.postprocess(processor=config)
 rompy postprocess model.yml --processor-config processor.yml
 
 # Run complete pipeline with postprocessor
-rompy pipeline model.yml \
-  --run-backend local \
+rompy pipeline examples/configs/basic_pipeline.yml \
   --processor-config processor.yml
 
 # Validate postprocessor configuration

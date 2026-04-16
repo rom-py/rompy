@@ -1,0 +1,8 @@
+# Complete pipeline configuration composed from reusable YAML files
+#
+# Usage:
+#   rompy pipeline examples/configs/basic_pipeline_with_includes.yml
+
+config: !include basic_modelrun.yml
+backend: !include local_backend.yml
+postprocessor: !include ../backends/postprocessor_configs/noop_basic.yml

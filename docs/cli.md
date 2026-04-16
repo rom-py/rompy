@@ -101,11 +101,11 @@ rompy pipeline [<config-file>] [OPTIONS]
 
 **Options:**
 
-`--run-backend TEXT`
-: Execution backend for run stage (default: local)
+`--backend-config PATH`
+: YAML/JSON file with backend configuration. Optional if `backend:` is defined inline in the pipeline config.
 
 `--processor-config PATH`
-: **Required.** YAML/JSON file with postprocessor configuration
+: YAML/JSON file with postprocessor configuration. Optional if `postprocessor:` is defined inline in the pipeline config.
 
 `--cleanup-on-failure, --no-cleanup`
 : Clean up outputs on pipeline failure (default: False)
@@ -119,12 +119,53 @@ rompy pipeline [<config-file>] [OPTIONS]
 **Examples:**
 
 ```bash
-# Run pipeline with postprocessor configuration
-rompy pipeline config.yaml --processor-config processor.yml
+# Run a complete pipeline from a single config file
+rompy pipeline examples/configs/basic_pipeline.yml
 
-# Run pipeline with Docker backend and custom postprocessor config
-rompy pipeline config.yaml --run-backend docker --processor-config noop.yml
+# Override the backend and postprocessor from separate files
+rompy pipeline examples/configs/basic_pipeline.yml \
+  --backend-config examples/configs/local_backend.yml \
+  --processor-config examples/backends/postprocessor_configs/noop_basic.yml
 ```
+
+#### Pipeline Configuration Migration
+
+`rompy pipeline` now expects a nested three-section configuration. This is the same structure shown in `rompy pipeline --help`.
+
+```yaml
+config:
+  run_id: my_run
+  output_dir: ./outputs
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+  config:
+    model_type: base
+
+backend:
+  type: local
+  timeout: 3600
+
+postprocessor:
+  type: noop
+  validate_outputs: true
+```
+
+The old `--run-backend local` pattern is no longer supported. Define `backend:` inline or provide `--backend-config` instead.
+
+YAML includes are supported for pipeline composition:
+
+```yaml
+config: !include basic_modelrun.yml
+backend: !include local_backend.yml
+postprocessor: !include ../backends/postprocessor_configs/noop_basic.yml
+```
+
+Published examples:
+
+- `examples/configs/basic_pipeline.yml`: inline pipeline configuration
+- `examples/configs/basic_pipeline_with_includes.yml`: include-based pipeline configuration
 
 ### postprocess
 
@@ -387,8 +428,8 @@ For complete postprocessor configuration options, see [Postprocessor Configurati
 Orchestrate complete workflows:
 
 - **local**: Execute all stages locally
-- **hpc**: HPC-optimized pipeline execution
-- **cloud**: Cloud-native pipeline execution
+
+Additional pipeline backends can be provided by plugins, but the built-in CLI pipeline command uses the local pipeline backend and accepts typed run backend and postprocessor configs.
 
 ## Examples
 
@@ -403,9 +444,9 @@ rompy run swan_config.yaml --backend-config local_backend.yml
 Complete pipeline with analysis:
 
 ```bash
-rompy pipeline ocean_model.yaml \
-    --run-backend local \
-    --processor-config analysis.yml \
+rompy pipeline examples/configs/basic_pipeline.yml \
+    --backend-config examples/configs/local_backend.yml \
+    --processor-config examples/backends/postprocessor_configs/noop_basic.yml \
     --validate-stages
 ```
 
@@ -424,41 +465,41 @@ rompy run config.yaml --backend-config local.yml --dry-run
 
 ## Configuration Files
 
-### Enhanced Configuration Structure
+### Configuration Structure
 
-The modern CLI supports enhanced configuration files with run and pipeline settings:
+`rompy run` takes a `ModelRun` configuration plus a separate backend config file:
 
 ```yaml
-# Basic model configuration
 run_id: my_ocean_model
 period:
-  start: 20230101T00
-  end: 20230102T00
-  interval: 3600
+  start: "2023-01-01T00:00:00"
+  end: "2023-01-02T00:00:00"
+  interval: "1H"
 output_dir: ./outputs
 
 config:
-  model_type: schism
-  # ... model-specific configuration
+  model_type: base
+```
 
-# Run configuration (optional)
-run:
-  backend: local
-  local:
-    env_vars:
-      OMP_NUM_THREADS: "4"
-    timeout: 3600
+`rompy pipeline` takes a nested workflow config containing `config`, `backend`, and `postprocessor` sections:
 
-# Pipeline configuration (optional)
-pipeline:
-  backend: local
-  local:
-    run_backend: docker
-    processor_config:
-      type: analysis
-      validate_outputs: true
-      timeout: 3600
-    cleanup_on_failure: false
+```yaml
+config:
+  run_id: my_pipeline_run
+  output_dir: ./outputs
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+  config:
+    model_type: base
+
+backend:
+  type: local
+  timeout: 3600
+
+postprocessor:
+  type: noop
 ```
 
 ## Environment Variables
@@ -521,7 +562,7 @@ kubectl create configmap rompy-config --from-file=ROMPY_CONFIG=config.yml
 
 # CI/CD Pipeline
 export ROMPY_CONFIG="$(envsubst < config_template.yml)"
-rompy pipeline --config-from-env --run-backend docker
+rompy pipeline --config-from-env --backend-config docker_backend.yml --processor-config noop.yml
 ```
 
 ## Monitoring and Debugging

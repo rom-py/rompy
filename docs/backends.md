@@ -242,7 +242,7 @@ rompy backends create --backend-type local --output template.yml
 rompy run model_config.yml --backend-config my_backend.yml
 
 # Run pipeline with configuration
-rompy pipeline --config pipeline_config.yml
+rompy pipeline examples/configs/basic_pipeline.yml
 ```
 
 ## Configuration Examples
@@ -679,8 +679,7 @@ Use postprocessor configurations with CLI commands:
 rompy postprocess model_config.yml --processor-config processor.yml
 
 # Run complete pipeline with postprocessor
-rompy pipeline model_config.yml \
-  --run-backend local \
+rompy pipeline examples/configs/basic_pipeline.yml \
   --processor-config processor.yml
 
 # Validate postprocessor configuration

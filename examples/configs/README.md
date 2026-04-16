@@ -1,6 +1,6 @@
-# ROMPY Backend Configuration Examples
+# ROMPY Configuration Examples
 
-This directory contains example configuration files for ROMPY backend systems. These YAML files demonstrate how to configure local and Docker backends for various use cases.
+This directory contains example `ModelRun`, backend, and pipeline configuration files for core rompy workflows.
 
 ## Configuration Files
 
@@ -10,7 +10,8 @@ This directory contains example configuration files for ROMPY backend systems. T
 - **`docker_backend.yml`** - Single-document Docker backend configuration
 - **`slurm_backend.yml`** - Single-document SLURM backend configuration
 - **`basic_modelrun.yml`** - Basic model run configuration for CLI testing
-- **`basic_pipeline.yml`** - Basic pipeline configuration for CLI testing
+- **`basic_pipeline.yml`** - Inline pipeline configuration using built-in core rompy types
+- **`basic_pipeline_with_includes.yml`** - Pipeline configuration composed with `!include`
 - **`local_backend_examples.yml`** - Multi-document local backend examples
 - **`docker_backend_examples.yml`** - Multi-document Docker backend examples
 - **`slurm_backend_examples.yml`** - Multi-document SLURM backend examples
@@ -19,13 +20,11 @@ This directory contains example configuration files for ROMPY backend systems. T
 
 ## Configuration Format
 
-ROMPY uses a unified configuration format that works for all use cases:
+Backend config files use a typed structure with a required `type` field:
 
 ```yaml
-# Backend type
-backend_type: local  # or 'docker'
+type: local
 
-# Configuration parameters
 timeout: 3600
 command: "python run_model.py"
 env_vars:
@@ -33,10 +32,25 @@ env_vars:
   MODEL_CONFIG: "production"
 ```
 
-This format works for:
-- CLI validation
-- Pipeline usage
-- Programmatic usage
+Pipeline config files use a nested structure:
+
+```yaml
+config:
+  run_id: example_pipeline
+  output_dir: ./output
+  period:
+    start: "2023-01-01T00:00:00"
+    end: "2023-01-02T00:00:00"
+    interval: "1H"
+  config:
+    model_type: base
+
+backend:
+  type: local
+
+postprocessor:
+  type: noop
+```
 
 ## Using Configuration Files
 
@@ -62,10 +76,10 @@ rompy backends create --backend-type local --output my_config.yml
 
 ```bash
 # Run with backend configuration
-rompy run --config model_config.yml --backend-config local_backend.yml
+rompy run model_config.yml --backend-config local_backend.yml
 
 # Run complete pipeline
-rompy pipeline --config pipeline_config.yml
+rompy pipeline basic_pipeline.yml
 ```
 
 ## Configuration Options
@@ -124,7 +138,7 @@ rompy pipeline --config pipeline_config.yml
 ### Local Backend
 
 ```yaml
-backend_type: local
+type: local
 timeout: 7200
 command: "python run_model.py"
 env_vars:
@@ -135,7 +149,7 @@ env_vars:
 ### Docker Backend
 
 ```yaml
-backend_type: docker
+type: docker
 image: "python:3.9-slim"
 timeout: 7200
 cpu: 4
@@ -149,21 +163,20 @@ env_vars:
 ### SLURM Backend
 
 ```yaml
-backend_type: slurm
-config:
-  queue: "general"
-  timeout: 7200
-  nodes: 2
-  ntasks: 8
-  cpus_per_task: 4
-  time_limit: "02:00:00"
-  account: "myproject"
-  additional_options:
-    - "--gres=gpu:v100:2"
-  job_name: "simulation_job"
-  env_vars:
-    OMP_NUM_THREADS: "4"
-    MODEL_CONFIG: "production"
+type: slurm
+queue: "general"
+timeout: 7200
+nodes: 2
+ntasks: 8
+cpus_per_task: 4
+time_limit: "02:00:00"
+account: "myproject"
+additional_options:
+  - "--gres=gpu:v100:2"
+job_name: "simulation_job"
+env_vars:
+  OMP_NUM_THREADS: "4"
+  MODEL_CONFIG: "production"
 ```
 
 ### Basic ModelRun Configuration
@@ -176,14 +189,14 @@ period:
   interval: "1H"
 output_dir: "./output/cli_test"
 delete_existing: true
+config:
+  model_type: base
 ```
 
 ### Basic Pipeline Configuration
 
 ```yaml
-pipeline_backend: local
-
-model_run:
+config:
   run_id: "cli_test_backend_run"
   output_dir: "./output/cli_test"
   delete_existing: true
@@ -191,42 +204,28 @@ model_run:
     start: "2023-01-01T00:00:00"
     end: "2023-01-02T00:00:00"
     interval: "1H"
+  config:
+    model_type: base
 
-run_backend:
-  backend_type: local
+backend:
+  type: local
   timeout: 3600
-  command: "echo 'Running basic model test'"
+  command: "ls -l"
   env_vars:
-    MODEL_TYPE: "test"
-    ENVIRONMENT: "cli"
+    MODEL_CONFIG: "example"
+    LOG_LEVEL: "INFO"
 
-postprocessing:
-  processor: "noop"
+postprocessor:
+  type: noop
+  validate_outputs: true
 ```
 
-### Pipeline Configuration
+### Pipeline Configuration With Includes
 
 ```yaml
-pipeline_backend: local
-
-model_run:
-  run_id: "example_run"
-  output_dir: "./output"
-  period:
-    start: "2023-01-01T00:00:00"
-    end: "2023-01-02T00:00:00"
-    interval: "1H"
-  config:
-    model_type: "swan"
-
-run_backend:
-  backend_type: local
-  timeout: 3600
-  env_vars:
-    OMP_NUM_THREADS: "4"
-
-postprocessing:
-  processor: "noop"
+config: !include basic_modelrun.yml
+backend: !include local_backend.yml
+postprocessor: !include ../backends/postprocessor_configs/noop_basic.yml
 ```
 
 ## Common Use Cases
@@ -234,7 +233,7 @@ postprocessing:
 ### Development and Testing
 
 ```yaml
-backend_type: local
+type: local
 timeout: 1800  # 30 minutes
 env_vars:
   ENV: "development"
@@ -244,7 +243,7 @@ env_vars:
 ### Production Runs
 
 ```yaml
-backend_type: docker
+type: docker
 image: "my-model:latest"
 timeout: 14400  # 4 hours
 cpu: 8
@@ -256,7 +255,7 @@ env_vars:
 ### High-Performance Computing
 
 ```yaml
-backend_type: docker
+type: docker
 image: "hpc-model:latest"
 timeout: 86400  # 24 hours
 cpu: 32
@@ -269,7 +268,7 @@ mpiexec: "mpirun -np 32"
 Configuration files support environment variable substitution:
 
 ```yaml
-backend_type: local
+type: local
 timeout: ${ROMPY_TIMEOUT:-3600}
 env_vars:
   MODEL_CONFIG: ${MODEL_CONFIG:-production}
@@ -324,7 +323,7 @@ python validate_configs.py
 ### Quick Start Template
 
 ```yaml
-backend_type: local  # or 'docker'
+type: local  # or 'docker'
 timeout: 3600
 command: "your_command_here"
 env_vars:
@@ -335,11 +334,14 @@ env_vars:
 
 ```
 rompy/examples/configs/
+├── basic_modelrun.yml             # Minimal ModelRun example
+├── basic_pipeline.yml             # Inline pipeline example
+├── basic_pipeline_with_includes.yml # Include-based pipeline example
 ├── local_backend.yml              # Simple local configuration
 ├── docker_backend.yml             # Simple Docker configuration
 ├── local_backend_examples.yml     # Comprehensive local examples
 ├── docker_backend_examples.yml    # Comprehensive Docker examples
-├── pipeline_config.yml            # Pipeline workflow examples
+├── pipeline_config.yml            # Extended pipeline examples
 ├── validate_configs.py            # Validation script
 └── README.md                      # This documentation
 ```
