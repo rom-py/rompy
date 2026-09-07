@@ -1,0 +1,116 @@
+run_id: run1
+output_dir: example-declarative
+period:
+  start: 2023-01-01T00:00
+  duration: 24h
+  interval: 1s
+config:
+  model_type: xbeach
+  grid:
+    model_type: regular
+    ori:
+      x: 115.594239
+      y: -32.641104
+      crs: EPSG:4326
+    alfa: 347
+    dx: 10
+    dy: 15
+    nx: 230
+    ny: 220
+    crs: EPSG:28350
+  bathy:
+    model_type: xbeach_bathy
+    source:
+      model_type: geotiff
+      filename: /source/csiro/rompy-xbeach/tests/data/bathy.tif
+    posdwn: False
+    interpolator:
+      model_type: scipy_regular_grid
+      kwargs:
+        method: linear
+        fill_value: null
+    left: 3
+    right: 3
+    extension:
+      model_type: linear
+      depth: 25
+      slope: 0.3
+  input:
+    wave:
+      model_type: station_param_jonstable
+      source:
+        model_type: file
+        uri: /source/csiro/rompy-xbeach/tests/data/smc-params-20230101.nc
+        crs: 4326
+      coords:
+        s: seapoint
+      hm0: phs1
+      tp: ptp1
+      mainang: pdir1
+      gammajsp: ppe1
+      dspr: pspr1
+    wind:
+      model_type: wind_station
+      source:
+        model_type: file
+        uri: /source/csiro/rompy-xbeach/tests/data/smc-params-20230101.nc
+        crs: 4326
+      location: centre
+      coords:
+        s: seapoint
+      wind_vars:
+        model_type: wind_vector
+        u: uwnd
+        v: vwnd
+    tide:
+      model_type: tide_cons_grid
+      source:
+        model_type: oceantide
+        reader: read_otis_binary
+        kwargs:
+          gfile: /source/csiro/rompy-xbeach/tests/data/swaus_tide_cons/grid_m2s2n2k2k1o1p1q1mmmf
+          hfile: /source/csiro/rompy-xbeach/tests/data/swaus_tide_cons/h_m2s2n2k2k1o1p1q1mmmf
+          ufile: /source/csiro/rompy-xbeach/tests/data/swaus_tide_cons/u_m2s2n2k2k1o1p1q1mmmf
+        crs: 4326
+      location: offshore
+      coords:
+        x: lon
+        y: lat
+  front: abs_2d
+  back: abs_2d
+  left: neumann
+  right: neumann
+  break: roelvink_daly
+  scheme: warmbeam
+  order: 1
+  lateralwave: wavecrest
+  random: True
+  zs0: 0.0
+  hmin: 0.01
+  wci: False
+  alpha: 1
+  delta: 0.0
+  n: 10
+  rho: 1025
+  g: 9.81
+  thetamin: -80
+  thetamax: 80
+  dtheta: 10.0
+  beta: 0.1
+  roller: True
+  gamma: 0.55
+  gammax: 1.0
+  sedtrans: False
+  morfac: 1.0
+  morphology: False
+  cf: 0.01
+  paulrevere: land
+  eps: 0.01
+  epsi: 0.001
+  cfl: 0.8
+  umin: 0.1
+  oldhu: True
+  tstart: 0
+  tintm: 3600.0
+  outputformat: netcdf
+  ncfilename: xboutput_test.nc
