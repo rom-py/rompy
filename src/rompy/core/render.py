@@ -163,7 +163,7 @@ def render(context, template, output_dir, checkout=None):
         repo_dir=repo_dir,
         context=context,
         overwrite_if_exists=True,
-        output_dir=".",
+        output_dir=output_dir,
     )
 
     # Log completion information
