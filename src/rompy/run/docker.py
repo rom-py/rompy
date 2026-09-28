@@ -11,6 +11,8 @@ import pathlib
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+from rompy.core.responses import GenerateFailure, GenerateSuccess
+
 import docker
 from docker.errors import APIError, BuildError, ContainerError, ImageNotFound
 
@@ -53,11 +55,18 @@ class DockerRunBackend:
         logger.debug(f"Using DockerConfig: image={exec_image}, cpu={exec_cpu}")
 
         # Use provided workspace or generate if not provided (for backwards compatibility)
+        self.generate_result = None
         if workspace_dir is None:
             logger.warning(
                 "No workspace_dir provided, generating files (this may cause double generation in pipeline)"
             )
-            workspace_dir = model_run.generate()
+            self.generate_result = model_run.generate()
+            if isinstance(self.generate_result, GenerateFailure):
+                logger.error("Model input generation failed: %s", self.generate_result.error)
+                return False
+            if not isinstance(self.generate_result, GenerateSuccess):
+                raise TypeError("generate() must return GenerateSuccess or GenerateFailure")
+            workspace_dir = self.generate_result.staging_dir
         else:
             logger.info(f"Using provided workspace directory: {workspace_dir}")
 

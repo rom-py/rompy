@@ -1,7 +1,6 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2  # Use the latest stable version
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.261
     hooks:
-      - id: black
-        language_version: python3
-        args: [--check]
+      - id: ruff
+        args: ["--fix"]

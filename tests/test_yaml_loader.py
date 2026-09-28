@@ -10,7 +10,6 @@ import pytest
 import yaml
 
 from rompy.core.yaml_loader import (
-    IncludeLoader,
     load_yaml_with_includes,
     safe_load_with_includes,
 )

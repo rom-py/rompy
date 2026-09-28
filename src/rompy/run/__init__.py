@@ -11,6 +11,8 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
+from rompy.core.responses import GenerateFailure, GenerateSuccess
+
 if TYPE_CHECKING:
     from rompy.backends import LocalConfig
 
@@ -63,11 +65,18 @@ class LocalRunBackend:
 
         try:
             # Use provided workspace or generate if not provided (for backwards compatibility)
+            self.generate_result = None
             if workspace_dir is None:
                 logger.warning(
                     "No workspace_dir provided, generating files (this may cause double generation in pipeline)"
                 )
-                staging_dir = model_run.generate()
+                self.generate_result = model_run.generate()
+                if isinstance(self.generate_result, GenerateFailure):
+                    logger.error("Model input generation failed: %s", self.generate_result.error)
+                    return False
+                if not isinstance(self.generate_result, GenerateSuccess):
+                    raise TypeError("generate() must return GenerateSuccess or GenerateFailure")
+                staging_dir = self.generate_result.staging_dir
                 logger.info(f"Model inputs generated in: {staging_dir}")
             else:
                 logger.info(f"Using provided workspace directory: {workspace_dir}")

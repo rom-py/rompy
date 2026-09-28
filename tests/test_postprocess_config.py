@@ -5,8 +5,6 @@ This module tests the postprocessor config classes, loading, and validation.
 """
 
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
 import yaml
@@ -18,7 +16,13 @@ from rompy.postprocess import (
 )
 from rompy.postprocess.config import (
     _load_processor_config,
+    _load_processor_config_from_dict,
+    _processor_config_entry_points,
     validate_postprocessor_config,
+)
+from rompy.core.responses import (
+    PostprocessSuccess,
+    PostprocessFailure,
 )
 
 
@@ -134,6 +138,70 @@ class TestLoadProcessorConfig:
             _load_processor_config(config_file)
 
 
+class _FakeEntryPoint:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def load(self):
+        return NoopPostprocessorConfig
+
+
+class _ModernEntryPoints(list):
+    def select(self, *, group):
+        assert group == "rompy.postprocess.config"
+        return self
+
+
+class TestConfigEntryPointDiscovery:
+    def test_reversed_duplicate_names_raise_deterministically(self, monkeypatch, tmp_path):
+        entries = _ModernEntryPoints(
+            [
+                _FakeEntryPoint("duplicate", "provider-b:Config"),
+                _FakeEntryPoint("duplicate", "provider-a:Config"),
+            ]
+        )
+        monkeypatch.setattr("importlib.metadata.entry_points", lambda: entries)
+
+        with pytest.raises(ValueError) as first:
+            _load_processor_config_from_dict({"type": "duplicate"})
+        monkeypatch.setattr(
+            "importlib.metadata.entry_points",
+            lambda: _ModernEntryPoints(list(reversed(entries))),
+        )
+        config_file = tmp_path / "duplicate.yml"
+        config_file.write_text("type: duplicate\n")
+        with pytest.raises(ValueError) as second:
+            _load_processor_config(config_file)
+
+        assert str(first.value) == str(second.value)
+        assert "duplicate" in str(first.value)
+        assert "provider-a:Config" in str(first.value)
+        assert "provider-b:Config" in str(first.value)
+
+    @pytest.mark.parametrize("legacy_shape", ["dict", "group_argument"])
+    def test_legacy_duplicate_names_raise(self, monkeypatch, legacy_shape):
+        entries = [
+            _FakeEntryPoint("duplicate", "provider-b:Config"),
+            _FakeEntryPoint("duplicate", "provider-a:Config"),
+        ]
+        if legacy_shape == "dict":
+            monkeypatch.setattr(
+                "importlib.metadata.entry_points",
+                lambda: {"rompy.postprocess.config": entries},
+            )
+        else:
+            def legacy_entry_points(*, group=None):
+                if group is None:
+                    raise TypeError("group is required")
+                return entries
+
+            monkeypatch.setattr("importlib.metadata.entry_points", legacy_entry_points)
+
+        with pytest.raises(ValueError, match="Ambiguous postprocessor config"):
+            _processor_config_entry_points()
+
+
 class TestValidatePostprocessorConfig:
     """Tests for validate_postprocessor_config function."""
 
@@ -213,7 +281,8 @@ class TestModelRunIntegration:
         config = NoopPostprocessorConfig(validate_outputs=False)
         # Should not raise TypeError
         result = model.postprocess(config)
-        assert isinstance(result, dict)
+        # Result is now PostprocessResult type, not dict
+        assert isinstance(result, (PostprocessSuccess, PostprocessFailure))
 
     def test_postprocess_rejects_string(self):
         """Test that ModelRun.postprocess rejects string processor names."""
@@ -230,5 +299,8 @@ class TestModelRunIntegration:
             ),
         )
 
-        with pytest.raises(TypeError, match="BasePostprocessorConfig"):
-            model.postprocess("noop")
+        # New behavior: returns PostprocessFailure instead of raising TypeError
+        result = model.postprocess("noop")
+        assert isinstance(result, PostprocessFailure)
+        assert not result.success
+        assert "BasePostprocessorConfig" in result.error

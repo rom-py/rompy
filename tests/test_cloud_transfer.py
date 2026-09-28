@@ -1,8 +1,7 @@
 """Tests for cloud storage transfer backend using cloudpathlib."""
 
 import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 from rompy.transfer.cloud import CloudTransfer
 
@@ -40,19 +39,19 @@ class TestCloudTransferParsing:
     def test_parse_s3_uri(self, cloud_transfer, mock_s3_path):
         """Test parsing S3 URI."""
         uri = "s3://bucket/key/file.txt"
-        result = cloud_transfer._parse_cloud_uri(uri)
+        cloud_transfer._parse_cloud_uri(uri)
         mock_s3_path.assert_called_once_with(uri)
 
     def test_parse_gs_uri(self, cloud_transfer, mock_gs_path):
         """Test parsing GCS URI."""
         uri = "gs://bucket/key/file.txt"
-        result = cloud_transfer._parse_cloud_uri(uri)
+        cloud_transfer._parse_cloud_uri(uri)
         mock_gs_path.assert_called_once_with(uri)
 
     def test_parse_az_uri(self, cloud_transfer, mock_az_path):
         """Test parsing Azure Blob URI."""
         uri = "az://container/blob/file.txt"
-        result = cloud_transfer._parse_cloud_uri(uri)
+        cloud_transfer._parse_cloud_uri(uri)
         mock_az_path.assert_called_once_with(uri)
 
     def test_parse_unsupported_scheme(self, cloud_transfer):
@@ -116,7 +115,7 @@ class TestCloudTransferGet:
         mock_s3_path.return_value = mock_cloud
 
         # Execute with link=True (should be ignored)
-        result = cloud_transfer.get("s3://bucket/file.txt", tmp_path, link=True)
+        cloud_transfer.get("s3://bucket/file.txt", tmp_path, link=True)
 
         # Verify download was called (not symlink)
         mock_cloud.download_to.assert_called_once()

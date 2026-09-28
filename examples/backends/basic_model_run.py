@@ -22,7 +22,7 @@ def create_basic_model_run():
     """
     # Create a temporary directory for output
     temp_dir = Path(tempfile.mkdtemp(prefix="rompy_test_"))
-    
+
     # Create a basic model run
     model_run = ModelRun(
         run_id="test_backend_run",
@@ -41,9 +41,9 @@ def create_basic_model_run():
 if __name__ == "__main__":
     # Create the basic model run
     model = create_basic_model_run()
-    
+
     print("Basic ModelRun Configuration Created")
-    print("="*40)
+    print("=" * 40)
     print(f"Run ID: {model.run_id}")
     print(f"Output Directory: {model.output_dir}")
     print(f"Time Period: {model.period.start} to {model.period.end}")

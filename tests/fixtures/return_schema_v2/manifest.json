@@ -1,0 +1,103 @@
+{
+  "description": "Deterministic canonical return-schema v2 corpus; paths are fixture-relative.",
+  "fixtures": [
+    {
+      "kind": "generate_result",
+      "path": "generate_failure.json",
+      "schema_version": 2,
+      "sha256": "83b85aebe1b41dac3bebf589a9a06bd3c7d7217d5dcb6029a00ca43844c0c466",
+      "status": "failed",
+      "success": false
+    },
+    {
+      "kind": "generate_result",
+      "path": "generate_success.json",
+      "schema_version": 2,
+      "sha256": "7d7b08398ab506bedae2dd50ae0cbcd0f2686fc6e255b9a1f7f6b0d66605c2f7",
+      "status": "success",
+      "success": true
+    },
+    {
+      "kind": "pipeline_result",
+      "path": "pipeline_failure.json",
+      "schema_version": 2,
+      "sha256": "afc33b6282000364aff23107cc8b3083a714e4d16ec93fba1e5f5c178f9e2541",
+      "status": "failed",
+      "success": false
+    },
+    {
+      "kind": "pipeline_result",
+      "path": "pipeline_success.json",
+      "schema_version": 2,
+      "sha256": "a8b509cf680db2e6286bfb9000836ce7577cc9b88ca4ec553cae57af8ad70c55",
+      "status": "success",
+      "success": true
+    },
+    {
+      "kind": "postprocess_result",
+      "path": "postprocess_failure.json",
+      "schema_version": 2,
+      "sha256": "42b846ed2581808d3dfd1e2cd391273f6f5fd81263d6c7914df255cbedf88a17",
+      "status": "failed",
+      "success": false
+    },
+    {
+      "kind": "postprocess_result",
+      "path": "postprocess_success.json",
+      "schema_version": 2,
+      "sha256": "0039a185e9a3284fa8d700f6ef9c9f984700681cf83e5473349226b014a32e01",
+      "status": "success",
+      "success": true
+    },
+    {
+      "kind": "run_result",
+      "path": "run_failure.json",
+      "schema_version": 2,
+      "sha256": "d1da8ea12df2c3a40ae00c2f41fc1f345a0d4b2292f12dbeb75c2652eb267643",
+      "status": "failed",
+      "success": false
+    },
+    {
+      "kind": "run_result",
+      "path": "run_success.json",
+      "schema_version": 2,
+      "sha256": "9e64d49a896a9fa521daa2cb5d0067517b3b65da5eb380d04c5d72e584d1ce9f",
+      "status": "success",
+      "success": true
+    },
+    {
+      "expected": "reject",
+      "kind": "run_result",
+      "path": "adversarial/legacy_v1.json",
+      "reason": "schema_version",
+      "schema_version": 1,
+      "sha256": "3c43fa6af22b2244292f3366a2c31fc4b2997e049bd98493b215187f1500abd6"
+    },
+    {
+      "expected": "reject",
+      "kind": "malformed",
+      "path": "adversarial/malformed.json",
+      "reason": "malformed_json",
+      "schema_version": null,
+      "sha256": "6f5e7359678e8924994c6dbfb317d70fb6443042df93c6d531bef3aa73974ba9"
+    },
+    {
+      "expected": "reject",
+      "kind": "run_result",
+      "path": "adversarial/unsupported_v99.json",
+      "reason": "schema_version",
+      "schema_version": 99,
+      "sha256": "b3975b59c2922984132d9a7e8febb142abb6ef7b36640e1c8db382cbd18d8265"
+    },
+    {
+      "expected": "reject",
+      "kind": "wrong_result",
+      "path": "adversarial/wrong_kind.json",
+      "reason": "kind",
+      "schema_version": 2,
+      "sha256": "d13d994a831fe9c7b156a08bfa30c4e1bbd8db28aa7628490fc33396db830875"
+    }
+  ],
+  "kind": "fixture_manifest",
+  "schema_version": 2
+}

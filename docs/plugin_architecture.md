@@ -2,6 +2,12 @@
 
 Rompy features a flexible plugin-based architecture that allows for extensible model execution and output processing. The system uses Python entry points to automatically discover and load plugins, making it easy to extend with custom implementations.
 
+Postprocessor configuration discovery is standardized on the
+`rompy.postprocess.config` entry-point group. The sibling
+`rompy.postprocess` group names runtime implementations; it is not consulted
+when loading a validated configuration. See [Postprocessor Protocol](postprocess_protocol.md)
+for the typed step/context ownership contract.
+
 ## Core Plugin Categories
 
 ROMPY implements three main plugin categories using Python entry points:
@@ -158,12 +164,27 @@ analysis = "mypackage.config:AnalysisPostprocessorConfig"
 
 The `noop` processor provides basic validation without processing:
 
+> **v2.0+**: Returns typed `PostprocessResult` instead of dict. See [Migration Guide](migration-v2.md).
+
 ```python
 from rompy.postprocess.config import NoopPostprocessorConfig
+from rompy.core.responses import PostprocessResult
 
 # Basic validation
 config = NoopPostprocessorConfig(validate_outputs=True)
-results = model.postprocess(processor=config)
+results: PostprocessResult = model.postprocess(processor=config)
+
+# Use type narrowing for safe field access
+if results.success:
+    print(f"✅ Processing succeeded")
+    print(f"Generated {len(results.artifacts)} artifacts")
+    print(f"Duration: {results.timing.duration_seconds:.2f}s")
+    
+    # List artifacts with metadata
+    for artifact in results.artifacts:
+        print(f"  - {artifact.path.name} ({artifact.type.value}, {artifact.size_bytes} bytes)")
+else:
+    print(f"❌ Processing failed: {results.error}")
 
 # With custom configuration
 config = NoopPostprocessorConfig(
@@ -234,14 +255,24 @@ class AnalysisPostprocessorConfig(BasePostprocessorConfig):
 
 Create the postprocessor implementation class:
 
+> **⚠️ v2.0 Breaking Change**: Starting in v2.0, postprocessors must return `PostprocessResult` (typed Pydantic model) instead of `Dict[str, Any]`. See the [Migration Guide](migration-v2.md) for details.
+
 ```python
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any
+from rompy.core.responses import (
+    PostprocessResult,
+    PostprocessSuccess,
+    PostprocessFailure,
+    TimingInfo,
+    Artifact,
+    ArtifactType,
+)
 
 class AnalysisPostprocessor:
     """Custom postprocessor for model analysis."""
 
-    def process(self, model_run, config: AnalysisPostprocessorConfig, **kwargs) -> Dict[str, Any]:
+    def process(self, model_run, config: AnalysisPostprocessorConfig, **kwargs) -> PostprocessResult:
         """Process model outputs with configuration.
 
         Args:
@@ -250,8 +281,10 @@ class AnalysisPostprocessor:
             **kwargs: Additional processor-specific parameters
 
         Returns:
-            dict: Processing results with success status
+            PostprocessResult: Typed result with success status, artifacts, and timing
         """
+        start_time = datetime.now(timezone.utc)
+        
         try:
             output_dir = Path(model_run.output_dir) / model_run.run_id
 
@@ -262,29 +295,45 @@ class AnalysisPostprocessor:
                 output_format=config.output_format
             )
             
+            # Track generated artifacts
+            artifacts = []
+            
             if config.plot_config:
-                plots = self._generate_plots(output_dir, config.plot_config)
-            else:
-                plots = []
+                plot_files = self._generate_plots(output_dir, config.plot_config)
+                # Add plots as artifacts
+                for plot_file in plot_files:
+                    artifacts.append(Artifact(
+                        path=plot_file,
+                        type=ArtifactType.PLOT,
+                        size_bytes=plot_file.stat().st_size if plot_file.exists() else 0,
+                    ))
             
             # Optionally compress outputs
             if config.compress:
-                self._compress_outputs(output_dir)
+                compressed_files = self._compress_outputs(output_dir)
+                for cf in compressed_files:
+                    artifacts.append(Artifact(
+                        path=cf,
+                        type=ArtifactType.OTHER,
+                        size_bytes=cf.stat().st_size if cf.exists() else 0,
+                    ))
 
-            return {
-                "success": True,
-                "metrics": metrics,
-                "plots": plots,
-                "compressed": config.compress,
-                "message": "Analysis completed successfully"
-            }
+            return PostprocessSuccess(
+                success=True,
+                artifacts=artifacts,
+                timing=TimingInfo(start=start_time, end=datetime.now(timezone.utc)),
+                metadata={
+                    "metrics": metrics,
+                    "compressed": config.compress,
+                }
+            )
 
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "message": f"Analysis failed: {e}"
-            }
+            return PostprocessFailure(
+                success=False,
+                error=str(e),
+                timing=TimingInfo(start=start_time, end=datetime.now(timezone.utc)),
+            )
 
     def _calculate_metrics(self, output_dir, metrics, output_format):
         """Calculate requested metrics."""

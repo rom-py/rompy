@@ -5,7 +5,7 @@ These tests require Docker to be installed and running.
 They test the full Docker backend functionality with real containers.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,8 +16,19 @@ from docker.errors import APIError
 from rompy.backends.config import DockerConfig
 from tests.test_helpers import DemoConfig
 from rompy.core.time import TimeRange
+from rompy.core.responses import GenerateSuccess, TimingInfo
 from rompy.model import ModelRun
 from rompy.run.docker import DockerRunBackend
+
+
+def generated_result(model_run, staging_dir):
+    now = datetime.now(timezone.utc)
+    return GenerateSuccess(
+        run_id=model_run.run_id,
+        staging_dir=str(staging_dir),
+        generated_files=[],
+        timing=TimingInfo(start_time=now, end_time=now),
+    )
 
 
 def docker_available():
@@ -69,7 +80,7 @@ class TestDockerBackendIntegration:
         )
 
         # Mock the generate method to avoid template rendering
-        with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
+        with patch("rompy.model.ModelRun.generate", return_value=generated_result(model_run, output_dir)):
             result = docker_backend.run(model_run, config)
 
         assert result is True
@@ -88,7 +99,7 @@ class TestDockerBackendIntegration:
         )
 
         # Mock the generate method
-        with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
+        with patch("rompy.model.ModelRun.generate", return_value=generated_result(model_run, output_dir)):
             result = docker_backend.run(model_run, config)
 
         assert result is True
@@ -116,7 +127,7 @@ class TestDockerBackendIntegration:
         )
 
         # Mock the generate method
-        with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
+        with patch("rompy.model.ModelRun.generate", return_value=generated_result(model_run, output_dir)):
             result = docker_backend.run(model_run, config)
 
         assert result is True
@@ -147,7 +158,7 @@ class TestDockerBackendIntegration:
         )
 
         # Mock the generate method
-        with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
+        with patch("rompy.model.ModelRun.generate", return_value=generated_result(model_run, output_dir)):
             result = docker_backend.run(model_run, config)
 
         assert result is True
@@ -166,7 +177,7 @@ class TestDockerBackendIntegration:
         config = DockerConfig(image="nonexistent:image", executable="echo", cpu=1)
 
         # Mock the generate method
-        with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
+        with patch("rompy.model.ModelRun.generate", return_value=generated_result(model_run, output_dir)):
             result = docker_backend.run(model_run, config)
 
         # Should return False for invalid image
@@ -546,7 +557,7 @@ class TestDockerBackendMocked:
         # Mock the generate method
         with patch(
             "rompy.model.ModelRun.generate",
-            return_value=str(tmp_path / model_run.run_id),
+            return_value=generated_result(model_run, tmp_path / model_run.run_id),
         ):
             # Mock all Docker operations
             with patch.object(
@@ -575,7 +586,7 @@ class TestDockerBackendMocked:
 
         with patch(
             "rompy.model.ModelRun.generate",
-            return_value=str(tmp_path / model_run.run_id),
+            return_value=generated_result(model_run, tmp_path / model_run.run_id),
         ):
             with patch.object(docker_backend, "_prepare_image", return_value=None):
                 result = docker_backend.run(model_run, config)
@@ -591,7 +602,7 @@ class TestDockerBackendMocked:
 
         with patch(
             "rompy.model.ModelRun.generate",
-            return_value=str(tmp_path / model_run.run_id),
+            return_value=generated_result(model_run, tmp_path / model_run.run_id),
         ):
             with patch.object(
                 docker_backend, "_prepare_image", return_value="test:image"

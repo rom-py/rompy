@@ -6,8 +6,6 @@ This script validates the YAML configuration files in this directory
 to ensure they follow the correct schema and can be loaded properly.
 """
 
-import logging
-import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -218,7 +216,8 @@ def main():
     # Handle both standalone execution and notebook execution
     # Check if __file__ is available (standalone execution) or not (notebook execution)
     import os
-    if '__file__' in globals():
+
+    if "__file__" in globals():
         # This will work when running as a standalone script
         config_dir = Path(os.path.dirname(os.path.abspath(__file__))).resolve()
         logger.info(f"Running as standalone script, config dir: {config_dir}")
@@ -235,26 +234,28 @@ def main():
             current_dir.parent / "configs",  # Parent configs directory
             current_dir,  # Current directory
         ]
-        
+
         config_dir = None
         for path in possible_paths:
             if path.exists() and (path / "local_backend.yml").exists():
                 config_dir = path
                 break
-        
+
         if config_dir is None:
             # Fall back to current directory
             config_dir = current_dir
-            logger.warning(f"Could not find configs directory, using current dir: {config_dir}")
+            logger.warning(
+                f"Could not find configs directory, using current dir: {config_dir}"
+            )
         else:
             logger.info(f"Found configs directory: {config_dir}")
-    
+
     logger.info(f"Looking for YAML files in: {config_dir}")
 
     # Find all YAML files (excluding README and Python files)
     yaml_files = list(config_dir.glob("*.yml")) + list(config_dir.glob("*.yaml"))
     logger.info(f"Found YAML files: {[f.name for f in yaml_files]}")
-    
+
     # If no YAML files found, that's OK - just return True
     if not yaml_files:
         logger.info("No YAML files found to validate")

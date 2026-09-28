@@ -13,6 +13,8 @@ import pytest
 from pydantic import ValidationError
 
 from rompy.backends import BaseBackendConfig, DockerConfig, LocalConfig
+from rompy.core.responses import GenerateSuccess, TimingInfo
+from datetime import datetime, timezone
 
 
 class TestBaseBackendConfig:
@@ -357,6 +359,16 @@ class TestConfigToBackendMapping:
 class TestBackendIntegration:
     """Test integration between configurations and backends."""
 
+    @staticmethod
+    def _generated_result(model_run, staging_dir):
+        now = datetime.now(timezone.utc)
+        return GenerateSuccess(
+            run_id=model_run.run_id,
+            staging_dir=str(staging_dir),
+            generated_files=[],
+            timing=TimingInfo(start_time=now, end_time=now),
+        )
+
     @pytest.fixture
     def mock_model_run(self):
         """Create a mock ModelRun instance."""
@@ -368,7 +380,7 @@ class TestBackendIntegration:
         import tempfile
 
         temp_dir = tempfile.mkdtemp()
-        model_run.generate.return_value = temp_dir
+        model_run.generate.return_value = self._generated_result(model_run, temp_dir)
         model_run.config.run.return_value = True
         return model_run
 
@@ -389,7 +401,7 @@ class TestBackendIntegration:
         # Create a temporary directory that exists
         with tempfile.TemporaryDirectory() as temp_dir:
             # Update mock to return existing directory
-            mock_model_run.generate.return_value = temp_dir
+            mock_model_run.generate.return_value = self._generated_result(mock_model_run, temp_dir)
 
             # Mock subprocess for command execution
             with patch("subprocess.run") as mock_run:
@@ -421,7 +433,7 @@ class TestBackendIntegration:
         # Create a temporary directory that exists
         with tempfile.TemporaryDirectory() as temp_dir:
             # Update mock to return existing directory
-            mock_model_run.generate.return_value = temp_dir
+            mock_model_run.generate.return_value = self._generated_result(mock_model_run, temp_dir)
 
             # Mock docker-py calls
             with patch("docker.from_env") as mock_docker:
@@ -451,7 +463,7 @@ class TestBackendIntegration:
         # Create a temporary directory that exists
         with tempfile.TemporaryDirectory() as temp_dir:
             # Update mock to return existing directory
-            mock_model_run.generate.return_value = temp_dir
+            mock_model_run.generate.return_value = self._generated_result(mock_model_run, temp_dir)
 
             # Mock subprocess for command execution
             with patch("subprocess.run") as mock_run:

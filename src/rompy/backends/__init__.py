@@ -5,7 +5,13 @@ This module provides Pydantic-based configuration classes for different
 execution backends, enabling type-safe and validated backend configurations.
 """
 
-from .config import BackendConfig, BaseBackendConfig, DockerConfig, LocalConfig, SlurmConfig
+from .config import (
+    BackendConfig,
+    BaseBackendConfig,
+    DockerConfig,
+    LocalConfig,
+    SlurmConfig,
+)
 
 __all__ = [
     "BackendConfig",

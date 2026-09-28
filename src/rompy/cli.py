@@ -12,13 +12,14 @@ import sys
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import click
 import yaml
 
 import rompy
 from rompy.backends import DockerConfig, LocalConfig, SlurmConfig
+from rompy.core.responses import GenerateFailure, PipelineFailure, PostprocessFailure, PostprocessSuccess
 from rompy.logging import LogFormat, LoggingConfig, LogLevel, get_logger
 from rompy.model import PIPELINE_BACKENDS, POSTPROCESSORS, RUN_BACKENDS, ModelRun
 from rompy.templating import render_templates
@@ -28,6 +29,53 @@ logger = get_logger(__name__)
 
 # Get installed entry points
 installed = importlib.metadata.entry_points(group="rompy.config").names
+
+
+def _result_envelope(result, kind, *, staging_dir=None, normalized_context=None):
+    """Serialize the current in-memory typed result as a canonical envelope."""
+    success = bool(result.success)
+    return {
+        "kind": kind,
+        "schema_version": 2,
+        "run_id": result.run_id,
+        "status": "success" if success else "failed",
+        "success": success,
+        "error": None if success else result.error,
+        "staging_dir": str(staging_dir) if staging_dir is not None else None,
+        "normalized_context": normalized_context.model_dump(mode="json") if normalized_context is not None else None,
+        "payload": result.model_dump(mode="json"),
+    }
+
+
+def _build_postprocess_model_run_from_sidecar(run_result_sidecar):
+    """Build a minimal ModelRun for sidecar-driven postprocessing."""
+    staging_dir = Path(run_result_sidecar.staging_dir)
+    ctx = run_result_sidecar.normalized_context
+    model_run = ModelRun(
+        model_type="modelrun",
+        run_id=run_result_sidecar.run_id,
+        period=rompy.core.time.TimeRange(
+            start=ctx.period_start,
+            end=ctx.period_end,
+            interval=ctx.period_interval,
+        )
+        if ctx is not None
+        else rompy.core.time.TimeRange(
+            start=datetime.now(),
+            end=datetime.now(),
+            interval="1h",
+        ),
+        output_dir=staging_dir.parent,
+        delete_existing=False,
+        run_id_subdir=True,
+    )
+    model_run._staging_dir = staging_dir
+    return model_run
+
+
+def _build_postprocess_processor_input(run_result_sidecar):
+    """Return the canonical payload unchanged for fresh-process parity."""
+    return run_result_sidecar.payload
 
 
 def configure_logging(
@@ -255,8 +303,15 @@ def cli(ctx):
 @click.option(
     "--backend-config",
     type=click.Path(exists=True),
-    required=True,
+    required=False,
     help="YAML/JSON file with backend configuration",
+)
+@click.option(
+    "--generate-result",
+    "generate_result_path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to generate_result.json sidecar (optional, sidecar-driven run)",
 )
 @click.option("--dry-run", is_flag=True, help="Generate inputs only, don't run")
 @click.option(
@@ -264,12 +319,20 @@ def cli(ctx):
     is_flag=True,
     help="Skip generation step, use existing workspace (must already exist)",
 )
+@click.option(
+    "--json/--no-json",
+    "json_output",
+    default=False,
+    help="Emit machine-readable JSON to stdout",
+)
 @add_common_options
 def run(
     config,
     backend_config,
+    generate_result_path,
     dry_run,
     skip_generate,
+    json_output,
     verbose,
     log_dir,
     show_warnings,
@@ -278,6 +341,9 @@ def run(
     config_from_env,
 ):
     """Run a model configuration using Pydantic backend configuration.
+
+    Writes run_result.json to the staging directory on success and failure.
+    Use --json to emit the sidecar JSON to stdout.
 
     Examples:
         # Run with local backend configuration
@@ -300,46 +366,114 @@ def run(
 
     if config_from_env and config:
         raise click.UsageError("Cannot specify both config file and --config-from-env")
-    if not config_from_env and not config:
-        raise click.UsageError("Must specify either config file or --config-from-env")
+    # Allow sidecar-driven runs: require either config, env config, or generate-result
+    if not config_from_env and not config and not generate_result_path:
+        raise click.UsageError(
+            "Must specify either config file, --config-from-env, or --generate-result"
+        )
 
+    current_result = None
     try:
-        config_data = load_config(config, from_env=config_from_env)
-        model_run = ModelRun(**config_data)
+        # Sidecar-driven flow
+        if generate_result_path:
+            from rompy.core.result_persistence import load_generate_result
 
-        logger.info(f"Running model: {model_run.config.model_type}")
-        logger.info(f"Run ID: {model_run.run_id}")
+            try:
+                generate_result = load_generate_result(generate_result_path)
+            except FileNotFoundError:
+                raise click.UsageError(
+                    f"Generate result sidecar not found: {generate_result_path}"
+                )
 
-        backend_cfg = _load_backend_config(backend_config)
+            # v1 sidecar upgrade check
+            if generate_result.normalized_context is None:
+                raise ValueError(
+                    "Generate result sidecar is v1 and missing normalized_context. "
+                    "Re-run 'rompy generate' to generate a v2 sidecar with normalized_context."
+                )
 
-        start_time = datetime.now()
+            # Build minimal ModelRun from normalized_context
+            ctx = generate_result.normalized_context
+            staging = Path(ctx.staging_dir)
+            model_run = ModelRun(
+                model_type="modelrun",
+                run_id=generate_result.run_id,
+                period=rompy.core.time.TimeRange(
+                    start=ctx.period_start,
+                    end=ctx.period_end,
+                    interval=ctx.period_interval,
+                ),
+                output_dir=Path(ctx.output_dir),
+                delete_existing=False,
+                run_id_subdir=True,
+            )
+            model_run._staging_dir = staging
 
-        if skip_generate:
+            if not backend_config:
+                raise click.UsageError(
+                    "--backend-config is required when using --generate-result"
+                )
+
+            backend_cfg = _load_backend_config(backend_config)
+            start_time = datetime.now()
+
             staging_dir = str(model_run.staging_dir)
-            staging_path = Path(staging_dir)
-            if not staging_path.exists():
-                raise click.UsageError(
-                    f"Workspace does not exist: {staging_dir}\n"
-                    f"Run 'rompy generate {config or '<config>'}' first or remove --skip-generate"
-                )
-            if not list(staging_path.glob("*")):
-                raise click.UsageError(
-                    f"Workspace exists but is empty: {staging_dir}\n"
-                    f"Run 'rompy generate {config or '<config>'}' first or remove --skip-generate"
-                )
-            logger.info(f"Using existing workspace: {staging_dir}")
+
+            if dry_run:
+                logger.info("Dry run mode - skipping model execution")
+                return
+
+            result = model_run.run(backend=backend_cfg, workspace_dir=staging_dir)
+            current_result = result
+
+        # Config-driven flow (existing behaviour)
         else:
-            staging_dir = model_run.generate()
-            logger.info(f"Inputs generated in: {staging_dir}")
+            config_data = load_config(config, from_env=config_from_env)
+            model_run = ModelRun(**config_data)
 
-        if dry_run:
-            logger.info("Dry run mode - skipping model execution")
-            return
+            logger.info(f"Running model: {model_run.config.model_type}")
+            logger.info(f"Run ID: {model_run.run_id}")
 
-        success = model_run.run(backend=backend_cfg, workspace_dir=staging_dir)
+            if not backend_config:
+                raise click.UsageError(
+                    "--backend-config is required when running from config"
+                )
+
+            backend_cfg = _load_backend_config(backend_config)
+
+            start_time = datetime.now()
+
+            if skip_generate:
+                staging_dir = str(model_run.staging_dir)
+                staging_path = Path(staging_dir)
+                if not staging_path.exists():
+                    raise click.UsageError(
+                        f"Workspace does not exist: {staging_dir}\n"
+                        f"Run 'rompy generate {config or '<config>'}' first or remove --skip-generate"
+                    )
+                if not list(staging_path.glob("*")):
+                    raise click.UsageError(
+                        f"Workspace exists but is empty: {staging_dir}\n"
+                        f"Run 'rompy generate {config or '<config>'}' first or remove --skip-generate"
+                    )
+                logger.info(f"Using existing workspace: {staging_dir}")
+            else:
+                generate_result = model_run.generate()
+                current_result = generate_result
+                staging_dir = generate_result.staging_dir or str(model_run.staging_dir)
+                logger.info(f"Inputs generated in: {staging_dir}")
+                if not generate_result.success:
+                    raise click.ClickException(generate_result.error)
+
+            if dry_run:
+                logger.info("Dry run mode - skipping model execution")
+                return
+
+            result = model_run.run(backend=backend_cfg, workspace_dir=staging_dir)
+            current_result = result
 
         elapsed = datetime.now() - start_time
-        if success:
+        if result.success:
             logger.info(
                 f"✅ Model completed successfully in {elapsed.total_seconds():.2f}s"
             )
@@ -347,12 +481,39 @@ def run(
             logger.error(
                 f"❌ Model execution failed after {elapsed.total_seconds():.2f}s"
             )
+
+            # Emit the current typed result, never a stale sidecar.
+            if json_output:
+                print(json.dumps(_result_envelope(result, "run_result", staging_dir=result.workspace_dir)))
+
             sys.exit(1)
+
+        # Emit JSON if requested
+        if json_output:
+            sidecar_path = model_run.staging_dir / "run_result.json"
+            if sidecar_path.exists():
+                print(sidecar_path.read_text())
+            else:
+                print(
+                    json.dumps({"success": True, "warning": "Sidecar file not found"})
+                )
 
     except Exception as e:
         logger.error(f"Error running model: {e}")
         if verbose > 0:
             logger.exception("Full traceback:")
+
+        # Emit error JSON if requested.
+        if json_output:
+            current = current_result
+            if current is not None and hasattr(current, "success"):
+                is_generation = isinstance(current, GenerateFailure)
+                kind = "generate_result" if is_generation else "run_result"
+                current_staging = getattr(current, "staging_dir", None) or getattr(current, "workspace_dir", None)
+                print(json.dumps(_result_envelope(current, kind, staging_dir=current_staging)))
+            else:
+                print(json.dumps({"success": False, "error": str(e)}))
+
         sys.exit(1)
 
 
@@ -526,7 +687,9 @@ def pipeline(
         logger.info(f"Running pipeline for: {model_run.config.model_type}")
         logger.info(f"Run ID: {model_run.run_id}")
         logger.info(
-            f"Pipeline: generate → run({backend_type}) → postprocess({processor_cfg.type})"
+            "Pipeline: generate → run(%s) → postprocess(%s)",
+            backend_type,
+            processor_cfg.model_dump(exclude_none=True).get("type", "unknown"),
         )
 
         start_time = datetime.now()
@@ -543,18 +706,25 @@ def pipeline(
         elapsed = datetime.now() - start_time
 
         # Report results
-        success = results.get("success", False)
-        stages = results.get("stages_completed", [])
+        success = results.success
+        stages = results.stages_completed
 
         logger.info(f"Pipeline completed in {elapsed.total_seconds():.2f}s")
-        logger.info(f"Stages completed: {', '.join(stages)}")
+        # Convert PipelineStage enums to their string values for display
+        stage_names = [stage.value for stage in stages]
+        logger.info(f"Stages completed: {', '.join(stage_names)}")
 
         if success:
             logger.info("✅ Pipeline completed successfully")
+            # Display timing information if available
+            if hasattr(results, "timing") and results.timing:
+                logger.info(
+                    f"Pipeline duration: {results.timing.duration_seconds:.2f}s"
+                )
         else:
-            logger.error(
-                f"❌ Pipeline failed: {results.get('message', 'Unknown error')}"
-            )
+            failure_result = cast(PipelineFailure, results)
+            error_msg = failure_result.error
+            logger.error(f"❌ Pipeline failed: {error_msg}")
             sys.exit(1)
 
     except Exception as e:
@@ -567,10 +737,17 @@ def pipeline(
 @cli.command()
 @click.argument("config", type=click.Path(exists=True), required=False)
 @click.option("--output-dir", help="Override output directory")
+@click.option(
+    "--json/--no-json",
+    "json_output",
+    default=False,
+    help="Emit machine-readable JSON to stdout",
+)
 @add_common_options
 def generate(
     config,
     output_dir,
+    json_output,
     verbose,
     log_dir,
     show_warnings,
@@ -578,7 +755,11 @@ def generate(
     simple_logs,
     config_from_env,
 ):
-    """Generate model input files only."""
+    """Generate model input files only.
+
+    Writes generate_result.json to the staging directory after completion.
+    Use --json to emit the sidecar JSON to stdout.
+    """
     configure_logging(verbose, log_dir, simple_logs, ascii_only, show_warnings)
 
     # Validate config source
@@ -599,26 +780,46 @@ def generate(
         logger.info(f"Run ID: {model_run.run_id}")
 
         start_time = datetime.now()
-        staging_dir = model_run.generate()
+        generate_result = model_run.generate()
+        staging_dir = generate_result.staging_dir or str(model_run.staging_dir)
         elapsed = datetime.now() - start_time
 
         logger.info(f"✅ Inputs generated in {elapsed.total_seconds():.2f}s")
         logger.info(f"📁 Staging directory: {staging_dir}")
+        if not generate_result.success:
+            raise click.ClickException(generate_result.error)
 
         # List generated files
         if Path(staging_dir).exists():
             files = list(Path(staging_dir).glob("*"))
             logger.info(f"Generated {len(files)} files")
 
+        # Emit JSON if requested
+        if json_output:
+            sidecar_path = Path(staging_dir) / "generate_result.json"
+            if sidecar_path.exists():
+                print(sidecar_path.read_text())
+            else:
+                print(json.dumps({"success": False, "error": "Sidecar file not found"}))
+
     except Exception as e:
         logger.error(f"Error generating inputs: {e}")
         if verbose > 0:
             logger.exception("Full traceback:")
+
+        # Emit error JSON if requested, preferring the current typed result.
+        if json_output:
+            current = locals().get("generate_result")
+            if current is not None and hasattr(current, "success"):
+                print(json.dumps(_result_envelope(current, "generate_result", staging_dir=getattr(current, "staging_dir", None))))
+            else:
+                print(json.dumps({"success": False, "error": str(e)}))
+
         sys.exit(1)
 
 
 @cli.command()
-@click.argument("config", type=click.Path(exists=True), required=False)
+@click.argument("staging", type=click.Path(exists=True), required=True)
 @click.option(
     "--processor-config",
     type=click.Path(exists=True),
@@ -631,66 +832,284 @@ def generate(
     default=True,
     help="Validate outputs exist (default: True)",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force reprocessing even if run result shows success=false",
+)
+@click.option(
+    "--json/--no-json",
+    "json_output",
+    default=False,
+    help="Emit machine-readable JSON to stdout",
+)
 @add_common_options
 def postprocess(
-    config,
+    staging,
     processor_config,
     output_dir,
     validate_outputs,
+    force,
+    json_output,
     verbose,
     log_dir,
     show_warnings,
     ascii_only,
     simple_logs,
-    config_from_env,
+    config_from_env,  # noqa: ARG001 — injected by @add_common_options, unused in sidecar-only path
 ):
     """Run postprocessing on model outputs using the specified postprocessor.
 
-    Examples:
-        # Run with processor configuration file
-        rompy postprocess config.yml --processor-config processor.yml
+    Requires run_result.json from a prior 'rompy run'.
+    STAGING is a path to the staging directory (auto-discovers run_result.json)
+    or a direct path to a run_result.json file.
 
-        # Run with config from environment variable
-        rompy postprocess --config-from-env --processor-config processor.yml
+    Use --force to reprocess even if run_result.json shows success=false,
+      or to reprocess even if postprocessing already completed.
+    Writes postprocess_result.json to the staging directory after completion.
+    Use --json to emit the sidecar JSON to stdout.
+
+    Examples:
+        # Directory: auto-discovers run_result.json inside
+        rompy postprocess simulations/glob3 --processor-config processor.yml
+
+        # Direct path to run_result.json
+        rompy postprocess simulations/glob3/run_result.json --processor-config processor.yml
+
+        # Force rerun
+        rompy postprocess simulations/glob3 --processor-config processor.yml --force
+
+        # Machine-readable output
+        rompy postprocess simulations/glob3 --processor-config processor.yml --json
     """
     configure_logging(verbose, log_dir, simple_logs, ascii_only, show_warnings)
 
-    # Validate config source
-    if config_from_env and config:
-        raise click.UsageError("Cannot specify both config file and --config-from-env")
-    if not config_from_env and not config:
-        raise click.UsageError("Must specify either config file or --config-from-env")
-
     try:
-        # Load configuration
-        config_data = load_config(config, from_env=config_from_env)
-        model_run = ModelRun(**config_data)
-
         # Load processor configuration
         from rompy.postprocess.config import _load_processor_config
 
         processor_cfg = _load_processor_config(processor_config)
 
-        logger.info(f"Running postprocessing for: {model_run.config.model_type}")
-        logger.info(f"Run ID: {model_run.run_id}")
-        logger.info(f"Postprocessor: {processor_cfg.type}")
+        from pathlib import Path
+        from rompy.core.result_persistence import (
+            load_run_result,
+            load_postprocess_result,
+            POSTPROCESS_RESULT_FILENAME,
+        )
+
+        # Resolve staging: directory → auto-discover run_result.json, .json → use directly
+        staging_path = Path(staging)
+        if staging_path.is_dir():
+            sidecar_path = staging_path / "run_result.json"
+        elif staging_path.suffix == ".json":
+            sidecar_path = staging_path
+        else:
+            logger.error(
+                f"❌ STAGING must be a directory containing run_result.json "
+                f"or a direct path to a run_result.json file. Got: {staging_path}"
+            )
+
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "success": False,
+                            "error": (
+                                f"STAGING must be a directory or .json file. "
+                                f"Got: {staging_path}"
+                            ),
+                        }
+                    )
+                )
+
+            sys.exit(1)
+
+        logger.info(f"Loading run result from: {sidecar_path}")
+
+        try:
+            run_result = load_run_result(sidecar_path)
+        except FileNotFoundError:
+            logger.error(
+                f"❌ Run result sidecar not found: {sidecar_path}\n"
+                f"The model must be executed before postprocessing."
+            )
+
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "success": False,
+                            "error": f"Run result sidecar not found: {sidecar_path}",
+                        }
+                    )
+                )
+
+            sys.exit(1)
+
+        # Validate sidecar version and build model run + processor input
+        try:
+            if run_result.normalized_context is None:
+                raise ValueError(
+                    "Run result sidecar is v1 and missing normalized_context. "
+                    "Re-run 'rompy run' to generate a v2 sidecar with normalized_context."
+                )
+            model_run_for_postprocess = _build_postprocess_model_run_from_sidecar(
+                run_result
+            )
+            processor_input = _build_postprocess_processor_input(run_result)
+        except ValueError as e:
+            logger.error(f"❌ Invalid run result sidecar: {e}")
+
+            if json_output:
+                print(
+                    json.dumps(
+                        {"success": False, "error": f"Invalid run result sidecar: {e}"}
+                    )
+                )
+
+            sys.exit(1)
+
+        logger.info(
+            "Running postprocessing for: %s",
+            getattr(
+                getattr(model_run_for_postprocess, "config", None),
+                "model_type",
+                "sidecar",
+            ),
+        )
+        logger.info(f"Run ID: {model_run_for_postprocess.run_id}")
+        logger.info(
+            "Postprocessor: %s",
+            processor_cfg.model_dump(exclude_none=True).get("type", "unknown"),
+        )
+
+        if not run_result.success and not force:
+            logger.error(
+                "❌ Run result shows success=false. Cannot postprocess failed run.\n"
+                "Use --force to override this check."
+            )
+
+            if json_output:
+                print(
+                    json.dumps(
+                        {"success": False, "error": "Run result shows success=false"}
+                    )
+                )
+
+            sys.exit(1)
+
+        if not run_result.success and force:
+            logger.warning(
+                "⚠️  Run result shows success=false but --force specified. Proceeding anyway."
+            )
+
+        # Check for existing postprocess result (idempotency guard)
+        try:
+            postprocess_result = load_postprocess_result(
+                model_run_for_postprocess.staging_dir
+            )
+            if postprocess_result.success:
+                if not force:
+                    logger.info(
+                        f"✅ Postprocessing already completed successfully. "
+                        f"Result stored in: {model_run_for_postprocess.staging_dir / POSTPROCESS_RESULT_FILENAME}\n"
+                        f"Use --force to reprocess."
+                    )
+
+                    if json_output:
+                        postprocess_sidecar_path = (
+                            model_run_for_postprocess.staging_dir
+                            / POSTPROCESS_RESULT_FILENAME
+                        )
+                        if postprocess_sidecar_path.exists():
+                            print(postprocess_sidecar_path.read_text())
+                        else:
+                            print(
+                                json.dumps(
+                                    {"success": True, "message": "Already completed"}
+                                )
+                            )
+
+                    sys.exit(0)
+                else:
+                    logger.warning(
+                        "⚠️  Postprocessing already completed successfully, but --force specified. "
+                        "Reprocessing and overwriting existing result."
+                    )
+        except FileNotFoundError:
+            # First run - no existing postprocess result, continue normally
+            pass
+        except ValueError as e:
+            # Corrupt or schema mismatch - log warning but continue
+            logger.warning(
+                f"⚠️  Found corrupt postprocess result sidecar, ignoring: {e}\n"
+                f"Continuing with postprocessing."
+            )
 
         # Run postprocessing
         start_time = datetime.now()
-        results = model_run.postprocess(
+        results = model_run_for_postprocess.postprocess(
             processor=processor_cfg,
-            output_dir=output_dir,
+            processor_input=processor_input,
+            output_dir=output_dir or str(model_run_for_postprocess.staging_dir),
             validate_outputs=validate_outputs,
         )
         elapsed = datetime.now() - start_time
 
-        logger.info(f"✅ Postprocessing completed in {elapsed.total_seconds():.2f}s")
-        logger.info(f"Results: {results}")
+        # Report results
+        if results.success is True:
+            success_result = cast(PostprocessSuccess, results)
+            logger.info(
+                f"✅ Postprocessing completed successfully in {elapsed.total_seconds():.2f}s"
+            )
+            if success_result.file_count is not None:
+                logger.info(
+                    f"Output files: {success_result.file_count} files generated"
+                )
+            elif success_result.artifacts:
+                logger.info(
+                    f"Output files: {len(success_result.artifacts)} files generated"
+                )
+            if success_result.timing:
+                logger.info(
+                    f"Processing duration: {success_result.timing.duration_seconds:.2f}s"
+                )
+
+            if json_output:
+                postprocess_sidecar_path = (
+                    model_run_for_postprocess.staging_dir / POSTPROCESS_RESULT_FILENAME
+                )
+                if postprocess_sidecar_path.exists():
+                    print(postprocess_sidecar_path.read_text())
+                else:
+                    print(
+                        json.dumps(
+                            {"success": True, "warning": "Sidecar file not found"}
+                        )
+                    )
+        else:
+            failure_result = cast(PostprocessFailure, results)
+            error_msg = failure_result.error
+            logger.error(f"❌ Postprocessing failed: {error_msg}")
+
+            if json_output:
+                print(json.dumps(_result_envelope(
+                    failure_result, "postprocess_result",
+                    staging_dir=model_run_for_postprocess.staging_dir,
+                    normalized_context=run_result.normalized_context,
+                )))
+
+            sys.exit(1)
 
     except Exception as e:
         logger.error(f"❌ Postprocessing failed: {e}")
         if verbose > 0:
             logger.exception("Full traceback:")
+
+        if json_output:
+            print(json.dumps({"success": False, "error": str(e)}))
+
         sys.exit(1)
 
 
@@ -807,7 +1226,6 @@ def validate_backend_config(
         if processor_type:
             # Validate postprocessor configuration
             from rompy.postprocess.config import (
-                _load_processor_config,
                 validate_postprocessor_config,
             )
 
@@ -818,7 +1236,7 @@ def validate_backend_config(
             if not is_valid:
                 raise click.UsageError(message)
 
-            logger.info(f"✅ Postprocessor configuration is valid")
+            logger.info("✅ Postprocessor configuration is valid")
             logger.info(f"Processor type: {config.type}")
             logger.info(f"Timeout: {config.timeout}s")
             if hasattr(config, "validate_outputs"):

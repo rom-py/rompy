@@ -171,9 +171,15 @@ task-*.md
 tests/data/
 tests/schism/test_data/
 
+# Test simulation artifacts (generated, not committed)
+simulations/
+
 # AGENTS.md files (generated, not committed)
 AGENTS.md
 **/AGENTS.md
+.opencode
+.github/prompts
+
 
 # uv lock
 uv.lock

@@ -1,112 +1,74 @@
-"""
-Example 3: Custom Postprocessor
+"""A Pydantic v2 postprocessor using the public v2 protocol."""
 
-This example demonstrates how to:
-1. Create a custom postprocessor class
-2. Register it for use with the model run
-3. Use it to process model outputs
-"""
-
-import logging
-import os
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
 
-from rompy.backends import LocalConfig
-from rompy.core.time import TimeRange
-from rompy.model import ModelRun
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from rompy.core.responses import (
+    ArtifactType,
+    LocalArtifact,
+    PostprocessFailure,
+    PostprocessSuccess,
+    TimingInfo,
+)
+from rompy.postprocess import PostprocessContext
 
 
 class ZipOutputsPostprocessor:
-    """Custom postprocessor that zips the model outputs.
+    """Context-aware postprocessor with explicit protocol capability."""
 
-    This class implements the postprocessor interface by providing a process() method
-    that takes a model_run instance and returns a dictionary with results.
-    """
+    name = "zip_outputs"
+    input_protocol = "context"
 
-    def process(
-        self, model_run, output_zip: str = "outputs.zip", **kwargs
-    ) -> Dict[str, Any]:
-        """Zip the model outputs.
+    def process(self, context: PostprocessContext):
+        start = datetime.now(timezone.utc)
+        output_dir = context.output_dir or context.staging_dir
+        if output_dir is None:
+            return PostprocessFailure(
+                run_id=context.run_result.run_id,
+                error="postprocessor requires an output directory",
+                artifacts=list(context.artifacts),
+                expected_outputs=list(context.expected_outputs),
+                missing_outputs=list(context.missing_outputs),
+                timing=TimingInfo(start_time=start, end_time=datetime.now(timezone.utc)),
+            )
 
-        Args:
-            model_run: The ModelRun instance
-            output_zip: Name of the output zip file
-            **kwargs: Additional parameters
-
-        Returns:
-            Dictionary with results
-        """
-        output_dir = Path(model_run.output_dir) / model_run.run_id
-        zip_path = output_dir.parent / output_zip
-
+        archive = output_dir / "outputs.zip"
         try:
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for root, _, files in os.walk(output_dir):
-                    for file in files:
-                        file_path = Path(root) / file
-                        arcname = file_path.relative_to(output_dir)
-                        zipf.write(file_path, arcname)
-
-            return {
-                "success": True,
-                "message": f"Outputs zipped to {zip_path}",
-                "zip_path": str(zip_path),
-                "file_count": len(files),
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "message": f"Failed to zip outputs: {str(e)}",
-                "error": str(e),
-            }
-
-
-def main():
-    """Run a model and process outputs with custom postprocessor."""
-    # Create a basic model run
-    model = ModelRun(
-        run_id="test_custom_postprocessor",
-        period=TimeRange(
-            start=datetime(2023, 1, 1),
-            end=datetime(2023, 1, 2),
-            interval="1H",
-        ),
-        output_dir="./output",
-        delete_existing=True,
-    )
-
-    # Run the model locally
-    logger.info("Running model locally...")
-    local_config = LocalConfig(
-        timeout=3600,  # 1 hour timeout
-        command="echo 'Model execution completed' && echo 'Creating test output' > output.txt",
-    )
-    success = model.run(backend=local_config)
-
-    if not success:
-        logger.error("Model run failed")
-        return
-
-    # Create and use the custom postprocessor
-    logger.info("Running custom postprocessor...")
-    postprocessor = ZipOutputsPostprocessor()
-    results = postprocessor.process(model, output_zip="model_outputs.zip")
-
-    if results["success"]:
-        logger.info(f"Successfully created zip archive: {results['zip_path']}")
-        logger.info(f"Zipped {results.get('file_count', 'unknown')} files")
-    else:
-        logger.error(
-            f"Postprocessing failed: {results.get('message', 'Unknown error')}"
-        )
+            with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for source in sorted(output_dir.rglob("*")):
+                    if source.is_file() and source != archive:
+                        zip_file.write(source, source.relative_to(output_dir))
+            artifact = LocalArtifact(
+                path=archive.relative_to(output_dir).as_posix(),
+                artifact_type=ArtifactType.OTHER,
+                size_bytes=archive.stat().st_size,
+            )
+            return PostprocessSuccess(
+                run_id=context.run_result.run_id,
+                output_dir=str(output_dir),
+                validated=True,
+                artifacts=list(context.artifacts) + [artifact],
+                expected_outputs=list(context.expected_outputs),
+                missing_outputs=list(context.missing_outputs),
+                file_count=1,
+                message="Created outputs.zip",
+                timing=TimingInfo(start_time=start, end_time=datetime.now(timezone.utc)),
+            )
+        except OSError as exc:
+            return PostprocessFailure(
+                run_id=context.run_result.run_id,
+                error=f"could not create output archive: {exc}",
+                output_dir=str(output_dir),
+                artifacts=list(context.artifacts),
+                expected_outputs=list(context.expected_outputs),
+                missing_outputs=list(context.missing_outputs),
+                timing=TimingInfo(start_time=start, end_time=datetime.now(timezone.utc)),
+            )
 
 
-if __name__ == "__main__":
-    main()
+def run_postprocessor(run_result, staging_dir: Path):
+    """Standalone call: pass the typed ``processor_input`` result explicitly."""
+    processor = ZipOutputsPostprocessor()
+    context = PostprocessContext.from_run_result(run_result, staging_dir=staging_dir)
+    return processor.process(context)

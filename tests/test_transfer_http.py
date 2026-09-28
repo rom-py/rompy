@@ -1,7 +1,5 @@
 """Tests for HttpTransfer implementation."""
 
-from pathlib import Path
-
 import httpx
 import pytest
 

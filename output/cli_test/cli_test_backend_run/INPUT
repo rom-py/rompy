@@ -1,0 +1,11 @@
+$
+$ BASE - Simple example template used by runtime
+$ Template: /home/tdurrant/source/rompy/rompy-meta/repos/rompy/return_schema/src/rompy/templates/base
+$ Generated: 2026-03-18 02:52:48.080827+00:00 on pop-os by tdurrant
+$ projection: wgs84
+$
+
+run_id: 'cli_test_backend_run'
+compute_start: 20230101.000000
+compute_interval: 1.0 HR
+compute_stop: 20230102.000000

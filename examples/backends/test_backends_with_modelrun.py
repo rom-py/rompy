@@ -26,7 +26,7 @@ def create_basic_model_run():
     Create a basic model run configuration for testing backends.
     """
     temp_dir = Path(tempfile.mkdtemp(prefix="rompy_test_"))
-    
+
     model_run = ModelRun(
         run_id="test_backend_run",
         period=TimeRange(
@@ -45,36 +45,34 @@ def test_local_backend():
     """Test the local backend with basic configuration."""
     logger.info("Testing Local Backend Configuration")
     logger.info("-" * 40)
-    
+
     model = create_basic_model_run()
-    
+
     # Create local backend configuration
     config = LocalConfig(
         timeout=1800,  # 30 minutes
         command="echo 'Running model on local backend' && pwd && date",
-        env_vars={
-            "MODEL_TYPE": "test",
-            "ENVIRONMENT": "local"
-        },
+        env_vars={"MODEL_TYPE": "test", "ENVIRONMENT": "local"},
         shell=True,
-        capture_output=True
+        capture_output=True,
     )
-    
+
     logger.info(f"LocalConfig: {config}")
-    
+
     # Note: In a real environment, you would run:
     # success = model.run(backend=config)
     # For this example, we'll just validate the configuration works
     logger.info("Local backend configuration validated successfully")
     logger.info(f"Working directory: {model.output_dir}")
 
+
 def test_docker_backend():
     """Test the Docker backend with basic configuration."""
     logger.info("Testing Docker Backend Configuration")
     logger.info("-" * 40)
-    
+
     model = create_basic_model_run()
-    
+
     # Create Docker backend configuration
     config = DockerConfig(
         image="python:3.9-slim",
@@ -86,23 +84,24 @@ def test_docker_backend():
         env_vars={
             "MODEL_TYPE": "test",
             "ENVIRONMENT": "docker",
-            "PYTHONUNBUFFERED": "1"
-        }
+            "PYTHONUNBUFFERED": "1",
+        },
     )
-    
+
     logger.info(f"DockerConfig: {config}")
-    
+
     # Validate the configuration
     logger.info("Docker backend configuration validated successfully")
     logger.info(f"Working directory: {model.output_dir}")
+
 
 def test_slurm_backend():
     """Test the SLURM backend with basic configuration."""
     logger.info("Testing SLURM Backend Configuration")
     logger.info("-" * 40)
-    
+
     model = create_basic_model_run()
-    
+
     # Create SLURM backend configuration
     config = SlurmConfig(
         queue="general",
@@ -114,18 +113,16 @@ def test_slurm_backend():
         job_name="test_backend_job",
         output_file=f"{model.output_dir}/slurm-%j.out",
         error_file=f"{model.output_dir}/slurm-%j.err",
-        env_vars={
-            "MODEL_TYPE": "test",
-            "ENVIRONMENT": "slurm"
-        },
-        command="echo 'Running model on SLURM backend' && pwd && date && env | grep MODEL"
+        env_vars={"MODEL_TYPE": "test", "ENVIRONMENT": "slurm"},
+        command="echo 'Running model on SLURM backend' && pwd && date && env | grep MODEL",
     )
-    
+
     logger.info(f"SlurmConfig: {config}")
-    
+
     # Validate the configuration
     logger.info("SLURM backend configuration validated successfully")
     logger.info(f"Working directory: {model.output_dir}")
+
 
 def main():
     """Run all backend tests."""

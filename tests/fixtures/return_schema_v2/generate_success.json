@@ -1,0 +1,48 @@
+{
+  "error": null,
+  "kind": "generate_result",
+  "normalized_context": {
+    "config_hash": "sha256:fixture-config",
+    "extensions": {
+      "source": "canonical-fixture"
+    },
+    "model_type": "fixture-model",
+    "output_dir": "fixtures/output",
+    "period_end": "2026-01-02T00:00:00Z",
+    "period_interval": 3600.0,
+    "period_start": "2026-01-01T00:00:00Z",
+    "staging_dir": "fixtures/staging"
+  },
+  "payload": {
+    "config_file": "config/model.yaml",
+    "generated_files": [
+      "config/model.yaml"
+    ],
+    "metadata": {
+      "normalized_context": {
+        "config_hash": "sha256:fixture-config",
+        "extensions": {
+          "source": "canonical-fixture"
+        },
+        "model_type": "fixture-model",
+        "output_dir": "fixtures/output",
+        "period_end": "2026-01-02T00:00:00Z",
+        "period_interval": 3600.0,
+        "period_start": "2026-01-01T00:00:00Z",
+        "staging_dir": "fixtures/staging"
+      }
+    },
+    "run_id": "run-001",
+    "staging_dir": "fixtures/staging",
+    "success": true,
+    "timing": {
+      "duration_seconds": 1.0,
+      "end_time": "2026-01-02T03:04:06Z",
+      "start_time": "2026-01-02T03:04:05Z"
+    }
+  },
+  "run_id": "run-001",
+  "schema_version": 2,
+  "status": "success",
+  "success": true
+}

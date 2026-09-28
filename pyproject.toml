@@ -88,6 +88,7 @@ noop = "rompy.postprocess:NoopPostprocessor"
 
 [project.entry-points."rompy.postprocess.config"]
 noop = "rompy.postprocess.config:NoopPostprocessorConfig"
+transfer = "rompy.postprocess.transfer:TransferPostprocessorConfig"
 
 [project.entry-points."rompy.pipeline"]
 local = "rompy.pipeline:LocalPipelineBackend"
@@ -134,6 +135,7 @@ line-length = 88
 
 [tool.ruff]
 line-length = 88
+ignore = ["E501"]
 
 [tool.ruff.format]
 # Use Black-compatible formatting

@@ -8,16 +8,14 @@ Tests cover:
 - Error handling for missing required sections
 """
 
-import tempfile
 from datetime import datetime
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+
 
 import pytest
 import yaml
 
-from rompy.backends import LocalConfig
 from rompy.cli import load_config
+
 from rompy.core.time import TimeRange
 from rompy.core.yaml_loader import load_yaml_with_includes
 from rompy.model import ModelRun
@@ -103,11 +101,6 @@ def tmp_config_files(tmp_path):
         yaml.dump(processor_config, f)
 
     # Create pipeline config with includes
-    pipeline_config = {
-        "config": f"!include {model_config_path}",
-        "backend": f"!include {backend_config_path}",
-        "postprocessor": f"!include {processor_config_path}",
-    }
 
     pipeline_config_path = tmp_path / "pipeline_config.yml"
     with open(pipeline_config_path, "w") as f:
@@ -340,17 +333,12 @@ class TestPipelineConfigComposition:
         assert loaded_config["config"]["run_id"] == "nested_test"
 
 
-class TestBackwardCompatibilityWarning:
-    """Test that using old parameter names triggers warnings."""
+class TestBackendConfigRequired:
+    """Test that backend_config is required and old parameter names raise errors."""
 
-    def test_old_run_backend_parameter_warning(self, tmp_path, caplog):
-        """Test that passing run_backend string logs a deprecation warning."""
-        import logging
+    def test_missing_backend_config_raises_value_error(self, tmp_path):
+        """Test that omitting backend_config raises ValueError."""
         from rompy.pipeline import LocalPipelineBackend
-
-        # Create the output directory structure that the pipeline expects
-        output_dir = tmp_path / "test_run"
-        output_dir.mkdir(parents=True, exist_ok=True)
 
         model_run = ModelRun(
             run_id="test_run",
@@ -366,24 +354,120 @@ class TestBackwardCompatibilityWarning:
         backend = LocalPipelineBackend()
         processor_config = NoopPostprocessorConfig()
 
-        with caplog.at_level(logging.WARNING):
-            with patch("rompy.model.ModelRun.generate", return_value=str(output_dir)):
-                with patch("rompy.model.ModelRun.run", return_value=True):
-                    with patch(
-                        "rompy.model.ModelRun.postprocess",
-                        return_value={"success": True},
-                    ):
-                        result = backend.execute(
-                            model_run,
-                            run_backend="local",  # Old parameter name
-                            processor=processor_config,
-                        )
+        # backend_config is required; omitting it (even with old-style run_backend kwarg)
+        # must raise ValueError immediately
+        with pytest.raises(ValueError, match="backend_config is required"):
+            backend.execute(
+                model_run,
+                run_backend="local",  # Old parameter name goes to **kwargs, ignored
+                processor=processor_config,
+            )
 
-        # Check that deprecation warning was logged
-        assert any(
-            "run_backend" in record.message and "deprecated" in record.message
-            for record in caplog.records
+    def test_invalid_backend_config_type_raises_type_error(self, tmp_path):
+        """Test that passing a non-BackendConfig object raises TypeError."""
+        from rompy.pipeline import LocalPipelineBackend
+
+        model_run = ModelRun(
+            run_id="test_run",
+            period=TimeRange(
+                start=datetime(2023, 1, 1),
+                end=datetime(2023, 1, 2),
+                interval="1H",
+            ),
+            output_dir=str(tmp_path),
+            config=DemoConfig(arg1="foo", arg2="bar"),
         )
 
-        # Should still work with backward compatibility
-        assert result["success"] is True
+        backend = LocalPipelineBackend()
+        processor_config = NoopPostprocessorConfig()
+
+        with pytest.raises(
+            TypeError, match="backend_config must be a BaseBackendConfig"
+        ):
+            backend.execute(
+                model_run,
+                backend_config="local",  # Wrong type
+                processor=processor_config,
+            )
+
+
+
+def test_pipeline_sidecar_chaining_happy_path(tmp_path):
+    """Full pipeline completes and sidecars contain normalized_context."""
+    from pathlib import Path
+    from rompy.model import ModelRun
+    from rompy.backends.config import LocalConfig
+    from rompy.postprocess.config import NoopPostprocessorConfig
+    from tests.test_helpers import DemoConfig
+    from rompy.core.result_persistence import load_generate_result, load_run_result
+    from unittest.mock import patch
+
+    model = ModelRun(
+        config=DemoConfig(arg1="foo", arg2="bar"),
+        run_id="pipeline-happy",
+        output_dir=str(tmp_path / "output"),
+    )
+
+    backend = LocalConfig(command="exit 0", timeout=60)
+    processor = NoopPostprocessorConfig()
+
+    # Prevent template rendering from doing IO; generation should still write sidecar
+    with patch.object(model.config.__class__, "render", return_value=None):
+        result = model.pipeline(
+            pipeline_backend="local", backend_config=backend, processor=processor
+        )
+
+    # Pipeline should succeed
+    assert result.success is True
+
+    staging_dir = Path(result.staging_dir)
+
+    # generate_result.json must exist and contain normalized_context
+    gen_sidecar = load_generate_result(staging_dir)
+    assert gen_sidecar.normalized_context is not None
+
+    # run_result.json must exist and contain normalized_context
+    run_sidecar = load_run_result(staging_dir)
+    assert run_sidecar.normalized_context is not None
+
+
+def test_pipeline_failed_run_blocks_postprocess(tmp_path):
+    """When run fails, run_result.json is written and postprocess is NOT attempted."""
+    from pathlib import Path
+    from rompy.model import ModelRun
+    from rompy.backends.config import LocalConfig
+    from rompy.postprocess.config import NoopPostprocessorConfig
+    from tests.test_helpers import DemoConfig
+    from rompy.core.result_persistence import load_run_result
+    from unittest.mock import patch
+    from rompy.core.responses import PipelineStage
+
+    model = ModelRun(
+        config=DemoConfig(arg1="foo", arg2="bar"),
+        run_id="pipeline-fail-run",
+        output_dir=str(tmp_path / "output"),
+    )
+
+    backend = LocalConfig(command="exit 1", timeout=60)
+    processor = NoopPostprocessorConfig()
+
+    # Patch render to avoid template complexity and patch postprocess to detect calls
+    with patch.object(model.config.__class__, "render", return_value=None):
+        with patch.object(ModelRun, "postprocess") as mock_post:
+            result = model.pipeline(
+                pipeline_backend="local", backend_config=backend, processor=processor
+            )
+
+    # Pipeline must indicate failure at RUN stage
+    assert result.success is False
+    assert result.failed_stage == PipelineStage.RUN
+
+    staging_dir = Path(result.staging_dir) if getattr(result, "staging_dir", None) else Path(model.staging_dir)
+
+    # run_result.json must exist even on failure
+    run_sidecar = load_run_result(staging_dir)
+    assert run_sidecar.success is False
+    assert run_sidecar.normalized_context is not None
+
+    # Ensure postprocess was NOT called
+    mock_post.assert_not_called()

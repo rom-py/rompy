@@ -1,7 +1,5 @@
 """Tests for join_prefix utility."""
 
-import pytest
-
 from rompy.transfer.utils import join_prefix
 
 

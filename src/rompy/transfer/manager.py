@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from .registry import get_transfer
-from .utils import join_prefix
+from .utils import join_prefix, redact_error, redact_uri
+
+logger = logging.getLogger(__name__)
 
 
 class TransferFailurePolicy(Enum):
@@ -41,7 +43,7 @@ class TransferItemResult:
     target_name: str
     dest_uri: str
     ok: bool
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -127,32 +129,43 @@ class TransferManager:
 
             for dest_prefix in destinations:
                 dest_uri = join_prefix(dest_prefix, target_name)
+                evidence_uri = redact_uri(dest_uri)
+                evidence_prefix = redact_uri(dest_prefix)
 
                 try:
                     transfer = get_transfer(dest_prefix)
+                    logger.info(
+                        "Transfer %s -> %s",
+                        local_path,
+                        evidence_uri,
+                    )
                     transfer.put(local_path, dest_uri)
 
                     items.append(
                         TransferItemResult(
                             local_path=local_path,
-                            dest_prefix=dest_prefix,
                             target_name=target_name,
-                            dest_uri=dest_uri,
+                            dest_prefix=evidence_prefix,
+                            dest_uri=evidence_uri,
                             ok=True,
                             error=None,
                         )
                     )
                     succeeded += 1
+                    logger.info("Transfer succeeded for %s", evidence_uri)
 
                 except Exception as e:
-                    error_msg = f"{type(e).__name__}: {str(e)}"
+                    error_msg = redact_error(
+                        f"{type(e).__name__}: {e!s}", dest_prefix, dest_uri
+                    )
+                    logger.error("Transfer failed for %s: %s", evidence_uri, error_msg)
 
                     items.append(
                         TransferItemResult(
                             local_path=local_path,
-                            dest_prefix=dest_prefix,
                             target_name=target_name,
-                            dest_uri=dest_uri,
+                            dest_prefix=evidence_prefix,
+                            dest_uri=evidence_uri,
                             ok=False,
                             error=error_msg,
                         )

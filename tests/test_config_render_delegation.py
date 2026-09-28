@@ -43,4 +43,5 @@ def test_modelrun_delegates_to_config_render(tmp_path):
         assert "runtime" in context_arg
         assert "config" in context_arg
         assert output_dir_arg == model_run.output_dir
-        assert str(result) == str(tmp_path / "test")
+        assert result.success is True
+        assert result.staging_dir == str(tmp_path / "test")

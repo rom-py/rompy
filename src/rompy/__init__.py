@@ -49,10 +49,9 @@ warnings.filterwarnings(
 )
 
 # __version__ = _version.get_versions()["version"]
-__version__ = "0.6.4"
+__version__ = "2.0.0-alpha"
 
 # Import and re-export formatting utilities
-from .formatting import get_formatted_box, get_formatted_header_footer
 
 # Import logging configuration
 from .logging import LoggingConfig

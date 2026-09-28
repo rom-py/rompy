@@ -279,7 +279,7 @@ def example_slurm_validation():
 
     # Valid SLURM configuration
     try:
-        valid_config = SlurmConfig(
+        SlurmConfig(
             queue="general",
             command="python run_model.py",
             timeout=3600,
@@ -296,7 +296,7 @@ def example_slurm_validation():
     # Invalid time limit format
     logger.info("Testing invalid time limit format...")
     try:
-        invalid_config = SlurmConfig(
+        SlurmConfig(
             queue="general",
             command="python run_model.py",
             time_limit="25:00",  # Invalid format - missing seconds
@@ -310,7 +310,7 @@ def example_slurm_validation():
     # Invalid number of nodes (too high)
     logger.info("Testing invalid number of nodes...")
     try:
-        invalid_config = SlurmConfig(
+        SlurmConfig(
             queue="general",
             command="python run_model.py",
             nodes=101,  # Max is 100
@@ -325,7 +325,7 @@ def example_slurm_validation():
     # Invalid cpus_per_task (too high)
     logger.info("Testing invalid CPUs per task...")
     try:
-        invalid_config = SlurmConfig(
+        SlurmConfig(
             queue="general",
             command="python run_model.py",
             cpus_per_task=129,  # Max is 128
@@ -397,4 +397,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

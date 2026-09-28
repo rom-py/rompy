@@ -1,17 +1,15 @@
 """Rompy core data objects."""
 
 import logging
-import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from shutil import copytree
 from typing import Literal, Optional, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from cloudpathlib import AnyPath
-from pydantic import Field, PrivateAttr, field_validator, model_validator
+from pydantic import Field, PrivateAttr, model_validator
 
 from rompy.core.filters import Filter
 from rompy.core.grid import BaseGrid, RegularGrid

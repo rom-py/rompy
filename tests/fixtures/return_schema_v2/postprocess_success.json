@@ -1,0 +1,81 @@
+{
+  "error": null,
+  "kind": "postprocess_result",
+  "normalized_context": {
+    "config_hash": "sha256:fixture-config",
+    "extensions": {
+      "source": "canonical-fixture"
+    },
+    "model_type": "fixture-model",
+    "output_dir": "fixtures/output",
+    "period_end": "2026-01-02T00:00:00Z",
+    "period_interval": 3600.0,
+    "period_start": "2026-01-01T00:00:00Z",
+    "staging_dir": "fixtures/staging"
+  },
+  "payload": {
+    "artifacts": [
+      {
+        "artifact_type": "netcdf",
+        "description": "observed wave output",
+        "kind": "local",
+        "path": "outputs/waves.nc",
+        "size_bytes": 42
+      },
+      {
+        "artifact_type": "text",
+        "kind": "remote",
+        "size_bytes": 17,
+        "uri": "s3://fixture-bucket/run-001/summary.txt"
+      }
+    ],
+    "expected_outputs": [
+      {
+        "artifact_type": "netcdf",
+        "kind": "local",
+        "path": "outputs/waves.nc"
+      },
+      {
+        "artifact_type": "netcdf",
+        "kind": "local",
+        "path": "outputs/wind.nc"
+      }
+    ],
+    "file_count": 2,
+    "metadata": {
+      "normalized_context": {
+        "config_hash": "sha256:fixture-config",
+        "extensions": {
+          "source": "canonical-fixture"
+        },
+        "model_type": "fixture-model",
+        "output_dir": "fixtures/output",
+        "period_end": "2026-01-02T00:00:00Z",
+        "period_interval": 3600.0,
+        "period_start": "2026-01-01T00:00:00Z",
+        "staging_dir": "fixtures/staging"
+      }
+    },
+    "missing_outputs": [
+      {
+        "artifact_type": "netcdf",
+        "kind": "local",
+        "path": "outputs/wind.nc",
+        "reason": "not produced"
+      }
+    ],
+    "output_dir": "fixtures/output",
+    "run_id": "run-001",
+    "success": true,
+    "timing": {
+      "duration_seconds": 1.25,
+      "end_time": "2026-01-02T03:04:06.250000Z",
+      "start_time": "2026-01-02T03:04:05Z"
+    },
+    "validated": true
+  },
+  "run_id": "run-001",
+  "schema_version": 2,
+  "status": "success",
+  "success": true
+}

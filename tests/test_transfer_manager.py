@@ -1,13 +1,13 @@
 """Tests for TransferManager."""
 
-import pytest
 from pathlib import Path
 
+import pytest
+
 from rompy.transfer.manager import (
-    TransferManager,
-    TransferFailurePolicy,
-    TransferItemResult,
     TransferBatchResult,
+    TransferFailurePolicy,
+    TransferManager,
 )
 
 
@@ -102,6 +102,25 @@ def test_transfer_manager_continue_on_failure(temp_files, tmp_path):
     assert result.items[1].error is not None
 
 
+def test_transfer_manager_redacts_decoded_credentials(temp_files, monkeypatch):
+    import rompy.transfer.manager as manager_module
+
+    class Destination:
+        def put(self, source, target):
+            raise RuntimeError("backend rejected token=secret fragment=fragment")
+
+    monkeypatch.setattr(manager_module, "get_transfer", lambda value: Destination())
+    destination = "https://example.test/archive?token=s%65cret#frag%6Dent"
+    result = TransferManager().transfer_files(
+        [temp_files[0]], [destination], {temp_files[0]: "file.txt"}
+    )
+
+    error = result.items[0].error
+    assert error is not None
+    assert "secret" not in error
+    assert "fragment" not in error
+
+
 def test_transfer_manager_fail_fast_on_error(temp_files, tmp_path):
     """Test FAIL_FAST policy raises on first failure."""
     manager = TransferManager()
@@ -112,7 +131,7 @@ def test_transfer_manager_fail_fast_on_error(temp_files, tmp_path):
     destinations = [bad_dest, good_dest]
     name_map = {temp_files[0]: "file.txt"}
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         manager.transfer_files(
             [temp_files[0]],
             destinations,
