@@ -14,8 +14,15 @@ from pydantic import field_validator
 from .types import RompyBaseModel, Slice
 
 
-# pydantic class to apply all the filters to the dataset
 class Filter(RompyBaseModel):
+    """Filters applied to a dataset after a source opens it.
+
+    Each field holds the keyword arguments of the filter function with the same
+    name in this module (`sort_filter`, `subset_filter`, `crop_filter`,
+    `timenorm_filter`, `rename_filter`, `derived_filter`). Calling the filter on a
+    dataset applies them in that order, skipping those left empty.
+    """
+
     sort: Optional[dict] = {}
     subset: Optional[dict] = {}
     crop: Optional[dict] = {}

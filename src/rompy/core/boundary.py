@@ -75,6 +75,13 @@ def find_minimum_distance(points: list[tuple[float, float]]) -> float:
 
 
 class DataBoundary(DataGrid):
+    """Gridded data along the open boundary of a model grid.
+
+    Selects data from a gridded source at points along the grid boundary, spaced by
+    `spacing` (or at the source grid spacing with `spacing="parent"`), with
+    `sel_method` choosing nearest-neighbour selection or interpolation.
+    """
+
     model_type: Literal["boundary"] = Field(
         default="data_boundary",
         description="Model type discriminator",

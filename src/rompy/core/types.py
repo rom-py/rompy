@@ -9,6 +9,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class RompyBaseModel(BaseModel):
+    """Base class of all rompy models.
+
+    Unknown fields are rejected, and a misspelled field name gets a suggestion of
+    the closest field. The inputs a model was created with are kept
+    (`dump_inputs_dict`, `dump_inputs_json`), and models print as a hierarchical
+    summary of their fields.
+    """
+
     # The config below prevents https://github.com/pydantic/pydantic/discussions/7121
     model_config = ConfigDict(protected_namespaces=(), extra="forbid")
 
