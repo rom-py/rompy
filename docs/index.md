@@ -83,7 +83,7 @@ For those looking to contribute or extend Rompy:
 
 - [**FAQ**](faq.md) - Common questions and troubleshooting solutions
 - [**Demo**](demo.md) - Interactive demonstration of Rompy capabilities
-- [**API Reference**](api.md) - Complete API documentation with usage examples
+- [**API Reference**](reference/index.md) - Complete API documentation with usage examples
 
 ---
 

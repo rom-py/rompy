@@ -1,3 +1,0 @@
-# CLI
-
-::: rompy.cli

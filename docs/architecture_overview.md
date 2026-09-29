@@ -361,4 +361,4 @@ Rompy integrates with various external systems:
 
 - Review the [Plugin Architecture](plugin_architecture.md) for more details on extending Rompy
 - Check the [Developer Guide](developer/index.md) for advanced development topics
-- Look at the [API Reference](api.md) for detailed class documentation
+- Look at the [API Reference](reference/index.md) for detailed class documentation

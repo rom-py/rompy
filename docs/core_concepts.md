@@ -4,8 +4,7 @@ This section explores the fundamental components that make up Rompy's architectu
 
 Rompy is a modular library with configuration and execution separated by design. The core framework consists of two primary concepts:
 
-::: rompy.model.ModelRun
-::: rompy.core.config.BaseConfig
+See [`ModelRun`][rompy.model.ModelRun] and [`BaseConfig`][rompy.core.config.BaseConfig] in the reference.
 
 At a high level, ModelRun orchestrates the entire model execution process including generation, execution, and post-processing, while configuration objects are responsible for defining the model setup.
 
@@ -60,36 +59,31 @@ Grids define the spatial domain of models. The base objects described here have 
 
 Rompy provides several grid types:
 
-::: rompy.core.grid.BaseGrid
-::: rompy.core.grid.RegularGrid
+See [`BaseGrid`][rompy.core.grid.BaseGrid] and [`RegularGrid`][rompy.core.grid.RegularGrid] in the reference.
 
 ### Source Components
 
 Source objects represent different ways to access data for models. They represent the abstraction layer between data inputs and model configurations, allowing for flexibility in data sourcing.
 
-::: rompy.core.source.SourceBase
-::: rompy.core.source.SourceFile
-::: rompy.core.source.SourceIntake
+See [`SourceBase`][rompy.core.source.SourceBase], [`SourceFile`][rompy.core.source.SourceFile] and [`SourceIntake`][rompy.core.source.SourceIntake] in the reference.
 
 ### Data Components
 
 Data objects represent and handle input data for models:
 
-::: rompy.core.data.DataBlob
-::: rompy.core.data.DataGrid
+See [`DataBlob`][rompy.core.data.DataBlob] and [`DataGrid`][rompy.core.data.DataGrid] in the reference.
 
 ### Boundary Components
 
 Boundary conditions specify model forcing at domain edges:
 
-::: rompy.core.boundary.BoundaryWaveStation
-::: rompy.core.source.SourceWavespectra
+See [`BoundaryWaveStation`][rompy.core.boundary.BoundaryWaveStation] and [`SourceWavespectra`][rompy.core.source.SourceWavespectra] in the reference.
 
 ### Spectrum Components
 
 Spectral representations for wave models:
 
-::: rompy.core.spectrum.LogFrequency
+See [`LogFrequency`][rompy.core.spectrum.LogFrequency] in the reference.
 
 ## Architecture Patterns
 

@@ -215,5 +215,5 @@ def run_with_retry(model_run, backend, max_retries=3):
 - For specific model examples, see [Examples](examples.md)
 - For model configuration details, see [Configuration Deep Dive](configuration_deep_dive.md)
 - For backend options, see [Backends](backends.md)
-- For API reference, see [API Reference](api.md)
+- For API reference, see [API Reference](reference/index.md)
 - For model-specific guides, see [Models](models.md)

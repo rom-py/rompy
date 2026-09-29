@@ -197,6 +197,6 @@ print("Data sources configured successfully!")
 
 - For more model-specific examples, see the [Model Guides](models.md) section
 - Learn about configuring [Backends](backends.md) for different execution environments
-- Explore the [API Reference](api.md) for detailed information about classes and methods
+- Explore the [API Reference](reference/index.md) for detailed information about classes and methods
 - Review [Common Workflows](common_workflows.md) for best practices and patterns
 

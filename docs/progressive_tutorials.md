@@ -365,4 +365,4 @@ For model-specific tutorials on SWAN, SCHISM, and other supported models, see th
 - Explore [Configuration Deep Dive](configuration_deep_dive.md) for detailed configuration options
 - Learn about [Common Workflows](common_workflows.md) for best practices
 - Check out the [Advanced Topics](backends.md) for more complex usage
-- Review the [API Reference](api.md) for comprehensive documentation of all classes and methods
+- Review the [API Reference](reference/index.md) for comprehensive documentation of all classes and methods
