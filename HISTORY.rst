@@ -33,6 +33,14 @@ are continually evolving. Contributions and feedback are welcome!
 Releases
 ********
 
+Unreleased
+__________
+
+Bug Fixes
+---------
+* The check for misspelled fields accepts field aliases. Models could not be created with an
+  alias, e.g. the ``break`` parameter of rompy-xbeach's wave models.
+
 0.6.0 (2026-02-18)
 ___________________
 

@@ -2,11 +2,13 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from pydantic import ConfigDict, Field
 
 # Import test utilities
 from test_utils.logging import get_test_logger
 
 from rompy.core.config import BaseConfig
+from rompy.core.types import RompyBaseModel
 from tests.test_helpers import DemoConfig
 from rompy.core.time import TimeRange
 from rompy.model import ModelRun
@@ -88,3 +90,20 @@ def test_gitlab_template(gitlab_template):
         Path(gitlab_template.output_dir) / gitlab_template.run_id / "INPUT",
         here / "simulations/test_base_ref/INPUT",
     )
+
+
+class _AliasModel(RompyBaseModel):
+    breaktype: str = Field("roelvink1", alias="break")
+    gamma: float = 0.55
+    model_config = ConfigDict(populate_by_name=True)
+
+
+def test_typo_check_accepts_field_aliases():
+    """A field can be given by its alias, as pydantic allows."""
+    assert _AliasModel(**{"break": "baldock"}).breaktype == "baldock"
+    assert _AliasModel(breaktype="baldock").breaktype == "baldock"
+
+
+def test_typo_check_suggests_close_field_name():
+    with pytest.raises(ValueError, match="Unknown field 'gama'. Did you mean 'gamma'?"):
+        _AliasModel(gama=0.5)

@@ -15,8 +15,18 @@ class RompyBaseModel(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def check_for_typos(cls, data: Any) -> Any:
+        """Suggest the closest field name for an unknown input key.
+
+        A field can be given by its name or, like in pydantic, by its alias.
+        """
         if isinstance(data, dict):
-            fields = cls.model_fields.keys()
+            fields = list(cls.model_fields)
+            for field in cls.model_fields.values():
+                fields += [
+                    alias
+                    for alias in (field.alias, field.validation_alias)
+                    if isinstance(alias, str) and alias not in fields
+                ]
             for key in data.keys():
                 if key not in fields:
                     matches = difflib.get_close_matches(key, fields, n=1, cutoff=0.6)
