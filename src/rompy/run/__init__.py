@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 if TYPE_CHECKING:
     from rompy.backends import LocalConfig
+    from rompy.model import ModelRun
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,10 @@ class LocalRunBackend:
     """
 
     def run(
-        self, model_run, config: "LocalConfig", workspace_dir: Optional[str] = None
+        self,
+        model_run: "ModelRun",
+        config: "LocalConfig",
+        workspace_dir: Optional[str] = None,
     ) -> bool:
         """Run the model locally.
 

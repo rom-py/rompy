@@ -74,7 +74,7 @@ class BasePostprocessorConfig(BaseModel, ABC):
         return v
 
     @abstractmethod
-    def get_postprocessor_class(self):
+    def get_postprocessor_class(self) -> type:
         """Return the postprocessor class that should handle this configuration.
 
         Returns:
@@ -240,7 +240,9 @@ def _load_processor_config_from_dict(config_data: dict) -> BasePostprocessorConf
         )
 
 
-def validate_postprocessor_config(config_file, processor_type=None):
+def validate_postprocessor_config(
+    config_file: str | Path, processor_type: str | None = None
+) -> tuple[bool, str, "BasePostprocessorConfig | None"]:
     """Validate a postprocessor configuration file.
 
     This function validates that a configuration file is valid YAML/JSON,

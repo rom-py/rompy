@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from rompy.backends import SlurmConfig
+    from rompy.model import ModelRun
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,10 @@ class SlurmRunBackend:
     """
 
     def run(
-        self, model_run, config: "SlurmConfig", workspace_dir: Optional[str] = None
+        self,
+        model_run: "ModelRun",
+        config: "SlurmConfig",
+        workspace_dir: Optional[str] = None,
     ) -> bool:
         """Submit model run to SLURM queue.
 
@@ -71,7 +75,7 @@ class SlurmRunBackend:
             return False
 
     def _create_job_script(
-        self, model_run, config: "SlurmConfig", staging_dir: str
+        self, model_run: "ModelRun", config: "SlurmConfig", staging_dir: str
     ) -> str:
         """Create SLURM job script.
 

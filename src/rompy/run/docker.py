@@ -16,6 +16,7 @@ from docker.errors import APIError, BuildError, ContainerError, ImageNotFound
 
 if TYPE_CHECKING:
     from rompy.backends import DockerConfig
+    from rompy.model import ModelRun
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,10 @@ class DockerRunBackend:
     """
 
     def run(
-        self, model_run, config: "DockerConfig", workspace_dir: Optional[str] = None
+        self,
+        model_run: "ModelRun",
+        config: "DockerConfig",
+        workspace_dir: Optional[str] = None,
     ) -> bool:
         """Run the model inside a Docker container.
 

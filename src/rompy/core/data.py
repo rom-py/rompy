@@ -45,16 +45,8 @@ class DataBlob(DataBase):
 
     Generic data source for files that either need to be copied to the model directory
     or linked if `link` is set to True. Supports local/cloud paths, remote HTTP/HTTPS URLs,
-    and oceanum:// storage URIs via the transfer registry.
-
-    Parameters
-    ----------
-    source : str | Path | AnyPath
-        URI of the data source: local file path, cloud storage URI (s3://, gs://),
-        remote HTTP/HTTPS URL, or oceanum:// storage URI.
-    link : bool
-        Whether to create a symbolic link instead of copying the file.
-        Note: Only works with local file paths (file:// scheme).
+    and oceanum:// storage URIs via the transfer registry. Linking only works with
+    local file paths (file:// scheme).
 
     Examples
     --------
@@ -208,13 +200,13 @@ class DataPoint(DataBase):
     )
     buffer: float = Field(
         default=0.0,
-        description="Space to buffer the grid bounding box if `filter_grid` is True",
+        description="Space to buffer the grid bounding box if `crop_data` is True",
     )
     time_buffer: list[int] = Field(
         default=[0, 0],
         description=(
             "Number of source data timesteps to buffer the time range "
-            "if `filter_time` is True"
+            "if `crop_data` is True"
         ),
     )
 
@@ -284,14 +276,14 @@ class DataPoint(DataBase):
 class DataGrid(DataPoint):
     """Data object for gridded source data.
 
-    Generic data object for xarray datasets that with gridded spatial dimensions
+    Generic data object for xarray datasets with gridded spatial dimensions.
 
     Note
     ----
-    The fields `filter_grid` and `filter_time` trigger updates to the crop filter from
-    the grid and time range objects passed to the get method. This is useful for data
-    sources that are not defined on the same grid as the model grid or the same time
-    range as the model run.
+    When `crop_data` is True, `get` crops the data to the bounding box of the grid
+    (plus `buffer`) and to the time range (plus `time_buffer` source time steps)
+    passed to it. This is useful for data sources that are not defined on the same
+    grid as the model grid or the same time range as the model run.
 
     """
 

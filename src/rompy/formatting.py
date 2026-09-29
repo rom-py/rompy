@@ -5,6 +5,8 @@ This module provides various formatting utilities for creating consistent and
 visually appealing output in the ROMPY codebase.
 """
 
+import logging
+from collections.abc import Callable
 from typing import Any, Dict, List, Optional, Tuple
 
 from rompy.logging import LogFormat, LoggingConfig, LogLevel, get_logger
@@ -225,7 +227,7 @@ def get_formatted_box(
 
 def log_box(
     title: str,
-    logger=None,
+    logger: logging.Logger | None = None,
     use_ascii: Optional[bool] = None,
     width: Optional[int] = None,
     add_empty_line: bool = True,
@@ -362,7 +364,9 @@ def format_table_row(key: str, value: str, use_ascii: Optional[bool] = None) -> 
     return format_dict["data_line"].format(key, value)
 
 
-def log_horizontal_line(logger=None, use_ascii: Optional[bool] = None) -> None:
+def log_horizontal_line(
+    logger: logging.Logger | None = None, use_ascii: Optional[bool] = None
+) -> None:
     """Log a horizontal line for visual separation.
 
     Args:
@@ -419,7 +423,7 @@ def get_status_box(
 def log_status(
     status_type: str,
     custom_title: Optional[str] = None,
-    logger=None,
+    logger: logging.Logger | None = None,
     add_empty_line: bool = True,
 ) -> None:
     """Log a pre-configured status box.
@@ -448,7 +452,11 @@ def log_status(
 
 
 def str_helper(
-    lines: list, name: str, obj: Any, level: int, format_value_func=None
+    lines: list,
+    name: str,
+    obj: Any,
+    level: int,
+    format_value_func: Callable[[Any], str | None] | None = None,
 ) -> None:
     """Helper method to build a hierarchical string representation.
 

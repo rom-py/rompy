@@ -11,7 +11,7 @@ Example:
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Set
+from typing import IO, Any, Dict, Set
 
 import yaml
 
@@ -39,7 +39,7 @@ class IncludeLoader(yaml.SafeLoader):
     # Maximum allowed include depth to prevent infinite recursion
     MAX_INCLUDE_DEPTH = 10
 
-    def __init__(self, stream):
+    def __init__(self, stream: str | IO):
         """Initialize the loader with stream and include tracking.
 
         Args:
@@ -147,7 +147,7 @@ def include_constructor(loader: IncludeLoader, node: yaml.Node) -> Any:
 IncludeLoader.add_constructor("!include", include_constructor)
 
 
-def load_yaml_with_includes(stream) -> Dict[str, Any]:
+def load_yaml_with_includes(stream: str | Path | IO) -> Dict[str, Any]:
     """Load a YAML file with support for !include directives.
 
     This is the main entry point for loading YAML files that may contain

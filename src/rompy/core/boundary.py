@@ -236,7 +236,7 @@ class BoundaryWaveStation(DataBoundary):
     )
     buffer: float = Field(
         default=2.0,
-        description="Space to buffer the grid bounding box if `filter_grid` is True",
+        description="Space to buffer the grid bounding box if `crop_data` is True",
     )
 
     def model_post_init(self, __context):

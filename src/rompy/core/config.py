@@ -45,7 +45,7 @@ class BaseConfig(RompyBaseModel):
     def __call__(self, *args, **kwargs):
         return self
 
-    def render(self, context: dict, output_dir: Path | str):
+    def render(self, context: dict, output_dir: Path | str) -> None:
         """Render the configuration template to the output directory.
 
         This method orchestrates the template rendering process. The default implementation
@@ -56,9 +56,6 @@ class BaseConfig(RompyBaseModel):
         Args:
             context: Full context dictionary. Expected to contain at least 'runtime' and 'config' keys.
             output_dir: Target directory for rendered output.
-
-        Returns:
-            str: Path to the staging directory (workspace) containing rendered files.
         """
         # Import locally to avoid potential circular imports at module import time
         from rompy.core.render import render as cookiecutter_render

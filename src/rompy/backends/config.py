@@ -74,7 +74,7 @@ class BaseBackendConfig(BaseModel, ABC):
         return v
 
     @abstractmethod
-    def get_backend_class(self):
+    def get_backend_class(self) -> type:
         """Return the backend class that should handle this configuration.
 
         Returns:

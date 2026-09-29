@@ -93,25 +93,30 @@ class TemplateRenderer(RompyBaseModel):
         """Render the template with the given context.
 
         Returns:
-            str: The path to the rendered template
+            The path to the rendered template
         """
         return render(self.context, self.template, self.output_dir, self.checkout)
 
 
-def render(context, template, output_dir, checkout=None):
+def render(
+    context: dict,
+    template: str,
+    output_dir: str | Path,
+    checkout: str | None = None,
+) -> str:
     """Render the template with the given context.
 
     This function handles the rendering process and provides detailed progress
     information during the rendering.
 
     Args:
-        context (dict): The context to use for rendering
-        template (str): The template directory or URL
-        output_dir (str): The output directory
-        checkout (str, optional): The branch, tag or commit to checkout
+        context: The context to use for rendering
+        template: The template directory or URL
+        output_dir: The output directory
+        checkout: The branch, tag or commit to checkout
 
     Returns:
-        str: The path to the rendered template
+        The path to the rendered template
     """
     # Use formatting utilities imported at the top of the file
 

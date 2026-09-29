@@ -12,6 +12,7 @@ from rompy.backends import DockerConfig, LocalConfig
 
 if TYPE_CHECKING:
     from rompy.backends.config import SlurmConfig
+    from rompy.model import ModelRun
     from rompy.postprocess.config import BasePostprocessorConfig
 
 logger = logging.getLogger(__name__)
@@ -26,14 +27,14 @@ class LocalPipelineBackend:
 
     def execute(
         self,
-        model_run,
+        model_run: "ModelRun",
         backend_config: Union[LocalConfig, DockerConfig, "SlurmConfig"] = None,
         processor: "BasePostprocessorConfig" = None,
         run_kwargs: Optional[Dict[str, Any]] = None,
         process_kwargs: Optional[Dict[str, Any]] = None,
         cleanup_on_failure: bool = False,
         validate_stages: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Execute the model pipeline locally.
 

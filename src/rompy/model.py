@@ -11,7 +11,7 @@ import shutil
 import zipfile as zf
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
 
 from pydantic import Field
 
@@ -22,6 +22,9 @@ from rompy.core.time import TimeRange
 from rompy.core.types import RompyBaseModel
 from rompy.logging import get_logger
 from rompy.utils import load_entry_points
+
+if TYPE_CHECKING:
+    from rompy.postprocess.config import BasePostprocessorConfig
 
 # Initialize the logger
 logger = get_logger(__name__)
@@ -363,7 +366,9 @@ class ModelRun(RompyBaseModel):
         # Pass the config object and workspace_dir to the backend
         return backend_instance.run(self, config=backend, workspace_dir=workspace_dir)
 
-    def postprocess(self, processor, **kwargs) -> Dict[str, Any]:
+    def postprocess(
+        self, processor: "BasePostprocessorConfig", **kwargs: Any
+    ) -> Dict[str, Any]:
         """
         Postprocess the model outputs using the specified processor configuration.
 
@@ -404,7 +409,9 @@ class ModelRun(RompyBaseModel):
 
         return processor_instance.process(self, **processor_fields)
 
-    def pipeline(self, pipeline_backend: str = "local", **kwargs) -> Dict[str, Any]:
+    def pipeline(
+        self, pipeline_backend: str = "local", **kwargs: Any
+    ) -> Dict[str, Any]:
         """
         Run the complete model pipeline (generate, run, postprocess) using the specified pipeline backend.
 

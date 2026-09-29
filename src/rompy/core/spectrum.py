@@ -37,9 +37,7 @@ class Frequency(RompyBaseModel):
 class LogFrequency(RompyBaseModel):
     """Logarithmic wave frequencies.
 
-    Frequencies are defined according to:
-
-    :math:`f_{i+1} = \gamma * f_{i}`
+    Frequencies are defined according to f(i+1) = γ · f(i).
 
     Note
     ----
@@ -54,15 +52,14 @@ class LogFrequency(RompyBaseModel):
     Examples
     --------
 
-    .. ipython:: python
-        :okwarning:
+    ```python exec="on" source="above" result="text" session="spectrum-logfrequency"
+    from rompy.core.spectrum import LogFrequency
 
-        from rompy.core.spectrum import LogFrequency
-
-        LogFrequency(f0=0.04, f1=1.0, nbin=34)
-        LogFrequency(f0=0.04, f1=1.0, finc=0.1)
-        LogFrequency(f0=0.04, nbin=34, finc=0.1)
-        LogFrequency(f1=1.0, nbin=34, finc=0.1)
+    print(LogFrequency(f0=0.04, f1=1.0, nbin=34))
+    print(LogFrequency(f0=0.04, f1=1.0, finc=0.1))
+    print(LogFrequency(f0=0.04, nbin=34, finc=0.1))
+    print(LogFrequency(f1=1.0, nbin=34, finc=0.1))
+    ```
 
     """
 
