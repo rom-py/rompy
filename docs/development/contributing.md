@@ -48,7 +48,8 @@ rompy is extended through entry points, so most additions are a class plus a lin
 The docs are built with [ProperDocs](https://github.com/ProperDocs/properdocs) (a maintained fork of MkDocs), Material and mkdocstrings, using the configuration shared by all rompy sites in [rompy-docs](https://github.com/rom-py/rompy-docs):
 
 ```bash
-pip install -e ".[docs]"
+pip install -e ".[docs,test]"
+python -c "import tests.conftest"           # download the example data into tests/data
 properdocs serve -f mkdocs.yml              # live preview
 properdocs build --strict -f mkdocs.yml     # what CI runs
 rompy-docs check -f mkdocs.yml              # compare with the shared configuration

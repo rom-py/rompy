@@ -27,7 +27,10 @@ jobs:
                       mkdocs-material-
             - name: Install GDAL
               run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
-            - run: pip install .[docs]
+            - run: pip install .[docs,test]
+            # The examples read data from tests/data, downloaded from rompy-test-data
+            - name: Download the example data
+              run: python -c "import tests.conftest"
             # The notebooks are rendered on the rompy-notebooks site, not copied here.
             - name: Check the shared docs configuration
               run: rompy-docs check -f mkdocs.yml
