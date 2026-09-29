@@ -1,127 +1,160 @@
 site_name: rompy
+site_description: Configure and run ocean models from Python and YAML
 site_url: https://rom-py.github.io/rompy/
 repo_url: https://github.com/rom-py/rompy
 repo_name: rom-py/rompy
 edit_uri: edit/main/docs/
 
 nav:
-    - Home: index.md
-    - Getting Started:
-          - getting_started.md
-          - Core Concepts: core_concepts.md
-    - Tutorials:
-          - Progressive Tutorials: progressive_tutorials.md
-          - Practical Examples: examples.md
-          - Common Workflows: common_workflows.md
-    - Models:
-          - Overview: models.md
-          - SWAN Guide: swan_guide.md
-          - SCHISM Guide: schism_guide.md
-          - XBeach Guide: xbeach_guide.md
-          - WAVEWATCH III Guide: ww3_guide.md
-          - Extending Models: extending_models.md
-
-    - Advanced Topics:
-          - Backends: backends.md
-          - Backend Reference: developer/backend_reference.md
-          - CLI: cli.md
-          - Formatting and Logging: formatting_and_logging.md
-          - Configuration Templating: templating.md
-    - Developer Guide:
-          - Contributing: contributing.md
-          - Development Setup: developer/index.md
-          - Testing: testing_guide.md
-    - Architecture:
-          - Architecture Overview: architecture_overview.md
-          - Plugin Architecture: plugin_architecture.md
-          - Selection Patterns: developer/architecture/selection_patterns.md # Moved for better organization
-          - Schema Advantages: schema_advantages.md
-    - API Reference: api.md
-    - FAQ: faq.md
-    - Examples: notebook_gallery.md
-
-    # - Gallery:
-    #       - Generated Examples: generated/gallery/index.md
+  - Home: index.md
+  - Getting Started:
+      - getting_started.md
+      - Core Concepts: core_concepts.md
+  - Tutorials:
+      - Progressive Tutorials: progressive_tutorials.md
+      - Practical Examples: examples.md
+      - Common Workflows: common_workflows.md
+  - Models:
+      - Overview: models.md
+      - SWAN Guide: swan_guide.md
+      - SCHISM Guide: schism_guide.md
+      - XBeach Guide: xbeach_guide.md
+      - WAVEWATCH III Guide: ww3_guide.md
+      - Extending Models: extending_models.md
+  - Advanced Topics:
+      - Backends: backends.md
+      - Backend Reference: developer/backend_reference.md
+      - CLI: cli.md
+      - Formatting and Logging: formatting_and_logging.md
+      - Configuration Templating: templating.md
+  - Developer Guide:
+      - Contributing: contributing.md
+      - Development Setup: developer/index.md
+      - Testing: testing_guide.md
+  - Architecture:
+      - Architecture Overview: architecture_overview.md
+      - Plugin Architecture: plugin_architecture.md
+      - Selection Patterns: developer/architecture/selection_patterns.md
+      - Schema Advantages: schema_advantages.md
+  - Reference:
+      - reference/index.md
+      - Model run: reference/model.md
+      - Model configuration: reference/config.md
+      - Time: reference/time.md
+      - Grids: reference/grid.md
+      - Data: reference/data.md
+      - Boundaries: reference/boundary.md
+      - Sources: reference/source.md
+      - Filters: reference/filters.md
+      - Spectra: reference/spectrum.md
+      - Base types: reference/types.md
+      - Templates and rendering: reference/templates.md
+      - YAML loading: reference/yaml.md
+      - Run backends: reference/backends.md
+      - Postprocessors: reference/postprocess.md
+      - Pipelines: reference/pipeline.md
+      - Transfers: reference/transfer.md
+      - Logging and formatting: reference/logging.md
+  - FAQ: faq.md
+  - Examples: notebook_gallery.md
 
 theme:
-    name: material
-    palette:
-        - media: "(prefers-color-scheme: light)"
-          scheme: default
-          primary: indigo
-          accent: indigo
-          toggle:
-              icon: material/lightbulb
-              name: Switch to dark mode
-        - media: "(prefers-color-scheme: dark)"
-          scheme: slate
-          primary: indigo
-          accent: indigo
-          toggle:
-              icon: material/lightbulb-outline
-              name: Switch to light mode
-    features:
-        - navigation.tabs
-        - navigation.sections
-        - navigation.top
-        - search.suggest
-        - search.highlight
-        - content.tabs.link
-        - content.code.annotation
-        - content.code.copy
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+
+extra_css:
+  - stylesheets/rompy.css
+
+extra:
+  rompy:
+    site: rompy
 
 plugins:
-    - search
-    - mkdocs-jupyter:
-          execute: false
-          execute_ignore:
-              - "*.ipynb"
-          include_source: True
-
-    - mkdocstrings:
-          handlers:
-              python:
-                  options:
-                      show_root_heading: true
-                      show_root_full_path: false
-                      show_object_full_path: false
-                      show_category_heading: true
-                      show_if_no_docstring: true
-                      show_signature_annotations: true
-                      signature_crossrefs: true
-                      separate_signature: true
-                      docstring_section_style: table
-                      members_order: source
-                      group_by_category: true
-                      show_submodules: false
-                      filters:
-                          - "!^_" # Hide private members by default
-    # - gallery:
-    #       examples_dirs:
-    #           - examples/notebooks/rompy_notebooks/common
-    #           - examples/notebooks/rompy_notebooks/backends
-    #           - examples/notebooks/rompy_notebooks/swan
-    #           - examples/notebooks/rompy_notebooks/schism
-    #       gallery_dirs:
-    #           - docs/generated/gallery # where to save generated gallery
+  - search
+  - markdown-exec
+  # Renders the notebooks copied from rompy-notebooks by the docs workflow.
+  # Removed when the notebook pages move to the rompy-notebooks site.
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          inventories:
+            - https://docs.python.org/3/objects.inv
+            - https://docs.pydantic.dev/latest/objects.inv
+            - https://docs.xarray.dev/en/stable/objects.inv
+          options:
+            docstring_style: auto
+            docstring_section_style: table
+            inherited_members: true
+            show_bases: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_if_no_docstring: false
+            show_source: false
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            members_order: source
+            group_by_category: true
+            summary: false
+            filters: ["!^_", "!^model_(?!type$)"]
+            extensions:
+              - griffe_pydantic: {schema: false}
+              - rompy_docs.griffe:PydanticFieldRules
 
 markdown_extensions:
-    - pymdownx.highlight:
-          anchor_linenums: true
-          line_spans: __span
-          pygments_lang_class: true
-    - pymdownx.inlinehilite
-    - pymdownx.snippets
-    - pymdownx.superfences
-    - pymdownx.details
-    - pymdownx.critic
-    - pymdownx.caret
-    - pymdownx.keys
-    - pymdownx.mark
-    - pymdownx.tilde
-    - attr_list
-    - pymdownx.superfences:
-          custom_fences:
-              - name: mermaid
-                class: mermaid
-                format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
