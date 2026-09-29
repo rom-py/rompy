@@ -1,12 +1,13 @@
-name: ci
+name: docs
 on:
     push:
         branches:
             - main
+    pull_request:
 permissions:
     contents: write
 jobs:
-    deploy:
+    docs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -16,7 +17,7 @@ jobs:
                   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
             - uses: actions/setup-python@v5
               with:
-                  python-version: 3.x
+                  python-version: "3.12"
             - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
             - uses: actions/cache@v4
               with:
@@ -26,9 +27,13 @@ jobs:
                       mkdocs-material-
             - name: Install GDAL
               run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
-            - run: cd /tmp && git clone --depth 1 https://github.com/rom-py/rompy-notebooks.git
-            - run: cp -r /tmp/rompy-notebooks/notebooks docs/
-            - run: rm docs/notebooks/schism/schism_basic_setup.ipynb -f
-            - run: rm docs/notebooks/common/rompy_core_features.py -f # This interferes with the rendered notebook
             - run: pip install .[docs]
-            - run: mkdocs gh-deploy --force
+            # The notebooks are rendered on the rompy-notebooks site, not copied here.
+            - name: Check the shared docs configuration
+              run: rompy-docs check -f mkdocs.yml
+            # Strict: broken links, missing API targets and failing examples fail the build
+            - name: Build
+              run: properdocs build --strict -f mkdocs.yml
+            - name: Deploy
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+              run: properdocs gh-deploy --force -f mkdocs.yml

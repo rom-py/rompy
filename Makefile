@@ -67,14 +67,14 @@ coverage: ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
 docs: ## generate MkDocs HTML documentation
-	mkdocs build
+	properdocs build --strict -f mkdocs.yml
 	$(BROWSER) site/index.html
 
 servedocs: ## serve documentation with MkDocs, watching for changes
-	mkdocs serve
+	properdocs serve -f mkdocs.yml
 
 apidocs: ## generate API documentation using mkdocstrings
-	mkdocs build
+	properdocs build --strict -f mkdocs.yml
 
 release: dist ## package and upload a release
 	twine upload dist/*

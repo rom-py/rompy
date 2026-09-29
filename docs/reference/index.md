@@ -24,4 +24,4 @@ Model plugins build on these classes. Their own references, for example [rompy-x
 | [Transfers](transfer.md) | `rompy.transfer` | `TransferManager`, transfer backends |
 | [Logging and formatting](logging.md) | `rompy.logging`, `rompy.formatting` | logging configuration |
 
-The command line is described in [CLI](../cli.md).
+The command line is described in [The command line](../how-to/cli.md).

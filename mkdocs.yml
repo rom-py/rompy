@@ -5,37 +5,35 @@ repo_url: https://github.com/rom-py/rompy
 repo_name: rom-py/rompy
 edit_uri: edit/main/docs/
 
+# Older pages kept until it is decided whether their content moves elsewhere.
+exclude_docs: |
+  common_workflows.md
+  usage.md
+
 nav:
   - Home: index.md
-  - Getting Started:
-      - getting_started.md
-      - Core Concepts: core_concepts.md
-  - Tutorials:
-      - Progressive Tutorials: progressive_tutorials.md
-      - Practical Examples: examples.md
-      - Common Workflows: common_workflows.md
-  - Models:
-      - Overview: models.md
-      - SWAN Guide: swan_guide.md
-      - SCHISM Guide: schism_guide.md
-      - XBeach Guide: xbeach_guide.md
-      - WAVEWATCH III Guide: ww3_guide.md
-      - Extending Models: extending_models.md
-  - Advanced Topics:
-      - Backends: backends.md
-      - Backend Reference: developer/backend_reference.md
-      - CLI: cli.md
-      - Formatting and Logging: formatting_and_logging.md
-      - Configuration Templating: templating.md
-  - Developer Guide:
-      - Contributing: contributing.md
-      - Development Setup: developer/index.md
-      - Testing: testing_guide.md
-  - Architecture:
-      - Architecture Overview: architecture_overview.md
-      - Plugin Architecture: plugin_architecture.md
-      - Selection Patterns: developer/architecture/selection_patterns.md
-      - Schema Advantages: schema_advantages.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Your first run: getting-started/first-run.md
+  - Concepts:
+      - Why rompy: concepts/why-rompy.md
+      - Configuration and validation: concepts/configuration.md
+      - Time: concepts/time.md
+      - Grids: concepts/grids.md
+      - Data and sources: concepts/data.md
+      - The run lifecycle: concepts/run-lifecycle.md
+      - Templates and rendering: concepts/templates.md
+      - Backends, postprocessors and pipelines: concepts/backends.md
+  - How-to:
+      - The command line: how-to/cli.md
+      - YAML configurations: how-to/yaml.md
+      - Logging and formatting: how-to/logging.md
+  - Plugins:
+      - Plugin architecture: plugins/architecture.md
+      - Writing a model plugin: plugins/model-plugin.md
+      - Sources, backends and postprocessors: plugins/extending.md
+      - Documenting a plugin: plugins/documenting.md
+  - Models: models.md
   - Reference:
       - reference/index.md
       - Model run: reference/model.md
@@ -55,8 +53,10 @@ nav:
       - Pipelines: reference/pipeline.md
       - Transfers: reference/transfer.md
       - Logging and formatting: reference/logging.md
-  - FAQ: faq.md
-  - Examples: notebook_gallery.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Testing: development/testing.md
+      - Backend internals: development/backend-internals.md
 
 theme:
   name: material
@@ -99,11 +99,6 @@ extra:
 plugins:
   - search
   - markdown-exec
-  # Renders the notebooks copied from rompy-notebooks by the docs workflow.
-  # Removed when the notebook pages move to the rompy-notebooks site.
-  - mkdocs-jupyter:
-      execute: false
-      include_source: true
   - mkdocstrings:
       handlers:
         python:
