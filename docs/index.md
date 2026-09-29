@@ -1,137 +1,67 @@
-# Welcome to Rompy's Documentation
+# rompy
 
-## *Streamlining Ocean Modeling with Python*
+rompy (Relocatable Ocean Modelling in PYthon) sets up and runs ocean and coastal models from Python or YAML. You describe a model run as validated objects: when it runs, where, which data force it and how the model is configured. rompy then writes the model's input files into a workspace and runs the model on it, locally, in Docker or on a cluster.
 
-Rompy (Relocatable Ocean Modelling in PYthon) is a comprehensive, modular Python library designed to simplify the setup, configuration, execution, and analysis of coastal ocean models. It combines templated model configuration with powerful xarray-based data handling and pydantic validation, enabling users to efficiently generate model control files and input datasets for a variety of ocean and wave models.
+Every model reads its inputs in its own format, but the chores are the same: define a period and a grid, turn datasets into forcing files, write the settings, run the model and repeat for the next event or variant. rompy provides the parts every model shares: the model run and its period, grids, data sources and the objects that extract data for a run, templates, run backends and the `rompy` command. Model plugins add the rest for one model each.
 
----
+Because the whole run is one object, it can be checked before the model starts, saved as a YAML file, and generated again on another machine or with one setting changed.
 
-## Why Rompy?
+## A first look
 
-Rompy was developed to address common pain points in the ocean modeling workflow:
+This example uses rompy's built-in base configuration, which needs no model, and writes a workspace from a template:
 
-- **Complex Model Setup & Configuration**: Traditional model setup can be a convoluted process involving manual editing of text files and scripts, making it error-prone and difficult to reproduce.
-- **Data Handling Complexity**: Ocean models require a wide variety of data formats for forcing, boundary conditions, and validation, each with its own complexities.
-- **Environment-Specific Execution**: Running models across different environments (local, Docker, HPC) often requires significant changes to the execution scripts and environment setup.
-- **Reproducibility & Version Control**: It can be challenging to version control a complete model configuration, including the exact data and software versions used.
-- **Model-Specific Complexity**: Each model has its own unique set of tools and conventions, making it difficult to switch between models or to couple them.
+```python exec="on" session="index"
+# Hidden setup: quiet logging and a temporary output folder.
+import tempfile
 
----
+from rompy.logging import config as logging_config
 
-## Key Features
-
-- **Modular Architecture**: Clean separation of configuration and execution logic supporting multiple ocean models
-- **Template-Based Configuration**: Reproducible model configuration using cookiecutter templates with pydantic validation
-- **Unified Data Interface**: Consistent interfaces for grids, data sources, boundary conditions, and spectra
-- **Extensible Plugin System**: Support for new models, data sources, backends, and postprocessors
-- **Multiple Execution Backends**: Support for local, Docker, and HPC execution environments
-- **Rich Logging & Formatting**: Comprehensive, visually appealing logging with formatted output and diagnostics
-- **Pydantic Validation**: Strong typing and validation throughout the API for robust error handling
-
----
-
-## Getting Started
-
-New to Rompy? Our **[Getting Started Guide](getting_started.md)** will walk you through installation, core concepts, and running your first model simulation.
-
----
-
-## Tutorials & Examples
-
-Learn through practical examples:
-
-- [**Progressive Tutorials**](progressive_tutorials.md) - Structured learning path from basic to advanced usage
-- [**Practical Examples**](examples.md) - Real-world scenarios with complete code examples
-- [**Common Workflows**](common_workflows.md) - Typical ocean modeling patterns and best practices
-
----
-
-## Model Support
-
-Rompy currently supports multiple ocean and wave models with plans for continued expansion:
-
-- [**Models Overview**](models.md) - Introduction to supported models
-- [**SWAN Guide**](swan_guide.md) - Comprehensive guide for SWAN model configuration
-- [**SCHISM Guide**](schism_guide.md) - Detailed configuration for SCHISM model
-- [**Extending Models**](extending_models.md) - Guide to adding new model implementations
-
----
-
-## Advanced Topics
-
-For more complex implementations and custom extensions:
-
-- [**Backends**](backends.md) - Execution backends for different environments
-- [**CLI**](cli.md) - Command-line interface for automation
-- [**Plugin Architecture**](plugin_architecture.md) - Extending Rompy with custom plugins
-- [**Architecture Overview**](architecture_overview.md) - System architecture and component relationships
-
----
-
-## Development & Contribution
-
-For those looking to contribute or extend Rompy:
-
-- [**Contribution Guidelines**](contributing.md) - How to contribute to the project
-- [**Development Setup**](developer/index.md) - Getting started with development
-- [**Testing Guide**](testing_guide.md) - Writing and running tests for Rompy
-- [**Backend Reference**](developer/backend_reference.md) - Technical details for backend development
-
----
-
-## Resources
-
-- [**FAQ**](faq.md) - Common questions and troubleshooting solutions
-- [**Demo**](demo.md) - Interactive demonstration of Rompy capabilities
-- [**API Reference**](reference/index.md) - Complete API documentation with usage examples
-
----
-
-## Quick Example
-
-Here's a simple example to demonstrate Rompy's capabilities:
-
-```python
-from rompy.model import ModelRun
-from rompy.core.config import BaseConfig
-from rompy.core.time import TimeRange
-from datetime import datetime
-
-# Create a basic model configuration
-config = BaseConfig()
-
-# Create a model run instance with time range
-run = ModelRun(
-    run_id="my_first_run",
-    period=TimeRange(
-        start=datetime(2023, 1, 1),
-        end=datetime(2023, 1, 2),
-        interval="1H",  # Hourly intervals
-    ),
-    config=config,
-    output_dir="./output",
-)
-
-# Generate model input files
-run.generate()
-
-# Execute the model run
-from rompy.backends import LocalConfig
-backend_config = LocalConfig(timeout=3600, command="echo 'Running model...'")
-success = run.run(backend=backend_config)
-
-if success:
-    print("Model run completed successfully!")
-else:
-    print("Model run failed.")
+logging_config.update(level="WARNING")
+OUT_DIR = tempfile.mkdtemp()
 ```
 
----
+```python exec="on" source="above" result="text" session="index"
+from rompy.core.config import BaseConfig
+from rompy.core.time import TimeRange
+from rompy.model import ModelRun
 
-## Support & Community
+run = ModelRun(
+    run_id="first_run",
+    period=TimeRange(start="2023-01-01T00", end="2023-01-02T00", interval="1h"),
+    output_dir=OUT_DIR,
+    config=BaseConfig(),
+)
+workspace = run.generate()
 
-- [**GitHub Repository**](https://github.com/rom-py/rompy) - Source code and issue tracking
-- [**Contributing**](contributing.md) - How to contribute to the project
-- [**FAQ**](faq.md) - Answers to common questions
+print(sorted(path.name for path in workspace.iterdir()))
+for line in (workspace / "INPUT").read_text().splitlines():
+    if not line.startswith("$"):  # skip the header comments
+        print(line)
+```
 
-**Note**: Rompy is under active development—features, model support, and documentation are continually evolving. Contributions and feedback are welcome!
+With a model plugin, `config` is the model's configuration, such as rompy-xbeach's `Config`, and the workspace holds that model's input files. [Your first run](getting-started/first-run.md) goes through these steps in detail.
+
+## The model family
+
+| Package | What it does | Documentation |
+|---|---|---|
+| rompy | The framework: model runs, time, grids, data and sources, templates, backends, the CLI | this site |
+| rompy-xbeach | [XBeach](https://xbeach.readthedocs.io/): nearshore waves, sediment transport and morphology | [rompy-xbeach](https://rom-py.github.io/rompy-xbeach/) |
+| rompy-swan | [SWAN](https://swanmodel.sourceforge.io/): spectral waves in coastal waters | [rompy-swan](https://rom-py.github.io/rompy-swan/) |
+| rompy-schism | [SCHISM](https://schism-dev.github.io/schism/master/index.html): unstructured-grid hydrodynamics, with waves through WWM | [rompy-schism](https://rom-py.github.io/rompy-schism/) |
+| rompy-notebooks | Tutorials and examples for every model | [rompy-notebooks](https://rom-py.github.io/rompy-notebooks/) |
+
+[Models](models.md) has a section for each model, with its tutorial.
+
+## Where to go next
+
+| If you want to | Go to |
+|---|---|
+| Install rompy and a model plugin | [Installation](getting-started/installation.md) |
+| Generate a first workspace, step by step | [Your first run](getting-started/first-run.md) |
+| Understand the ideas behind rompy | [Concepts](concepts/why-rompy.md) |
+| Use the command line and YAML files | [How-to guides](how-to/cli.md) |
+| Add a model, a data source or a backend | [Plugins](plugins/architecture.md) |
+| Choose a model and find its documentation | [Models](models.md) |
+| Look up a class or function | [Reference](reference/index.md) |
+| Learn with notebooks | The [notebook site](https://rom-py.github.io/rompy-notebooks/), starting with the [rompy hands-on notebook](https://rom-py.github.io/rompy-notebooks/notebooks/common/rompy_hands_on/) |

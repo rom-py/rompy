@@ -1,96 +1,45 @@
 # Models
 
-## Overview
+Each model is supported by a plugin package with its own documentation site: how the model maps to rompy, a guide to its settings, and its API reference. The tutorials and examples for every model are on the [notebook site](https://rom-py.github.io/rompy-notebooks/).
 
-Rompy provides model-specific implementations for various ocean, wave, and hydrodynamic models. Each model implementation includes configuration classes, grid definitions, data handling, and execution backends. For basic concepts about models, see the [Getting Started Guide](getting_started.md).
+| Model | Plugin | Install | Documentation | Tutorial |
+|---|---|---|---|---|
+| XBeach | rompy-xbeach | `pip install rompy-xbeach` | [rompy-xbeach](https://rom-py.github.io/rompy-xbeach/) | [XBeach tutorial](https://rom-py.github.io/rompy-notebooks/xbeach-tutorial/) |
+| SWAN | rompy-swan | `pip install rompy-swan` | [rompy-swan](https://rom-py.github.io/rompy-swan/) | [SWAN tutorial](https://rom-py.github.io/rompy-notebooks/swan-tutorial/) |
+| SCHISM | rompy-schism | `pip install rompy-schism` | [rompy-schism](https://rom-py.github.io/rompy-schism/) | [SCHISM tutorial](https://rom-py.github.io/rompy-notebooks/schism-tutorial/) |
 
-## Supported Models
+Installing a plugin also installs rompy, and registers the model's configuration so that `ModelRun` and the `rompy` command accept it (see [Plugin architecture](plugins/architecture.md)).
 
-Rompy currently supports the following models, each with a varying level of maturity:
+## XBeach
 
-- **SWAN**: Spectral Wave Nearshore model (install with `pip install rompy-swan`)
-- **SCHISM**: Semi-implicit Cross-scale Hydroscience Integrated Modeling System (install with `pip install rompy-schism`)
-- **XBeach**: A numerical model for the simulation of nearshore and coastal processes (install with `pip install rompy-xbeach`)
-- **WAVEWATCH III**: A third-generation wave model developed at NOAA/NCEP (install with `pip install rompy-ww3`)
+[XBeach](https://xbeach.readthedocs.io/) models nearshore waves, currents, sediment transport and morphological change, for example beach and dune erosion during storms. It reads a flat parameter file, `params.txt`, plus files for the grid, bathymetry and forcing.
 
-## Model Maturity
+rompy-xbeach builds `params.txt` and those files from a configuration with a rotated regular grid, bathymetry interpolated from GeoTIFF, XYZ or gridded data, wave boundaries from parameters, spectra or files, tide, water level and wind forcing, and the physics, sediment and output settings.
 
-The integration of each model into the Rompy framework is at a different stage of development. Here is a summary of the current status:
+- Documentation: [rompy-xbeach](https://rom-py.github.io/rompy-xbeach/), starting with [Your first model](https://rom-py.github.io/rompy-xbeach/getting-started/first-model/) and [How rompy-xbeach works](https://rom-py.github.io/rompy-xbeach/user-guide/how-it-works/)
+- Tutorial: [XBeach tutorial](https://rom-py.github.io/rompy-notebooks/xbeach-tutorial/)
+- Configuration type: `model_type: xbeach`
 
-- **SWAN**: Full implementation. The SWAN integration is the most mature and has the most features.
-- **SCHISM**: Full implementation. Less well tested and still under active development.
-- **XBeach**: Under active development
-- **WAVEWATCH III**: Under active development.
+## SWAN
 
-For more detailed information on each model, please refer to their specific guides:
+[SWAN](https://swanmodel.sourceforge.io/) is a third-generation spectral wave model for coastal regions, lakes and estuaries. It reads a command file, `INPUT`, and input grids for bathymetry, wind and currents.
 
-- [SWAN Guide](swan_guide.md)
-- [SCHISM Guide](schism_guide.md)
-- [XBeach Guide](xbeach_guide.md)
-- [WAVEWATCH III Guide](ww3_guide.md)
+rompy-swan writes the `INPUT` command file from components that mirror SWAN's commands (computational grid, input grids, boundaries, physics, numerics, output), and writes the input grids and boundary spectra from data sources.
 
-## Model-Specific Documentation
+- Documentation: [rompy-swan](https://rom-py.github.io/rompy-swan/)
+- Tutorial: [SWAN tutorial](https://rom-py.github.io/rompy-notebooks/swan-tutorial/)
+- Configuration types: `model_type: swan`, and `model_type: swanconfig` for `SwanConfigComponents`
 
-- **SWAN**: [https://rom-py.github.io/rompy-swan](https://rom-py.github.io/rompy-swan)
-- **SCHISM**: [https://rom-py.github.io/rompy-schism](https://rom-py.github.io/rompy-schism)
-- **XBeach**: [https://rom-py.github.io/rompy-xbeach](https://rom-py.github.io/rompy-xbeach)
-- **WAVEWATCH III**: [https://rom-py.github.io/rompy-ww3](https://rom-py.github.io/rompy-ww3)
+## SCHISM
 
-## Model Architecture
+[SCHISM](https://schism-dev.github.io/schism/master/index.html) is a hydrodynamic model on unstructured grids, from the ocean to creeks, with optional modules such as the WWM wave model. It reads a horizontal grid (`hgrid.gr3`), a vertical grid, Fortran namelists (`param.nml` and others) and forcing files.
 
-Each model implementation follows a consistent architecture:
+rompy-schism writes the grids, the namelists, the tidal and ocean boundaries and the atmospheric forcing (`sflux`) from its configuration.
 
-### Configuration
+- Documentation: [rompy-schism](https://rom-py.github.io/rompy-schism/)
+- Tutorial: [SCHISM tutorial](https://rom-py.github.io/rompy-notebooks/schism-tutorial/)
+- Configuration type: `model_type: schism`
 
-Model-specific configuration classes that define model parameters, grid settings, and data sources.
+## Other models
 
-### Grid
-
-Grid definitions that specify the model domain, resolution, and coordinate system.
-
-### Data
-
-Data handling classes for preparing model input data from various sources.
-
-### Execution
-
-Backend configurations for running the model in different environments (local, Docker, HPC).
-
-### Postprocessing
-
-Classes for analyzing and visualizing model output.
-
-## Model Integration
-
-Models integrate with Rompy's core framework through:
-
-- Pydantic-based configuration classes for type safety
-- XArray accessors for data manipulation
-- Intake drivers for data catalog integration
-- Cookiecutter templates for model setup
-- Unified execution backends for consistent deployment
-
-## Best Practices
-
-When working with models:
-
-1. **Use Type Safety**: Leverage Pydantic models for configuration validation
-2. **Modular Design**: Keep model components modular and reusable
-3. **Documentation**: Document model-specific parameters and usage
-4. **Testing**: Include comprehensive tests for model implementations
-5. **Examples**: Provide clear examples for common use cases
-
-## Extending Model Support
-
-To add support for a new model, see the [Extending Models](extending_models.md) guide which provides detailed information about creating new model implementations.
-
-## Next Steps
-
-For further information on working with models in Rompy:
-
-- Check the [Extending Models](extending_models.md) guide to add new model support
-- Follow the [Progressive Tutorials](progressive_tutorials.md) for hands-on examples
-- Review [Configuration Deep Dive](configuration_deep_dive.md) for advanced configuration techniques
-- Understand the [Architecture Overview](architecture_overview.md) for component integration
-- Explore [Common Workflows](common_workflows.md) for practical implementation patterns
-
+Any model with text or file inputs can be added as a plugin, for example WAVEWATCH III. A plugin needs a configuration class, templates for the model's input files and, usually, grid and data classes for the model's formats. [Writing a model plugin](plugins/model-plugin.md) describes the contract and builds a small plugin, and [Documenting a plugin](plugins/documenting.md) sets up its documentation site.
